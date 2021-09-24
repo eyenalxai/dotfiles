@@ -91,11 +91,15 @@ alias v=nvim
 alias la="exa --long -a"
 alias sudo="sudo "
 
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    alias sed=gsed
+fi
+
 # Generate .gitignore
 function gi() { 
     curl -sL https://www.toptal.com/developers/gitignore/api/$@ >> .gitignore
-    gsed -i '/^#/ d' .gitignore
-    gsed -i '/^$/d' .gitignore
+    sed -i '/^#/ d' .gitignore
+    sed -i '/^$/d' .gitignore
 }
 
 _gitignoreio_get_command_list() {
