@@ -10,6 +10,8 @@ plugins=(
     alias-finder
     git
     history-substring-search
+    docker
+    docker-compose
 )
 
 if [[ "$(hostname)" == *"fedora"* ]]; then
@@ -18,6 +20,9 @@ if [[ "$(hostname)" == *"fedora"* ]]; then
         git
         systemd
     )
+fi
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
 fi
 
 # Disable zsh substitution/autocomplete with URL and backslashes
@@ -48,14 +53,21 @@ export HISTSIZE=50000
 export SAVEHIST=10000
 
 # QOL, self-explanatory
+if [[ "$(hostname)" == *"fedora"* ]]; then
+    EDITOR=/usr/bin/nvim
 
+    source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+    source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+    source /usr/share/fzf/shell/key-bindings.zsh
+fi
 
-# Use neovim to edit with chezmoi
-EDITOR=/usr/bin/nvim
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    EDITOR=/opt/homebrew/bin/nvim
 
-source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source /usr/share/fzf/shell/key-bindings.zsh
+    source "${HOME}/.fzf.zsh"
+    source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+    source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
 
 export FZF_DEFAULT_COMMAND='rg --files --hidden -g "!.git" '
 export ZSH_ALIAS_FINDER_AUTOMATIC=true
