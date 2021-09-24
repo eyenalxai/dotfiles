@@ -1,0 +1,10 @@
+.config/git/config-work
+.ssh/config
+.ssh/g*/d*
+.ssh/g*/p*
+.ssh/h*/b*
+.ssh/h*/f*
+.ssh/p*/c*
+.ssh/p*/r*
+.ssh/w*/e*
+.ssh/w*/g*
