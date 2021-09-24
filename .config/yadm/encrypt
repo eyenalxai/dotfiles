@@ -9,3 +9,4 @@
 .ssh/p*/r*
 .ssh/w*/e*
 .ssh/w*/g*
+.zsh_history
