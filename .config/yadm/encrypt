@@ -10,3 +10,4 @@
 .ssh/w*/e*
 .ssh/w*/g*
 .zsh_history
+Projects/Notes/*.md
