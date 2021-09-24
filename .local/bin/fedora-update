@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+if [[ "$(hostname)" != "fedora-server" ]]; then
+    if [[ "$(whoami)" != "root" ]]; then
+        bash ~/.local/bin/dotfiles-pull
+        bash ~/.local/bin/dotfiles-push
+        flatpak update -y
+    fi
+
+    dnf check-update
+
+    if [[ $? -eq 100 ]]; then
+        sudo dnf offline-upgrade -y download 
+        read -r -p  "$(echo -e '\nThere are updates. Do you want to reboot to install them now? [y/N] ')" RESPONSE
+        if [[ "${RESPONSE}" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+            sudo dnf offline-upgrade -y reboot
+        fi
+    else 
+        echo "There are no updates"
+    fi
+else 
+    echo "You don't need that on servers"
+fi

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+yadm pull --quiet origin main
+
+if [[ "$(whoami)" != "root" ]]; then
+    yadm decrypt
+fi
