@@ -1,3 +1,4 @@
+.config/git/config-personal
 .config/git/config-work
 .ssh/config
 .ssh/g*/d*
