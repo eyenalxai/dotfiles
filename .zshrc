@@ -12,14 +12,13 @@ plugins=(
     history-substring-search
 )
 
-
-plugins+=(
-    dnf
-    git
-    systemd
-)
-
-
+if [[ "$(hostname)" == *"fedora"* ]]; then
+    plugins+=(
+        dnf
+        git
+        systemd
+    )
+fi
 
 # Disable zsh substitution/autocomplete with URL and backslashes
 DISABLE_MAGIC_FUNCTIONS=true
