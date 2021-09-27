@@ -12,7 +12,7 @@ fi
 
 if [ -n "$(yadm status --porcelain)" ]; then
     echo -e "\nCommiting...\n\n"
-    yadm commit -am "$(curl -sL commit.yatx.one)" && \
+    yadm commit -am "$(curl -sL commit.takx.xyz)" && \
     echo -e "\nPushing... \n\n"
     yadm push --quiet origin main
     echo -e "\nDone! \n\n"
