@@ -26,6 +26,7 @@ if [[ "$(hostname)" == *"server"* ]]; then
     plugins+=(
         keychain
         gpg-agent
+        ssh-agent
     )
 fi
 
