@@ -22,6 +22,13 @@ if [[ "$(hostname)" == *"fedora"* ]]; then
     )
 fi
 
+if [[ "$(hostname)" == *"server"* ]]; then
+    plugins+=(
+        keychain
+        gpg-agent
+    )
+fi
+
 if [[ "$(uname -s)" == "Darwin" ]]; then
 fi
 
