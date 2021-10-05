@@ -103,6 +103,10 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     alias sed=gsed
 fi
 
+# GOPATH
+export GOPATH=${HOME}/.go
+export PATH=${PATH}:${GOPATH}/bin
+
 # Generate .gitignore
 function gi() { 
     curl -sL https://www.toptal.com/developers/gitignore/api/$@ >> .gitignore
