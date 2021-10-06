@@ -3,8 +3,7 @@
 .ssh/config
 .ssh/g*/d*
 .ssh/g*/p*
-.ssh/h*/b*
-.ssh/h*/f*
+.ssh/h*/m*
 .ssh/p*/c*
 .ssh/p*/r*
 .ssh/w*/e*
