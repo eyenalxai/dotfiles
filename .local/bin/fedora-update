@@ -4,8 +4,6 @@ set -uo pipefail
 
 if [[ "$(hostname)" != "fedora-server" ]]; then
     if [[ "$(whoami)" != "root" ]]; then
-        bash ~/.local/bin/dotfiles-pull
-        bash ~/.local/bin/dotfiles-push
         flatpak update -y
     fi
 
