@@ -94,7 +94,6 @@ eval "$(zoxide init zsh)"
 alias garbage-commit='git commit -m "$(curl -sL commit.takx.xyz)"'
 alias gcg="gaa && garbage-commit"
 alias rg="rg -i"
-alias ssh-keygen="ssh-keygen -t ed25519"
 alias v=nvim
 alias la="exa --long -a"
 alias sudo="sudo "
@@ -106,6 +105,9 @@ fi
 # GOPATH
 export GOPATH=${HOME}/.go
 export PATH=${PATH}:${GOPATH}/bin
+
+# Confidential
+source .aliases.zsh
 
 # Generate .gitignore
 function gi() { 

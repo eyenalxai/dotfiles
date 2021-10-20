@@ -4,10 +4,10 @@
 .ssh/g*/d*
 .ssh/g*/p*
 .ssh/h*/m*
-.ssh/p*/c*
-.ssh/p*/r*
+.ssh/p*/p*
 .ssh/w*/e*
 .ssh/w*/g*
 .zsh_history
 Projects/Notes/*.md
 Projects/Notes/.obsidian/workspace
+.aliases.zsh
