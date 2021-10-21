@@ -4,6 +4,6 @@ set -euo pipefail
 
 yadm pull --quiet origin main
 
-if [[ "$(whoami)" == "dmitry" && "$(hostname)" != "*server*" ]]; then
+if [[ "$(whoami)" == "dmitry" ] && [ "$(hostname)" != "*server*" ]]; then
     yadm decrypt
 fi
