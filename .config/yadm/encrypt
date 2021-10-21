@@ -5,6 +5,7 @@
 .ssh/g*/p*
 .ssh/h*/m*
 .ssh/p*/p*
+.ssh/p*/x*
 .ssh/w*/e*
 .ssh/w*/g*
 .zsh_history
