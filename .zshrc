@@ -91,7 +91,9 @@ export GOPATH=${HOME}/.go
 export PATH=${PATH}:${GOPATH}/bin
 
 # Confidential
-source .aliases.zsh
+if [[ "$(whoami)" == "dmitry" ]]; then
+    source .aliases.zsh
+fi
 
 # Generate .gitignore
 function gi() { 
