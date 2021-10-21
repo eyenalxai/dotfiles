@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-if [[ "$(whoami)" == "dmitry" ]] && [[ "$(hostname)" != "*server*" ]]; then
+if [[ "$(whoami)" == "dmitry" ]] && [[ "$(hostname)" != *"server"* ]]; then
     yadm encrypt
     yadm commit -am "$(curl -sL commit.takx.xyz)" && \
     yadm push --quiet origin main
