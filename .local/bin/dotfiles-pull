@@ -4,6 +4,6 @@ set -euo pipefail
 
 yadm pull --quiet origin main
 
-if [[ "$(whoami)" != "root" ]]; then
+if [[ "$(whoami)" == "dmitry" ]]; then
     yadm decrypt
 fi
