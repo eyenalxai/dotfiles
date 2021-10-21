@@ -91,7 +91,7 @@ export GOPATH=${HOME}/.go
 export PATH=${PATH}:${GOPATH}/bin
 
 # Confidential
-if [[ "$(whoami)" == "dmitry" ]]; then
+if [[ "$(whoami)" == "dmitry" && "$(hostname)" != "*server*" ]]; then
     source .aliases.zsh
 fi
 
