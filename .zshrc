@@ -92,7 +92,7 @@ export PATH=${PATH}:${GOPATH}/bin
 
 # Confidential
 if [[ "$(whoami)" == "dmitry" ]] && [[ "$(hostname)" != *"server"* ]]; then
-    source .aliases.zsh
+    source ~/.aliases.zsh
 fi
 
 # Generate .gitignore
