@@ -8,6 +8,7 @@
 .ssh/p*/x*
 .ssh/w*/e*
 .ssh/w*/g*
+.ssh/w*/n*
 .zsh_history
 Projects/Notes/*.md
 Projects/Notes/.obsidian/workspace
