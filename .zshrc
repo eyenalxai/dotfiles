@@ -30,9 +30,6 @@ if [[ "$(hostname)" == *"server"* ]]; then
     )
 fi
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-fi
-
 # Disable zsh substitution/autocomplete with URL and backslashes
 DISABLE_MAGIC_FUNCTIONS=true
 
@@ -75,6 +72,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     source "${HOME}/.fzf.zsh"
     source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+    test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh" || true
 fi
 
 export FZF_DEFAULT_COMMAND='rg --files --hidden -g "!.git" '
@@ -112,3 +110,5 @@ _gitignoreio () {
 }
 
 compdef _gitignoreio gi
+
+
