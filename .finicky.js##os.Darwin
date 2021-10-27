@@ -4,14 +4,12 @@ module.exports = {
   defaultBrowser: "Safari",
   rewrite: [
     {
-      // Redirect all urls to use https
       match: ({ url }) => url.protocol === "http",
       url: { protocol: "https" }
     }
   ],
   handlers: [
     {
-      // Open apple.com and example.org urls in Safari
       match: ["youtube.com/*", "www.youtube.com/*"],
       browser: "Microsoft Edge"
     }
