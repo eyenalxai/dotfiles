@@ -1,5 +1,3 @@
-// ~/.finicky.js
-
 module.exports = {
   defaultBrowser: "Safari",
   rewrite: [
@@ -10,9 +8,12 @@ module.exports = {
   ],
   handlers: [
     {
-      match: ["youtube.com/*", "www.youtube.com/*"],
+      match: ["youtube.com/*", "www.youtube.com/*", "youtu.be/*"],
       browser: "Microsoft Edge"
     }
-  ]
+  ],
+  options: {
+    hideIcon: true,
+  }
 };
 
