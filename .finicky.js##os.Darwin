@@ -1,11 +1,5 @@
 module.exports = {
   defaultBrowser: "Safari",
-  rewrite: [
-    {
-      match: ({ url }) => url.protocol === "http",
-      url: { protocol: "https" }
-    }
-  ],
   handlers: [
     {
       match: ["youtube.com/*", "www.youtube.com/*", "youtu.be/*"],
