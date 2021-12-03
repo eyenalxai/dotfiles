@@ -88,6 +88,10 @@ eval "$(zoxide init zsh)"
 export GOPATH=${HOME}/.go
 export PATH=${PATH}:${GOPATH}/bin
 
+# Node
+export N_PREFIX=$HOME/.n
+export PATH=$N_PREFIX/bin:$PATH
+
 # Confidential
 if [[ "$(whoami)" == "dmitry" ]] && [[ "$(hostname)" != *"server"* ]]; then
     source ~/.aliases.zsh
