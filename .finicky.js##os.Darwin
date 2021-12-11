@@ -1,0 +1,13 @@
+module.exports = {
+  defaultBrowser: "Safari",
+  handlers: [
+    {
+      match: ["youtube.com/*", "www.youtube.com/*", "youtu.be/*"],
+      browser: "Microsoft Edge"
+    }
+  ],
+  options: {
+    hideIcon: true,
+  }
+};
+
