@@ -97,6 +97,23 @@ if [[ "$(whoami)" == "dmitry" ]] && [[ "$(hostname)" != *"server"* ]]; then
     source ~/.aliases.zsh
 fi
 
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+alias garbage-commit='git commit -m "$(curl -sL commit.takx.xyz)"'
+alias gcg="gaa && garbage-commit"
+alias rg="rg -i"
+alias v=nvim
+alias la="exa --long -a"
+alias sudo="sudo "
+alias python=python3
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    alias sed=gsed
+fi
+
+
 # Generate .gitignore
 function gi() { 
     curl -sL https://www.toptal.com/developers/gitignore/api/$@ >> .gitignore
