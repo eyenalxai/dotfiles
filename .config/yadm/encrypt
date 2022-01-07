@@ -11,3 +11,4 @@
 .ssh/w*/n*
 .zsh_history
 .aliases.zsh
+Notes/Personal/*.md
