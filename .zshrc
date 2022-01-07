@@ -14,11 +14,22 @@ plugins=(
     docker-compose
 )
 
+if [[ "$(hostname)" == *"fedora"* ]] || [[ "$(hostname)" == *"ubuntu"* ]]; then
+    plugins+=(
+        systemd
+    )
+fi
+
 if [[ "$(hostname)" == *"fedora"* ]]; then
     plugins+=(
         dnf
-        git
-        systemd
+    )
+fi
+
+
+if [[ "$(hostname)" == *"fedora"* ]]; then
+    plugins+=(
+        apt
     )
 fi
 
