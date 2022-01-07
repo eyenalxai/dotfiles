@@ -69,7 +69,7 @@ export HISTSIZE=50000
 export SAVEHIST=10000
 
 # QOL, self-explanatory
-if [[ "$(hostname)" == *"fedora"* ]]; then
+if [[ "$(hostname)" == *"fedora"* ]] || [[ "$(hostname)" == *"ubuntu"* ]]; then
     EDITOR=/usr/bin/nvim
 
     source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
