@@ -74,7 +74,11 @@ if [[ "$(hostname)" == *"fedora"* ]] || [[ "$(hostname)" == *"ubuntu"* ]]; then
 
     source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-    source /usr/share/fzf/shell/key-bindings.zsh
+    if [[ "$(hostname)" == *"ubuntu"* ]]; then
+        source /usr/share/doc/fzf/examples/key-bindings.zsh
+    elif [[ "$(hostname)" == *"fedora"* ]]; then 
+        source /usr/share/fzf/shell/key-bindings.zsh
+    fi
 fi
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
