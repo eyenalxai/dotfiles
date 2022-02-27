@@ -4,7 +4,6 @@
 .ssh/g*/d*
 .ssh/g*/p*
 .ssh/h*/m*
-.ssh/p*/p*
 .ssh/p*/x*
 .ssh/p*/l*
 .ssh/p*/n*
