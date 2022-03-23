@@ -26,13 +26,6 @@ if [[ "$(hostname)" == *"fedora"* ]]; then
     )
 fi
 
-
-if [[ "$(hostname)" == *"fedora"* ]]; then
-    plugins+=(
-        apt
-    )
-fi
-
 if [[ "$(hostname)" == *"server"* ]]; then
     plugins+=(
         keychain
