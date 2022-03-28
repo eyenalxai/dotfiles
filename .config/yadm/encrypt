@@ -11,5 +11,6 @@
 .ssh/w*/g*
 .ssh/w*/n*
 .ssh/s*/p*
+.ssh/s*/d*
 .zsh_history
 .aliases.zsh
