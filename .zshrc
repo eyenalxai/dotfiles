@@ -77,6 +77,7 @@ fi
 if [[ "$(uname -s)" == "Darwin" ]]; then
     EDITOR=/opt/homebrew/bin/nvim
 
+    source ~/.aliases.zsh
     source "${HOME}/.fzf.zsh"
     source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
@@ -99,11 +100,6 @@ export PATH=${PATH}:${GOPATH}/bin
 # Node
 export N_PREFIX=$HOME/.n
 export PATH=$N_PREFIX/bin:$PATH
-
-# Confidential
-if [[ "$(whoami)" == "dmitry" ]] && [[ "$(hostname)" != *"server"* ]]; then
-    source ~/.aliases.zsh
-fi
 
 # Set personal aliases, overriding those provided by oh-my-zsh libs,
 # plugins, and themes. Aliases can be placed here, though oh-my-zsh
