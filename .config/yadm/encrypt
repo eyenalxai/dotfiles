@@ -8,7 +8,6 @@
 
 .ssh/p*/l*
 .ssh/p*/n*
-.ssh/p*/p*
 .ssh/p*/x*
 
 .ssh/s*/p*
