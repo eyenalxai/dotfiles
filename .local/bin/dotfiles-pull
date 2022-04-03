@@ -2,20 +2,16 @@
 
 set -euo pipefail
 
-if ! [[ $(yadm rev-parse HEAD) = $(yadm ls-remote $(yadm rev-parse --abbrev-ref @{u} | sed 's/\// /g') | cut -f1) ]]; then
-    echo Pull needed
-    exit 1
-fi
 
-# if [[ "$(hostname)" != *"server"* ]] && [[ "$(whoami)" != "root" ]]; then
-#     if [[ $(command -v dconf) ]]; then
-#         # I'm sorry
-#         mkdir -p ~/.local/share/gnome-settings
-#         cd ~/.local/share/gnome-settings || exit
-#         echo user-db:user > temporary-profile
-#         DCONF_PROFILE="$(pwd)/temporary-profile" dconf load / < settings.ini
-#         rm temporary-profile
-#     fi
+if [[ "$(hostname)" != *"server"* ]] && [[ "$(whoami)" != "root" ]]; then
+    if [[ $(command -v dconf) ]]; then
+        # I'm sorry
+        mkdir -p ~/.local/share/gnome-settings
+        cd ~/.local/share/gnome-settings || exit
+        echo user-db:user > temporary-profile
+        DCONF_PROFILE="$(pwd)/temporary-profile" dconf load / < settings.ini
+        rm temporary-profile
+    fi
     
-#     yadm decrypt
-# fi
+    yadm decrypt
+fi
