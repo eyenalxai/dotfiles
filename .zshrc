@@ -65,7 +65,7 @@ export SAVEHIST=10000
 if [[ "$(hostname)" == *"fedora"* ]] || [[ "$(hostname)" == *"ubuntu"* ]]; then
     EDITOR=/usr/bin/nvim
 
-    if [[ "$(whoami)" != "root" ]]; then
+    if [[ "$(whoami)" != "root" ]] && [[ "$(hostname)" != *"server"* ]]; then
         source ~/.aliases.zsh
     fi
 
