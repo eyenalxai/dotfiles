@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+yadm pull origin main
 
 if [[ "$(hostname)" != *"server"* ]] && [[ "$(whoami)" != "root" ]]; then
     if [[ $(command -v dconf) ]]; then
