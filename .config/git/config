@@ -1,7 +1,5 @@
 [include]
 	path = ~/.config/git/config-personal
-[includeIf "gitdir:~/Projects/Work/"]
- 	path = ~/.config/git/config-work
 [core]
 	autocrlf = input
 	editor = nvim
