@@ -65,6 +65,10 @@ export SAVEHIST=10000
 if [[ "$(hostname)" == *"fedora"* ]] || [[ "$(hostname)" == *"ubuntu"* ]]; then
     EDITOR=/usr/bin/nvim
 
+    if [[ "$(whoami)" != "root" ]]; then
+        source ~/.aliases.zsh
+    fi
+
     source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
     if [[ "$(hostname)" == *"ubuntu"* ]]; then
@@ -74,7 +78,7 @@ if [[ "$(hostname)" == *"fedora"* ]] || [[ "$(hostname)" == *"ubuntu"* ]]; then
     fi
 fi
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
+if [[ "$(uname -s)" == "Darwin" ]] && [[ "$(whoami)" != "root" ]]; then
     EDITOR=/opt/homebrew/bin/nvim
 
     source ~/.aliases.zsh
