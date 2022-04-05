@@ -31,4 +31,3 @@ endif
 " Make tab key adequate
 Plug 'ervandew/supertab'
 
-Plug 'arcticicestudio/nord-vim'
