@@ -10,6 +10,12 @@ fi
 if [[ "$(whoami)" != "root" ]] && [[ "$(hostname)" != *"server"* ]]; then
     yadm encrypt
 
+    if [[ $(command -v dconf) ]]; then
+        echo -e "\nExporing GNOME settings..."
+        mkdir -p ~/.local/share/gnome-settings
+        dconf dump / > ~/.local/share/gnome-settings/settings.ini
+    fi
+
     yadm commit -am "$(curl -sL commit.takx.xyz)" 
     yadm push --quiet origin main
     
