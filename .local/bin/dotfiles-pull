@@ -5,14 +5,5 @@ set -euo pipefail
 yadm pull origin main
 
 if [[ "$(hostname)" != *"server"* ]] && [[ "$(whoami)" != "root" ]]; then
-    if [[ $(command -v dconf) ]]; then
-        # I'm sorry
-        mkdir -p ~/.local/share/gnome-settings
-        cd ~/.local/share/gnome-settings || exit
-        echo user-db:user > temporary-profile
-        DCONF_PROFILE="$(pwd)/temporary-profile" dconf load / < settings.ini
-        rm temporary-profile
-    fi
-    
     yadm decrypt
 fi
