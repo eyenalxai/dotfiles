@@ -45,9 +45,9 @@ eval "$(starship init zsh)"
 export STARSHIP_CONFIG=~/.config/starship/starship.toml
 
 # History
-export HISTFILE="$HOME/.zsh_history"
-export HISTSIZE=10000000
-export SAVEHIST=10000000
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=10000000
+SAVEHIST=10000000
 
 setopt EXTENDED_HISTORY
 setopt HIST_BEEP
