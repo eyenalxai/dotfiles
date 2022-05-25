@@ -2,17 +2,10 @@
 
 .ssh/config
 
-.ssh/g*/d*
-.ssh/g*/p*
+~/.ssh/p*/p*
 
-.ssh/h*/m*
-
-.ssh/p*/l*
-.ssh/p*/n*
-.ssh/p*/x*
-
-.ssh/s*/p*
-.ssh/s*/g*
+~/.ssh/g*/p*
+~/.ssh/g*/d*
 
 .zsh_history
 .aliases.zsh
