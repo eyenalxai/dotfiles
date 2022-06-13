@@ -31,8 +31,5 @@ set updatetime=100
 " The most situation maybe want to insert single closed pair in the string, eg ")"
 let g:AutoPairsFlyMode = 1
 
-" Enable Deoplete
-let g:deoplete#enable_at_startup = 1
-
 " Enable Supertab
 let g:SuperTabDefaultCompletionType = "<c-n>"

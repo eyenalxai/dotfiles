@@ -34,6 +34,12 @@ if [[ "$(hostname)" == *"server"* ]]; then
     )
 fi
 
+# PyEnv
+export PATH="$HOME/.poetry/bin:$PATH"
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
 # Disable zsh substitution/autocomplete with URL and backslashes
 DISABLE_MAGIC_FUNCTIONS=true
 
@@ -144,6 +150,3 @@ _gitignoreio () {
 
 compdef _gitignoreio gi
 
-
-
-export PATH="$HOME/.poetry/bin:$PATH"
