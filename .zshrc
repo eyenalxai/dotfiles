@@ -107,10 +107,6 @@ PATH="${HOME}/.cargo/bin:${HOME}/.local/bin:${PATH}"
 # Zoxide
 eval "$(zoxide init zsh)"
 
-# GOPATH
-export GOPATH=${HOME}/.go
-export PATH=${PATH}:${GOPATH}/bin
-
 # Node
 export N_PREFIX=$HOME/.n
 export PATH=$N_PREFIX/bin:$PATH
