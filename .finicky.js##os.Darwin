@@ -3,7 +3,7 @@ module.exports = {
   handlers: [
     {
       match: ["youtube.com/*", "www.youtube.com/*", "youtu.be/*"],
-      browser: "Google Chrome"
+      browser: "Microsoft Edge"
     }
   ],
   options: {
