@@ -115,13 +115,16 @@ export PATH=$N_PREFIX/bin:$PATH
 # plugins, and themes. Aliases can be placed here, though oh-my-zsh
 # users are encouraged to define aliases within the ZSH_CUSTOM folder.
 # For a full list of active aliases, run `alias`.
+alias cd=z
+
 alias garbage-commit='git commit -m "$(curl -sL commit.takx.xyz)"'
 alias gcg="gaa && garbage-commit"
-alias rg="rg -i"
-alias v=nvim
+
 alias la="exa --long -a"
-alias sudo="sudo "
 alias python=python3
+alias rg="rg -i"
+alias sudo="sudo "
+alias v=nvim
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
     alias sed=gsed
