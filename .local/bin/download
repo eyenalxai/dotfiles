@@ -30,15 +30,17 @@ cd "${HOME}/.yt-dlp-temp" || exit
 yt-dlp --no-check-certificate "${LINK}"
 
 DOWNLOADED_FILE="$(ls -AU | head -1)"
-
 echo "Downloaded file: ${DOWNLOADED_FILE}"
 
-if [ "${DOWNLOADED_FILE}" == "*.webm" ]; then
+DOWNLOADED_FILE_EXTENSION="${DOWNLOADED_FILE##*.}"
+
+if [[ "${DOWNLOADED_FILE_EXTENSION}" == "webm" ]] || [[ "${DOWNLOADED_FILE_EXTENSION}" == "mkv" ]]; then
   echo "Converting to .mp4"
   ffmpeg -i "${DOWNLOADED_FILE}" "${DOWNLOADED_FILE%%.*}.mp4"
+  rm "${DOWNLOADED_FILE}"
 fi
 
-mv "$(ls -AU | head -1)" "${DIRECTORY}/${NAME%%.*}.mp4"
+mv "${DOWNLOADED_FILE%%.*}.mp4" "${DIRECTORY}/${NAME%%.*}.mp4"
 
 echo "Moved to: ${DIRECTORY}/${NAME%%.*}.mp4"
 
