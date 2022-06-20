@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+if ! command -v yt-dlp &> /dev/null; then
+    echo "yt-dlp is required"
+    exit
+fi
+
+if ! command -v ffmpeg &> /dev/null; then
+    echo "ffmpeg is required"
+    exit
+fi
+
+NAME="${1}"
+FORMAT="${2}"
+LINK=${3}
+
+VIDEOS_DIRECTORY="${HOME}/Library/Mobile Documents/com~apple~CloudDocs/Videos"
+
+if [[ "${FORMAT}" == "short" ]]; then
+  DIRECTORY="${VIDEOS_DIRECTORY}/Short"
+elif [[ "${FORMAT}" == "long" ]]; then
+  DIRECTORY="${VIDEOS_DIRECTORY}/Long"
+else
+  DIRECTORY="${VIDEOS_DIRECTORY}/Whatever"
+
+fi
+mkdir -p "${HOME}/.yt-dlp-temp"
+cd "${HOME}/.yt-dlp-temp" || exit
+
+yt-dlp --no-check-certificate "${LINK}"
+
+DOWNLOADED_FILE="$(ls -AU | head -1)"
+
+echo "Downloaded file: ${DOWNLOADED_FILE}"
+
+if [ "${DOWNLOADED_FILE}" == "*.webm" ]; then
+  echo "Converting to .mp4"
+  ffmpeg -i "${DOWNLOADED_FILE}" "${DOWNLOADED_FILE%%.*}.mp4"
+fi
+
+mv "$(ls -AU | head -1)" "${DIRECTORY}/${NAME%%.*}.mp4"
+
+echo "Moved to: ${DIRECTORY}/${NAME%%.*}.mp4"
+
+rm -r "${HOME}/.yt-dlp-temp"
