@@ -1,47 +1,114 @@
-#!/usr/bin/env bash
+TEMP_FOLDER="${HOME}/.yt-dlp-temp"
+TEMP_NAME="temp-video-file"
+MACOS_VIDEOS_FOLDER="${HOME}/Library/Mobile Documents/com~apple~CloudDocs/Videos"
+LINUX_VIDEOS_FOLDER="${HOME}/Videos"
 
-if ! command -v yt-dlp &> /dev/null; then
-    echo "yt-dlp is required"
-    exit
-fi
-
-if ! command -v ffmpeg &> /dev/null; then
-    echo "ffmpeg is required"
-    exit
-fi
-
-NAME="${1}"
-FORMAT="${2}"
-LINK=${3}
-
-VIDEOS_DIRECTORY="${HOME}/Library/Mobile Documents/com~apple~CloudDocs/Videos"
-
-if [[ "${FORMAT}" == "short" ]]; then
-  DIRECTORY="${VIDEOS_DIRECTORY}/Short"
-elif [[ "${FORMAT}" == "long" ]]; then
-  DIRECTORY="${VIDEOS_DIRECTORY}/Long"
+# If platform is MacOS, use the MacOS videos folder, otherwise use the Linux videos folder
+if [ "$(uname)" == "Darwin" ]; then
+    VIDEOS_FOLDER="${MACOS_VIDEOS_FOLDER}"
 else
-  DIRECTORY="${VIDEOS_DIRECTORY}/Whatever"
-
-fi
-mkdir -p "${HOME}/.yt-dlp-temp"
-cd "${HOME}/.yt-dlp-temp" || exit
-
-yt-dlp --no-check-certificate "${LINK}"
-
-DOWNLOADED_FILE="$(ls -AU | head -1)"
-echo "Downloaded file: ${DOWNLOADED_FILE}"
-
-DOWNLOADED_FILE_EXTENSION="${DOWNLOADED_FILE##*.}"
-
-if [[ "${DOWNLOADED_FILE_EXTENSION}" == "webm" ]] || [[ "${DOWNLOADED_FILE_EXTENSION}" == "mkv" ]]; then
-  echo "Converting to .mp4"
-  ffmpeg -i "${DOWNLOADED_FILE}" "${DOWNLOADED_FILE%%.*}.mp4"
-  rm "${DOWNLOADED_FILE}"
+    VIDEOS_FOLDER="${LINUX_VIDEOS_FOLDER}"
 fi
 
-mv "${DOWNLOADED_FILE%%.*}.mp4" "${DIRECTORY}/${NAME%%.*}.mp4"
+# Check that ffmpeg is installed.
+if ! [ -x "$(command -v ffmpeg)" ]; then
+  echo "ffmpeg is not installed. Please install it and try again."
+  exit 1
+fi
 
-echo "Moved to: ${DIRECTORY}/${NAME%%.*}.mp4"
+# Check that yt-dlp is installed.
+if ! [ -x "$(command -v yt-dlp)" ]; then
+  echo "yt-dlp is not installed. Please install it and try again."
+  exit 1
+fi
 
-rm -r "${HOME}/.yt-dlp-temp"
+# Check that four command line arguments are provided.
+if [ $# -ne 3 ]; then
+  echo "Usage: download <filename> <short | long | whatever> <video_url>"
+  exit 1
+fi
+
+# Read three arguments from the command line.
+# The first argument is the name of the file to download.
+# The second argument is the name of the folder to download to.
+# The third argument is the link to the video.
+FILENAME=$1
+TYPE=$2
+LINK=$3
+
+# Check that FOLDER argument is either "short", "long" or "whatever".
+if [ "${TYPE}" != "short" ] && [ "${TYPE}" != "long" ] && [ "${TYPE}" != "whatever" ]; then
+  echo "Usage: download <filename> <short | long | whatever> <video_url>"
+  exit 1
+fi
+
+# Create the temporary folder if it doesn't exist.
+if [ ! -d "${TEMP_FOLDER}" ]; then
+    mkdir "${TEMP_FOLDER}"
+
+    # Print a message that temporary folder was created using printf and %s instead of variables.
+    # Add a newline to the end of the message.
+    printf "Created temporary folder: %s\n\n" "${TEMP_FOLDER}"
+fi
+
+
+# Download the video using youtube-dl and save it to the temporary folder under a temporary name while keeping the extension.
+yt-dlp --no-check-certificat -o "${TEMP_FOLDER}/${TEMP_NAME}.%(ext)s" "${LINK}"
+
+# If the temporary video file has the webm extension, convert it to mp4 and remove the webm file.
+if [ "$(file -b --mime-type "${TEMP_FOLDER}/${TEMP_NAME}.webm")" = "video/webm" ]; then
+    ffmpeg -i "${TEMP_FOLDER}/${TEMP_NAME}.webm" "${TEMP_FOLDER}/${TEMP_NAME}.mp4"
+
+    # Print a message that the video was converted using printf and %s instead of variables.
+    printf "Converted video: %s\n" "${TEMP_FOLDER}/${TEMP_NAME}.mp4"
+
+    rm "${TEMP_FOLDER}/${TEMP_NAME}.webm"
+
+    # Print a message that the webm file was removed using printf and %s instead of variables.
+    printf "Removed webm file: %s\n" "${TEMP_FOLDER}/${TEMP_NAME}.webm"
+
+fi
+
+# If the temporary video file has the mkv extension, convert it to mp4 and remove the mkv file.
+if [ "$(file -b --mime-type "${TEMP_FOLDER}/${TEMP_NAME}.mkv")" = "video/x-matroska" ]; then
+    ffmpeg -i "${TEMP_FOLDER}/${TEMP_NAME}.mkv" "${TEMP_FOLDER}/${TEMP_NAME}.mp4"
+
+    # Print a message that the video was converted using printf and %s instead of variables.
+    printf "Converted video: %s\n" "${TEMP_FOLDER}/${TEMP_NAME}.mp4"
+
+    rm "${TEMP_FOLDER}/${TEMP_NAME}.mkv"
+
+    # Print a message that the webm file was removed using printf and %s instead of variables.
+    printf "Removed mkv file: %s\n" "${TEMP_FOLDER}/${TEMP_NAME}.webm"
+
+fi
+
+# Capitalize the first letter of TYPE and assign it to the variable FOLDER.
+FOLDER=$(echo "${TYPE}" | awk '{print toupper($0)}')
+
+# Move the temporary video file to the videos folder.
+mv "${TEMP_FOLDER}/${TEMP_NAME}.mp4" "${VIDEOS_FOLDER}/${FOLDER}/${FILENAME}.mp4"
+
+# Print a message that the video was moved using printf and %s instead of variables. Add a newline to the start of the message.
+printf "\nMoved video to: %s\n" "${VIDEOS_FOLDER}/${FOLDER}/${FILENAME}.mp4"
+
+# Remove the temporary folder.
+rm -rf "${TEMP_FOLDER}"
+
+# Print a message that the temporary folder was removed using printf and %s instead of variables.
+printf "Removed temporary folder: %s\n" "${TEMP_FOLDER}"
+
+# Ask a user if they want to open the folder where the video was moved.
+# Read the user's response using read command and assign it to the variable ANSWER.
+printf "Open the folder where the video was moved? (y/n)\n"
+read -r ANSWER
+
+# If the user responds with "y", open the directory of the video.
+if [ "${ANSWER}" = "y" ]; then
+    # If platform is MacOS, use the MacOS open command, otherwise use the Linux open command.
+    if [ "$(uname)" == "Darwin" ]; then
+        open "${VIDEOS_FOLDER}/${FOLDER}"
+    else
+        xdg-open "${VIDEOS_FOLDER}/${FOLDER}"
+    fi
+fi
