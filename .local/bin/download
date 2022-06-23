@@ -53,7 +53,7 @@ fi
 
 
 # Download the video using youtube-dl and save it to the temporary folder under a temporary name while keeping the extension.
-yt-dlp --no-check-certificat -o "${TEMP_FOLDER}/${TEMP_NAME}.%(ext)s" "${LINK}"
+yt-dlp -o "${TEMP_FOLDER}/${TEMP_NAME}.%(ext)s" "${LINK}"
 
 # If the temporary video file has the webm extension, convert it to mp4 and remove the webm file.
 if [ "$(file -b --mime-type "${TEMP_FOLDER}/${TEMP_NAME}.webm")" = "video/webm" ]; then
