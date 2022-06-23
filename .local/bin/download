@@ -71,8 +71,6 @@ fi
 
 # If the temporary video file has the mkv extension, convert it to mp4 and remove the mkv file.
 if [ "$(file -b --mime-type "${TEMP_FOLDER}/${TEMP_NAME}.mkv")" = "video/x-matroska" ]; then
-    ffmpeg -i "${TEMP_FOLDER}/${TEMP_NAME}.mkv" "${TEMP_FOLDER}/${TEMP_NAME}.mp4"
-
     # Print a message that the video was converted using printf and %s instead of variables.
     printf "Converted video: %s\n" "${TEMP_FOLDER}/${TEMP_NAME}.mp4"
 
