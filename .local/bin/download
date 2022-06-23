@@ -99,7 +99,7 @@ printf "Removed temporary folder: %s\n" "${TEMP_FOLDER}"
 
 # Ask a user if they want to open the folder where the video was moved.
 # Read the user's response using read command and assign it to the variable ANSWER.
-printf "Open the folder where the video was moved? (y/n)\n"
+printf "\nOpen the folder where the video was moved? (y/n) "
 read -r ANSWER
 
 # If the user responds with "y", open the directory of the video.
