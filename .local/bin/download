@@ -1,7 +1,8 @@
-TEMP_FOLDER="${HOME}/.yt-dlp-temp"
-TEMP_NAME="temp-video-file"
 MACOS_VIDEOS_FOLDER="${HOME}/Library/Mobile Documents/com~apple~CloudDocs/Videos"
 LINUX_VIDEOS_FOLDER="${HOME}/Videos"
+
+TEMP_FOLDER="${HOME}/.yt-dlp-temp"
+TEMP_NAME="temp-video-file"
 
 # If platform is MacOS, use the MacOS videos folder, otherwise use the Linux videos folder
 if [ "$(uname)" == "Darwin" ]; then
