@@ -1,10 +1,9 @@
+TEMP_FOLDER="${HOME}/.yt-dlp-temp"
+TEMP_NAME="temp-video-file"
 MACOS_VIDEOS_FOLDER="${HOME}/Library/Mobile Documents/com~apple~CloudDocs/Videos"
 LINUX_VIDEOS_FOLDER="${HOME}/Videos"
 
-TEMP_FOLDER="${HOME}/.yt-dlp-temp"
-TEMP_NAME="temp-video-file"
-
-# If platform is MacOS, use the MacOS videos folder, otherwise use the Linux videos folder
+# If platform is macOS, use the macOS videos folder, otherwise use the Linux videos folder
 if [ "$(uname)" == "Darwin" ]; then
     VIDEOS_FOLDER="${MACOS_VIDEOS_FOLDER}"
 else
@@ -67,6 +66,7 @@ if [ "$(file -b --mime-type "${TEMP_FOLDER}/${TEMP_NAME}.webm")" = "video/webm" 
 
     # Print a message that the webm file was removed using printf and %s instead of variables.
     printf "Removed webm file: %s\n" "${TEMP_FOLDER}/${TEMP_NAME}.webm"
+
 fi
 
 # If the temporary video file has the mkv extension, convert it to mp4 and remove the mkv file.
@@ -80,6 +80,7 @@ if [ "$(file -b --mime-type "${TEMP_FOLDER}/${TEMP_NAME}.mkv")" = "video/x-matro
 
     # Print a message that the webm file was removed using printf and %s instead of variables.
     printf "Removed mkv file: %s\n" "${TEMP_FOLDER}/${TEMP_NAME}.webm"
+
 fi
 
 # Capitalize the first letter of TYPE and assign it to the variable FOLDER.
@@ -99,15 +100,18 @@ printf "Removed temporary folder: %s\n" "${TEMP_FOLDER}"
 
 # Ask a user if they want to open the folder where the video was moved.
 # Read the user's response using read command and assign it to the variable ANSWER.
-printf "\nOpen the folder where the video was moved? (y/n) "
+printf "\nOpen the folder where the video was moved? ([y]/n) "
 read -r ANSWER
 
-# If the user responds with "y", open the directory of the video.
-if [ "${ANSWER}" = "y" ]; then
-    # If platform is MacOS, use the MacOS open command, otherwise use the Linux open command.
-    if [ "$(uname)" == "Darwin" ]; then
-        open "${VIDEOS_FOLDER}/${FOLDER}"
-    else
-        xdg-open "${VIDEOS_FOLDER}/${FOLDER}"
-    fi
+# If the user's response is "n", exit the script. Check for capitalization.
+if [[ "${ANSWER}" =~ ^[Nn]$ ]]; then
+    exit 0
+fi
+
+# Open the folder where the video was moved.
+# If the platform is macOS, use the macOS open command, otherwise use the Linux open command.
+if [ "$(uname)" == "Darwin" ]; then
+    open "${VIDEOS_FOLDER}/${FOLDER}"
+else
+    xdg-open "${VIDEOS_FOLDER}/${FOLDER}"
 fi
