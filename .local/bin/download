@@ -1,5 +1,8 @@
+#!/usr/bin/env bash
+
 TEMP_FOLDER="${HOME}/.yt-dlp-temp"
 TEMP_NAME="temp-video-file"
+
 MACOS_VIDEOS_FOLDER="${HOME}/Library/Mobile Documents/com~apple~CloudDocs/Videos"
 LINUX_VIDEOS_FOLDER="${HOME}/Videos"
 
@@ -50,7 +53,6 @@ if [ ! -d "${TEMP_FOLDER}" ]; then
     # Add a newline to the end of the message.
     printf "Created temporary folder: %s\n\n" "${TEMP_FOLDER}"
 fi
-
 
 # Download the video using youtube-dl and save it to the temporary folder under a temporary name while keeping the extension.
 yt-dlp -o "${TEMP_FOLDER}/${TEMP_NAME}.%(ext)s" "${LINK}"
