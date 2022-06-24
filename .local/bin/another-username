@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-curl -sL name.takx.xyz | jq -r '.[]'
