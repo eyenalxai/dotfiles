@@ -5,19 +5,19 @@ NAME_PROVIDER_URL="https://name.takx.xyz"
 # Create variable SPLIT_USERNAMES and assign true
 SPLIT_USERNAMES=false
 
+# Check that jq is installed.
+if ! [ -x "$(command -v jq)" ]; then
+  echo "jq is not installed. Please install it and try again."
+  exit 1
+fi
+
 # Ask user if they want to split usernames into two parts. Assign the answer to a variable.
-printf "\nSplit usernames into two parts? (y/[n]) "
+printf "Split usernames into two parts? (y/[n]) "
 read -r ANSWER
 
 # If the answer is "y", set SPLIT_USERNAMES to true.
 if [[ "${ANSWER}" =~ ^[Yy]$ ]]; then
     SPLIT_USERNAMES=true
-fi
-
-# Check that jq is installed.
-if ! [ -x "$(command -v jq)" ]; then
-  echo "jq is not installed. Please install it and try again."
-  exit 1
 fi
 
 # Send GET request using curl to NAME_PROVIDER_URL and receive json response with random usernames inside an json array.
@@ -26,6 +26,9 @@ USERNAMES_JSON=$(curl -s "${NAME_PROVIDER_URL}")
 
 # Parse the json array and assign the usernames to a variable called USERNAMES.
 USERNAMES=$(echo "${USERNAMES_JSON}" | jq -r '.[]')
+
+# Print newline.
+printf "\n"
 
 # Print usernames to the console one by one.
 for USERNAME in ${USERNAMES}; do
