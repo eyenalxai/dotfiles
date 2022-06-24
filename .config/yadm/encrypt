@@ -7,7 +7,7 @@
 .ssh/g*/p*
 .ssh/g*/d*
 
-./local/bin/f*
+.local/bin/f*
 
 .zsh_history
 .aliases.zsh
