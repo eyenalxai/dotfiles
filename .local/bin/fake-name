@@ -30,8 +30,11 @@ USERNAMES=$(echo "${USERNAMES_JSON}" | jq -r '.[]')
 # Print newline.
 printf "\n"
 
-# Print usernames to the console one by one.
 for USERNAME in ${USERNAMES}; do
+
+    # Create an empty array called USERNAME_ARRAY.
+    USERNAME_ARRAY=()
+
     # If SPLIT_USERNAMES is true, split the username into two equal parts, otherwise, just print the username.
     if ${SPLIT_USERNAMES}; then
         # Get the length of the username using #
@@ -45,11 +48,15 @@ for USERNAME in ${USERNAMES}; do
         USERNAME_FIRST_PART="$(tr '[:lower:]' '[:upper:]' <<< ${USERNAME_FIRST_PART:0:1})${USERNAME_FIRST_PART:1}"
         USERNAME_SECOND_PART="$(tr '[:lower:]' '[:upper:]' <<< ${USERNAME_SECOND_PART:0:1})${USERNAME_SECOND_PART:1}"
 
-        # Print both parts separated by a space.
-        echo "${USERNAME_FIRST_PART} ${USERNAME_SECOND_PART}"
+        # Combine the two parts into single string and put them into USERNAME_ARRAY.
+        USERNAME_ARRAY+=("${USERNAME_FIRST_PART}${USERNAME_SECOND_PART}")
     else
-        # Print the username.
-        printf "%s\n" "${USERNAME}"
+        # Add the username to USERNAME_ARRAY.
+        USERNAME_ARRAY+=("${USERNAME}")
     fi
 done
 
+# Print each username in USERNAME_ARRAY with a number next to it.
+for ((i=0; i<${#USERNAME_ARRAY[@]}; i++)); do
+    printf "%d. %s\n" "$((i+1))" "${USERNAME_ARRAY[$i]}"
+done
