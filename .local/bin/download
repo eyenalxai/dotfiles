@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Use bash strict mode.
+set -o errexit -o nounset -o pipefail
+
 TEMP_FOLDER="${HOME}/.yt-dlp-temp"
 TEMP_NAME="temp-video-file"
 
@@ -73,6 +76,8 @@ fi
 
 # If the temporary video file has the mkv extension, convert it to mp4 and remove the mkv file.
 if [ "$(file -b --mime-type "${TEMP_FOLDER}/${TEMP_NAME}.mkv")" = "video/x-matroska" ]; then
+    ffmpeg -i "${TEMP_FOLDER}/${TEMP_NAME}.mkv" "${TEMP_FOLDER}/${TEMP_NAME}.mp4"
+
     # Print a message that the video was converted using printf and %s instead of variables.
     printf "Converted video: %s\n" "${TEMP_FOLDER}/${TEMP_NAME}.mp4"
 
@@ -83,8 +88,8 @@ if [ "$(file -b --mime-type "${TEMP_FOLDER}/${TEMP_NAME}.mkv")" = "video/x-matro
 
 fi
 
-# Capitalize the first letter of TYPE and assign it to the variable FOLDER.
-FOLDER=$(echo "${TYPE}" | awk '{print toupper($0)}')
+# Capitalize the first letter of TYPE using tr and assign it to the variable VIDEOS_FOLDER.
+FOLDER="$(tr '[:lower:]' '[:upper:]' <<< ${TYPE:0:1})${TYPE:1}"
 
 # Move the temporary video file to the videos folder.
 mv "${TEMP_FOLDER}/${TEMP_NAME}.mp4" "${VIDEOS_FOLDER}/${FOLDER}/${FILENAME}.mp4"
