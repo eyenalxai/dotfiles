@@ -9,7 +9,7 @@
 
 .local/bin/f*
 
-.local/share/m*/v*
+.local/share/m*/v*/v*
 
 .zsh_history
 .aliases.zsh
