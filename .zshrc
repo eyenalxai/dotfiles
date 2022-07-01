@@ -121,7 +121,6 @@ alias gcg="gaa && garbage-commit"
 alias la="exa --long -a"
 alias python=python3
 alias rg="rg -i"
-alias sudo="/Users/decfusxad/Projects/sudo-wrapper/sudo.sh "
 alias v=nvim
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
