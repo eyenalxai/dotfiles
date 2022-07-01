@@ -9,7 +9,5 @@
 
 .local/bin/f*
 
-.local/share/m*/w*/w*
-
 .zsh_history
 .aliases.zsh
