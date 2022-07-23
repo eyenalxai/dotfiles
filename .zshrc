@@ -14,14 +14,9 @@ plugins=(
     docker-compose
 )
 
-if [[ "$(hostname)" == *"fedora"* ]] || [[ "$(hostname)" == *"ubuntu"* ]]; then
-    plugins+=(
-        systemd
-    )
-fi
-
 if [[ "$(hostname)" == *"fedora"* ]]; then
     plugins+=(
+        systemd
         dnf
     )
 fi
@@ -33,12 +28,6 @@ if [[ "$(hostname)" == *"server"* ]]; then
         ssh-agent
     )
 fi
-
-# PyEnv
-export PATH="$HOME/.poetry/bin:$PATH"
-export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
 
 # Disable zsh substitution/autocomplete with URL and backslashes
 DISABLE_MAGIC_FUNCTIONS=true
@@ -96,6 +85,12 @@ if [[ "$(uname -s)" == "Darwin" ]] && [[ "$(whoami)" != "root" ]]; then
     source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
     test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh" || true
+
+    # PyEnv
+    export PATH="$HOME/.poetry/bin:$PATH"
+    export PYENV_ROOT="$HOME/.pyenv"
+    command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init -)"
 fi
 
 export FZF_DEFAULT_COMMAND='rg --files --hidden -g "!.git" '
