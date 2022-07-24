@@ -79,6 +79,8 @@ fi
 
 if [[ "$(uname -s)" == "Darwin" ]] && [[ "$(whoami)" != "root" ]]; then
     EDITOR=/opt/homebrew/bin/nvim
+    
+    alias sed=gsed
 
     source ~/.aliases.zsh
     source "${HOME}/.fzf.zsh"
@@ -91,20 +93,21 @@ if [[ "$(uname -s)" == "Darwin" ]] && [[ "$(whoami)" != "root" ]]; then
     export PYENV_ROOT="$HOME/.pyenv"
     command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init -)"
+    
+    # Node manager
+    export N_PREFIX=$HOME/.n
+    export PATH=$N_PREFIX/bin:$PATH
 fi
 
 export FZF_DEFAULT_COMMAND='rg --files --hidden -g "!.git" '
 export ZSH_ALIAS_FINDER_AUTOMATIC=true
 
-# My 
-PATH="${HOME}/.cargo/bin:${HOME}/.local/bin:${PATH}"
+# My stuff
+PATH="${HOME}/.local/bin:${PATH}"
 
 # Zoxide
 eval "$(zoxide init zsh)"
 
-# Node
-export N_PREFIX=$HOME/.n
-export PATH=$N_PREFIX/bin:$PATH
 
 # Set personal aliases, overriding those provided by oh-my-zsh libs,
 # plugins, and themes. Aliases can be placed here, though oh-my-zsh
@@ -117,11 +120,6 @@ alias la="exa --long -a"
 alias python=python3
 alias rg="rg -i"
 alias v=nvim
-
-if [[ "$(uname -s)" == "Darwin" ]]; then
-    alias sed=gsed
-fi
-
 
 # Generate .gitignore
 function gi() { 
