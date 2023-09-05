@@ -18,8 +18,14 @@ set $mod Mod4
 # Screenshot
 bindsym $mod+Shift+s exec grim -g "$(slurp -d)" - | wl-copy -t image/png
 
+### Stuff
+
+# Borders & Gaps
 default_border pixel 2
 gaps inner 6
+
+# Background
+output * bg #000000 solid_color
 
 # Default config for sway
 #
@@ -44,7 +50,6 @@ set $menu dmenu_path | dmenu | xargs swaymsg exec --
 ### Output configuration
 #
 # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 #
 # Example configuration:
 #
