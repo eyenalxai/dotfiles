@@ -18,6 +18,8 @@ set $mod Mod4
 # Screenshot
 bindsym $mod+Shift+s exec grim -g "$(slurp -d)" - | wl-copy -t image/png
 
+default_border pixel 2
+gaps inner 6
 
 # Default config for sway
 #
