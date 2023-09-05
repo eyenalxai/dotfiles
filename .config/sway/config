@@ -28,7 +28,7 @@ gaps inner 6
 output * bg #000000 solid_color
 
 # Launcher
-set $menu dmenu_path | bemenu | xargs swaymsg exec --
+set $menu j4-dmenu-desktop --dmenu='bemenu -i' --term='kitty'
 
 # Your preferred terminal emulator
 set $term kitty
