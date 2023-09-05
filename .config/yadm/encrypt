@@ -1,1 +1,2 @@
-~/.config/git/config-personal
+.config/git/config-personal
+.ssh/*.pub
