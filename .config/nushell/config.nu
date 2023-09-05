@@ -772,3 +772,5 @@ source ~/.zoxide.nu
 
 # Starship
 use ~/.cache/starship/init.nu
+
+$env.STARSHIP_SHELL = "nu"
