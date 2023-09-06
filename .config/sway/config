@@ -1,6 +1,9 @@
 # Auth Agent
 exec "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 
+# Clipboard watcher
+exec wl-paste --watch cliphist store
+
 # Inputs
 input * {
     xkb_layout "us,ru"
@@ -24,8 +27,14 @@ input 4152:6220:SteelSeries_SteelSeries_Rival_3 {
 # Variables
 set $mod Mod4
 
-# Screenshot
+# Screenshot Area
 bindsym $mod+Shift+s exec grim -g "$(slurp -d)" - | wl-copy -t image/png
+
+# Record Area
+bindsym $mod+Shift+r exec "${HOME}/.local/share/bin/record-area.nu"
+
+# Clipboard
+bindsym $mod+Shift+x exec cliphist list | wofi --dmenu | cliphist decode | wl-copy
 
 ### Stuff
 
