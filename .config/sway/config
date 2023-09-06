@@ -54,7 +54,7 @@ client.urgent           $bg-urgent    $bg-urgent   $text          $bar $bar
 
 
 # Launcher
-set $menu SHELL=/usr/bin/bash j4-dmenu-desktop --dmenu='bemenu -i' --term='kitty' --usage-log="${HOME}/usage"
+set $menu SHELL=/usr/bin/bash j4-dmenu-desktop --dmenu='wofi --fork --show drun' --term='kitty' --usage-log="${HOME}/usage"
 
 # Your preferred terminal emulator
 set $term kitty
