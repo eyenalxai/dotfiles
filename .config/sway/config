@@ -1,13 +1,22 @@
 # Auth Agent
 exec "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 
-# Keyboard
+# Inputs
 input * {
     xkb_layout "us,ru"
     xkb_options "grp:caps_toggle"
 }
 
 input 1118:2040:Microsoft_Wired_Keyboard_600 xkb_model "pc101"
+
+input 4152:6220:SteelSeries_SteelSeries_Rival_3 {
+    left_handed disabled
+    tap enabled
+    natural_scroll disabled
+    dwt enabled
+    accel_profile "flat" # disable mouse acceleration (enabled by default; to set it manually, use "adaptive" instead of "flat")
+    pointer_accel 0 # set mouse sensitivity (between -1 and 1)
+}
 
 
 ### Keybinding
@@ -45,7 +54,7 @@ client.urgent           $bg-urgent    $bg-urgent   $text          $bar $bar
 
 
 # Launcher
-set $menu SHELL=/usr/bin/bash j4-dmenu-desktop --dmenu='bemenu -i' --term='kitty'
+set $menu SHELL=/usr/bin/bash j4-dmenu-desktop --dmenu='bemenu -i' --term='kitty' --usage-log="${HOME}/usage"
 
 # Your preferred terminal emulator
 set $term kitty
