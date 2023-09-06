@@ -1,11 +1,8 @@
 [[language]]
 name = "python"
-roots = ["pyproject.toml", "poetry.lock", ".git"]
-shebangs = ["python"]
-comment-token = "#"
-file-types = ["py"]
-language-server = { command = "pyright-langserver", args = ["--stdio"] }
-formatter = { command = "black", args = ["--quiet", "-"] }
+formatter = { command = "sh", args = ["-c", "black --quiet - | isort -"]}
 auto-format = true
-config = { }
 
+[language.config.pylsp.plugins]
+ruff = { enabled = true }
+mypy = { enabled= true }
