@@ -774,3 +774,6 @@ source ~/.zoxide.nu
 use ~/.cache/starship/init.nu
 
 $env.STARSHIP_SHELL = "nu"
+
+# Aliases
+alias hx = helix
