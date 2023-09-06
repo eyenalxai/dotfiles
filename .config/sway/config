@@ -36,6 +36,11 @@ bindsym $mod+Shift+r exec "${HOME}/.local/share/bin/record-area.nu"
 # Clipboard
 bindsym $mod+Shift+x exec cliphist list | wofi --dmenu | cliphist decode | wl-copy
 
+# Volume
+bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
+bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+
 ### Stuff
 
 # Borders & Gaps
