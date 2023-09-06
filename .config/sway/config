@@ -22,10 +22,27 @@ bindsym $mod+Shift+s exec grim -g "$(slurp -d)" - | wl-copy -t image/png
 
 # Borders & Gaps
 default_border pixel 2
-gaps inner 6
+gaps inner 10
+smart_gaps on
 
 # Background
 output * bg #000000 solid_color
+
+# Colors
+set $bg 	#d65d0e
+set $bg-inactive   #323232
+set $bg-urgent     #000000
+set $text          #eeeeec
+set $text-inactive #babdb6
+
+set $bar           #323232
+set $statusline    #e0e0e0
+
+client.focused          $bg           $bg          $text          $bg $bg
+client.unfocused        $bg-inactive  $bg-inactive $text-inactive $bar $bar
+client.focused_inactive $bg-inactive  $bg-inactive $text-inactive $bar $bar
+client.urgent           $bg-urgent    $bg-urgent   $text          $bar $bar
+
 
 # Launcher
 set $menu SHELL=/usr/bin/bash j4-dmenu-desktop --dmenu='bemenu -i' --term='kitty'
