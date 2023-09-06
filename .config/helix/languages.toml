@@ -2,7 +2,6 @@
 name = "python"
 formatter = { command = "sh", args = ["-c", "black --quiet - | isort -"]}
 auto-format = true
+config.pylsp.plugins.ruff = { enabled = true }
+config.pylsp.plugins.mypy = { enabled = true }
 
-[language.config.pylsp.plugins]
-ruff = { enabled = true }
-mypy = { enabled= true }
