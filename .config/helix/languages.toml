@@ -1,4 +1,14 @@
 [[language]]
+name = "ts"
+formatter = { command = 'prettier', args = ["--parser", "typescript"] }
+auto-format = true
+
+[[language]]
+name = "tsx"
+formatter = { command = 'prettier', args = ["--parser", "typescript"] }
+auto-format = true
+
+[[language]]
 name = "python"
 formatter = { command = "sh", args = ["-c", "black --quiet - | isort -"]}
 auto-format = true
