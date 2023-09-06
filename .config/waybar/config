@@ -7,7 +7,7 @@
     // Choose the order of the modules
     "modules-left": ["sway/workspaces", "sway/mode", "sway/scratchpad"],
     "modules-center": ["sway/window"],
-    "modules-right": ["custom/is_recording"," pulseaudio", "network", "keyboard-state", "sway/language", "clock", "tray"],
+    "modules-right": ["custom/is_recording"," pulseaudio", "network", "custom/is_vpn_active", "keyboard-state", "sway/language", "clock", "tray"],
     // Modules configuration
     // "sway/workspaces": {
     //     "disable-scroll": true,
@@ -84,8 +84,12 @@
     "custom/is_recording": {
         "exec": "${HOME}/.local/share/bin/is-recording.nu",
         "interval": 1,
-        "spacing": 10,
         "format": "  {}  "
-    }
+    },
+    "custom/is_vpn_active": {
+        "exec": "${HOME}/.local/share/bin/is-vpn-active.nu",
+        "interval": 1,
+        "format": "  {}  "
+        }
 }
 
