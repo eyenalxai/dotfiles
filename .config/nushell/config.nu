@@ -781,3 +781,8 @@ alias hx = helix
 alias toggle-vpn = nu $"($env.HOME)/.local/share/bin/toggle-vpn.nu"
 alias toggle-headphones = nu $"($env.HOME)/.local/share/bin/toggle-headphones.nu"
 
+# Functions
+export def with-dot-env [filename: string, command: closure] {
+    with-env (open -r $filename | lines | parse "{env_key}={env_value}" | transpose -r) $command
+}
+
