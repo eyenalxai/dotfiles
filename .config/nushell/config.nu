@@ -776,6 +776,7 @@ use ~/.cache/starship/init.nu
 # My Stuff
 use ~/.config/nushell/stuff.nu with-dot-env
 use ~/.config/nushell/stuff.nu poetry-run
+use ~/.config/nushell/stuff.nu poetry-run-python
 
 $env.STARSHIP_SHELL = "nu"
 $env.EDITOR = "helix"
@@ -784,5 +785,7 @@ $env.EDITOR = "helix"
 alias hx = helix
 alias toggle-vpn = nu $"($env.HOME)/.local/share/bin/toggle-vpn.nu"
 alias toggle-headphones = nu $"($env.HOME)/.local/share/bin/toggle-headphones.nu"
+
 alias pr = poetry-run
+alias prp = poetry-run-python
 
