@@ -773,6 +773,10 @@ source ~/.zoxide.nu
 # Starship
 use ~/.cache/starship/init.nu
 
+# My Stuff
+use ~/.config/nushell/stuff.nu with-dot-env
+use ~/.config/nushell/stuff.nu poetry-run
+
 $env.STARSHIP_SHELL = "nu"
 $env.EDITOR = "helix"
 
@@ -780,9 +784,5 @@ $env.EDITOR = "helix"
 alias hx = helix
 alias toggle-vpn = nu $"($env.HOME)/.local/share/bin/toggle-vpn.nu"
 alias toggle-headphones = nu $"($env.HOME)/.local/share/bin/toggle-headphones.nu"
-
-# Functions
-export def with-dot-env [filename: string, command: closure] {
-    with-env (open -r $filename | lines | parse "{env_key}={env_value}" | transpose -r) $command
-}
+alias pr = poetry-run
 
