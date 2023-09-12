@@ -1,11 +1,16 @@
 [[language]]
 name = "typescript"
-formatter = { command = 'prettier', args = ["--parser", "typescript"] }
+formatter = { command = "yarn", args = ["run", "prettier", "--parser", "typescript"] }
 auto-format = true
 
 [[language]]
 name = "tsx"
-formatter = { command = 'prettier', args = ["--parser", "typescript"] }
+formatter = { command = "yarn", args = ["run", "prettier", "--parser", "typescript"] }
+auto-format = true
+
+[[language]]
+name = "json"
+formatter = { command = 'prettier', args = ["--parser", "json"] }
 auto-format = true
 
 [[language]]
