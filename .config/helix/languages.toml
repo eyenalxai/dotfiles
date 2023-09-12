@@ -1,4 +1,9 @@
 [[language]]
+name = "rust"
+formatter = { command = "rustfmt" }
+auto-format = true
+
+[[language]]
 name = "typescript"
 formatter = { command = "yarn", args = ["run", "prettier", "--parser", "typescript"] }
 auto-format = true
