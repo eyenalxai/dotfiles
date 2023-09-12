@@ -4,6 +4,9 @@ exec "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 # Clipboard watcher
 exec wl-paste --watch cliphist store
 
+# Split Direction
+exec sway-maqsuma
+
 # Inputs
 input * {
     xkb_layout "us,ru"
