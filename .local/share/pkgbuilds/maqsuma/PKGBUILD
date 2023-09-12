@@ -1,5 +1,5 @@
 pkgname=sway-maqsuma
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="awoof"
 arch=('x86_64')
@@ -7,11 +7,11 @@ url="https://github.com/eyenalxai/sway-maqsuma"
 license=('MIT')
 depends=('gcc-libs')
 makedepends=('cargo')
-source=("$pkgname::git+https://github.com/eyenalxai/$pkgname")
-sha256sums=('SKIP')
+source=("$pkgname-$pkgver::https://github.com/eyenalxai/$pkgname/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('74c965c1a6be2e9342358635d2a44ffac15d849a66d34c454e91c9060decafc6')
 
 build() {
-  cd "$pkgname"
+  cd "$pkgname-$pkgver"
 
   cargo build --release --locked
   find target -name sway-maqsuma -print0 | xargs -0 ls -t | head -n1 | xargs dirname > out_dir
