@@ -46,7 +46,7 @@ bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
 # Borders & Gaps
 default_border pixel 2
 gaps inner 10
-smart_gaps on
+smart_gaps off
 
 # Background
 output * bg #000000 solid_color
