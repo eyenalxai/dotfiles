@@ -30,7 +30,11 @@ window#waybar {
 #language,
 #clock,
 #tray,
-#custom-is_recording,
 #custom-is_vpn_active {
   border-bottom: 3px solid @orange;
+}
+
+#custom-is_recording {
+  border-bottom: 3px solid @orange;
+  background-color: @red;
 }
