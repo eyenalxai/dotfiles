@@ -32,9 +32,11 @@ window#waybar {
 #tray,
 #custom-is_vpn_active {
   border-bottom: 3px solid @orange;
+  margin: 0 5px;
 }
 
 #custom-is_recording {
   border-bottom: 3px solid @orange;
   background-color: @red;
+  margin: 0 5px;
 }
