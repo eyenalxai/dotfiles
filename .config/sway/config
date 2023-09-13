@@ -74,7 +74,7 @@ client.urgent           $bg-urgent    $bg-urgent   $text          $bar $bar
 
 
 # Launcher
-set $menu j4-dmenu-desktop --dmenu='wofi --fork --show drun -D key_expand=Tab' --term='kitty'
+set $menu j4-dmenu-desktop --dmenu='wofi --show drun -D key_expand=Tab' --term='kitty'
 
 # Your preferred terminal emulator
 set $term kitty
