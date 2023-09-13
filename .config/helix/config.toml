@@ -2,11 +2,10 @@ theme = "gruvbox"
 
 [editor]
 line-number = "relative"
-mouse = false
+mouse = true
 bufferline = "multiple"
 
 [keys.normal]
-esc = ["collapse_selection"]
 S-up = ["move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up"]
 S-down = ["move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down"]
 

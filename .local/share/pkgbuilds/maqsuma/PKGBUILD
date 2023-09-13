@@ -1,5 +1,5 @@
 pkgname=sway-maqsuma
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="awoof"
 arch=('x86_64')
@@ -8,7 +8,7 @@ license=('MIT')
 depends=('gcc-libs')
 makedepends=('cargo')
 source=("$pkgname-$pkgver::https://github.com/eyenalxai/$pkgname/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('74c965c1a6be2e9342358635d2a44ffac15d849a66d34c454e91c9060decafc6')
+sha256sums=('4a2c68fbae7b9af58fbc7cee6e74f77b7631d87eca231fdb67ee31811fe81d7a')
 
 build() {
   cd "$pkgname-$pkgver"
