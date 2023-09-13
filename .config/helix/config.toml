@@ -5,9 +5,15 @@ line-number = "relative"
 mouse = true
 bufferline = "multiple"
 
+[editor.lsp]
+auto-signature-help = false
+
 [keys.normal]
 S-up = ["move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up", "move_visual_line_up"]
 S-down = ["move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down", "move_visual_line_down"]
+
+[keys.insert]
+C-h = "signature_help"
 
 [editor.cursor-shape]
 insert = "bar"
