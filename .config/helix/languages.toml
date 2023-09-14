@@ -22,7 +22,6 @@ auto-format = true
 name = "python"
 formatter = { command = "sh", args = ["-c", "black --quiet - | isort -"]}
 auto-format = true
-config.pylsp.plugins.ruff = { enabled = true }
-config.pylsp.plugins.mypy = { enabled = true }
-config.pylsp.plugins.rope_autoimport = { enabled = true }
-
+roots = ["pyproject.toml"]
+language-server = { command = "pyright-langserver", args = ["--stdio"] }
+config = {}
