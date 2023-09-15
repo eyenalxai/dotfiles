@@ -3,9 +3,17 @@ export def with-dot-env [filename: string, command: closure] {
 }
 
 export def poetry-run [...args: string] {
-    with-dot-env .env { poetry run $args }
+    if (.env.local | | path exists) { 
+        with-dot-env .env.local { poetry run $args }
+    } else {
+        poetry run $args
+    }
 }
 
 export def poetry-run-python [filename: string] {
-    with-dot-env .env { poetry run python $filename }
+    if (.env.local | | path exists) { 
+        with-dot-env .env.local { poetry run python $args }
+    } else {
+        poetry run python $args
+    }
 }
