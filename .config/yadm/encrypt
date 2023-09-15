@@ -1,3 +1,4 @@
 .config/git/config-personal
 .ssh/*.pub
 .config/nushell/*.txt
+Notes/Projects/*
