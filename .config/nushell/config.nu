@@ -785,6 +785,7 @@ $env.EDITOR = "helix"
 alias hx = helix
 alias toggle-vpn = nu $"($env.HOME)/.local/share/bin/toggle-vpn.nu"
 alias toggle-headphones = nu $"($env.HOME)/.local/share/bin/toggle-headphones.nu"
+alias boot-into-windows = systemctl reboot --boot-loader-entry=windows.conf
 
 alias pr = poetry-run
 alias prp = poetry-run-python
