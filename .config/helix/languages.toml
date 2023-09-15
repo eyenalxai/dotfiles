@@ -28,8 +28,9 @@ config = {}
 
 [[language]] 
 name = "python" 
-config = {pylsp = {plugins = {rope_autoimport = {enabled = true}}}} 
 formatter = { command = "sh", args = ["-c", "black --quiet - | isort -"]}
-auto-format = true
 roots = ["pyproject.toml"]
 language-server = { command = "pyright-langserver", args = ["--stdio"] }
+auto-format = true
+
+
