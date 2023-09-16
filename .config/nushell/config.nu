@@ -138,7 +138,7 @@ let light_theme = {
 # }
 
 register /home/elddry/Projects/anga/target/release/nu_plugin_anga
-use ~/.config/nushell/venv.nu auto-venv-toggle
+use ~/.config/nushell/auto-venv.nu auto-venv-toggle
 
 
 # The default config record. This is where much of your global configuration is setup.
