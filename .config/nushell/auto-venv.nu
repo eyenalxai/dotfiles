@@ -69,7 +69,6 @@ export def-env auto-venv-toggle [_env: record] {
     }
 
     if ('VIRTUAL_ENV' in $_env) and ('VIRTUAL_ENV_NAME' in $_env) and $_env.VIRTUAL_ENV_NAME != $virtual_env_name {
-        deactivate-venv $_env
         activate-venv $_env $virtual_env
     }
 }
