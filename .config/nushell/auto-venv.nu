@@ -2,14 +2,9 @@ def find-closest-dir [target: string] {
     $env.PWD
     | path split 
     | range 1.. 
-    | reduce -f [($env.PWD | path split | first)] {|subdir, acc|
-        $acc 
-        | append ([($acc | last) $subdir] | path join ) 
-    } 
+    | reduce -f [($env.PWD | path split | first)] {|subdir, acc| $acc | append ([($acc | last) $subdir] | path join ) } 
     | reverse 
-    | where {|subdir| 
-        [$subdir $target] | path join | path exists
-    }
+    | where {|subdir| [$subdir $target] | path join | path exists }
     | each {[$in $target] | path join }
 }
 
