@@ -139,6 +139,8 @@ let light_theme = {
 
 register /home/elddry/Projects/anga/target/release/nu_plugin_anga
 use ~/.config/nushell/venv.nu auto-venv-on-enter
+use ~/.config/nushell/venv.nu find-closest-dir
+
 
 # The default config record. This is where much of your global configuration is setup.
 $env.config = {
@@ -249,7 +251,7 @@ $env.config = {
     render_right_prompt_on_last_line: false # true or false to enable or disable right prompt to be rendered on last line of the prompt.
 
     hooks: {
-        pre_prompt: [{ auto-venv-on-enter $env }] # run before the prompt is shown
+        pre_prompt: [{ null }] # run before the prompt is shown
         pre_execution: [{ null }] # run before the repl input is run
         env_change: {
             PWD: [{|before, after| null }] # run if the PWD environment is different since the last repl input
