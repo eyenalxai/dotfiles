@@ -1,4 +1,4 @@
-export def find-closest-dir [target: string, dir?: string] {
+def find-closest-dir [target: string, dir?: string] {
     # 1: split the directory into subdirs
     ($dir | default $env.PWD)
     | path split 
