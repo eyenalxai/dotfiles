@@ -25,36 +25,25 @@ def has-env [name: string, _env: record] {
     $name in ($_env)
 }
 
-def get-old-path [_env: record] {
-    if (is-string $_env.PATH) {
-        return $_env.PATH | split row '/' | path expand
-    } 
-    
-    return $_env.PATH
-    
-}
-
 def get-new-lib-dirs [env: record] {
-    if not $env.PWD in $env.NU_LIB_DIRS {
-        return ($env.NU_LIB_DIRS | prepend $env.PWD)
-    } 
+    if not $env.PWD in $env.NU_LIB_DIRS { return ($env.NU_LIB_DIRS | prepend $env.PWD) } 
     
     return $env.NU_LIB_DIRS
 }
 
-
-export def-env auto-venv-on-enter [_env: record] {
-    let find_closest_venv_result = find-closest-dir ".venv"
-
-    if ($find_closest_venv_result | is-empty) == true {
-        return
-    }
-
-    let virtual_env = $find_closest_venv_result | first
+def-env deactivate-venv [_env: record] {
+    hide-env VIRTUAL_ENV    
     
+    load-env {
+        PATH: $_env.PATH,
+        NU_LIB_DIRS: $_env.NU_LIB_DIRS
+    }
+}
+
+def-env activate-venv [_env: record, virtual_env: string] {
     let bin = ([$virtual_env, "bin"] | path join)
     
-    let old_path = get-old-path $_env
+    let old_path = $_env.PATH
     let venv_path = ([$virtual_env $bin] | path join)
     let new_path = ($old_path | prepend $venv_path)
     
@@ -66,4 +55,20 @@ export def-env auto-venv-on-enter [_env: record] {
         NU_LIB_DIRS: $new_lib_dirs
     }
 }
+
+export def-env auto-venv-toggle [_env: record] {
+    let find_closest_venv_result = find-closest-dir ".venv"
+
+    if ($find_closest_venv_result | is-empty) == true {
+        if ('VIRTUAL_ENV' in $env) == true {
+            deactivate-venv $_env
+        }
+        return
+    }
+    
+    if ('VIRTUAL_ENV' in $env) == false {
+        activate-venv $_env ($find_closest_venv_result | first)
+    }
+}
+
 
