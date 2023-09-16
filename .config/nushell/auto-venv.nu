@@ -1,24 +1,16 @@
-def find-closest-dir [target: string, dir?: string] {
-    # 1: split the directory into subdirs
-    ($dir | default $env.PWD)
+def find-closest-dir [target: string] {
+    $env.PWD
     | path split 
     | range 1.. 
     | reduce -f [($env.PWD | path split | first)] {|subdir, acc|
         $acc 
         | append ([($acc | last) $subdir] | path join ) 
     } 
-    # 2: reverse the subdirs so thet the first is the "closest"
     | reverse 
-    # 3: filter subdirs where the target exists
     | where {|subdir| 
         [$subdir $target] | path join | path exists
     }
-    # 4. get subdir\target
     | each {[$in $target] | path join }
-}
-
-def is-string [x] {
-    ($x | describe) == 'string'
 }
 
 def has-env [name: string, _env: record] {
