@@ -28,7 +28,7 @@ def-env deactivate-venv [_env: record] {
     hide-env VIRTUAL_ENV_NAME
     
     load-env {
-        PATH: $_env.PATH
+        PATH: ($_env.PATH | filter { |entry| ($entry | str contains -n .venv) })
         NU_LIB_DIRS: $_env.NU_LIB_DIRS
     }
 }
