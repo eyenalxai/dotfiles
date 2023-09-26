@@ -137,7 +137,6 @@ let light_theme = {
 #     carapace $spans.0 nushell $spans | from json
 # }
 
-register /home/elddry/Projects/anga/target/release/nu_plugin_anga
 use ~/.config/nushell/auto-venv.nu auto-venv-toggle
 
 

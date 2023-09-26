@@ -84,8 +84,8 @@ $env.NU_PLUGIN_DIRS = [
 # Zoxide
 zoxide init nushell | save -f ~/.zoxide.nu
 
-# 1Password SSH Agent
-$env.SSH_AUTH_SOCK = $"($env.HOME)/.1password/agent.sock"
+# GNOME SSH Agent
+$env.SSH_AUTH_SOCK = $"($env.XDG_RUNTIME_DIR)/gcr/ssh"
 
 # Starship
 starship init nu | save -f ~/.cache/starship/init.nu
