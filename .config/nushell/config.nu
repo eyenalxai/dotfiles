@@ -794,4 +794,3 @@ alias yaasu = yay -S --noconfirm
 
 alias pr = poetry-run
 alias prp = poetry-run-python
-
