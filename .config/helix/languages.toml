@@ -18,19 +18,3 @@ name = "json"
 formatter = { command = 'prettier', args = ["--parser", "json"] }
 auto-format = true
 
-[[language]]
-name = "python"
-formatter = { command = "sh", args = ["-c", "black --quiet - | isort -"]}
-auto-format = true
-roots = ["pyproject.toml"]
-language-server = { command = "pyright-langserver", args = ["--stdio"] }
-config = {}
-
-[[language]] 
-name = "python" 
-formatter = { command = "sh", args = ["-c", "black --quiet - | isort -"]}
-roots = ["pyproject.toml"]
-language-server = { command = "pyright-langserver", args = ["--stdio"] }
-auto-format = true
-
-
