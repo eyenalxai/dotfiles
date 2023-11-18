@@ -83,7 +83,7 @@ $env.NU_PLUGIN_DIRS = [
 $env.PATH = ($env.PATH | split row (char esep) | prepend '/home/elddry/.local/share/JetBrains/Toolbox/scripts')
 
 # Zoxide
-zoxide init nushell | save -f ~/.zoxide.nu
+# zoxide init nushell | save -f ~/.zoxide.nu
 
 # GNOME SSH Agent
 $env.SSH_AUTH_SOCK = $"($env.XDG_RUNTIME_DIR)/gcr/ssh"

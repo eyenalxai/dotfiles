@@ -776,7 +776,6 @@ use ~/.cache/starship/init.nu
 use ~/.config/nushell/stuff.nu with-dot-env
 use ~/.config/nushell/stuff.nu poetry-run
 use ~/.config/nushell/stuff.nu poetry-run-python
-use ~/.config/nushell/stuff.nu start_zellij
 
 $env.STARSHIP_SHELL = "nu"
 $env.EDITOR = "helix"
@@ -792,4 +791,3 @@ alias yaasu = yay -Suy --noconfirm
 alias pr = poetry-run
 alias prp = poetry-run-python
 
-start_zellij
