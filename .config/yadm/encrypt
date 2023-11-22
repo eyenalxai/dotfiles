@@ -4,4 +4,4 @@
 .ssh/*.pub
 .config/nushell/*.txt
 Notes/Projects/*
-.config/jippety-kohmmit/*.toml
+.config/jippety-commit/*.toml
