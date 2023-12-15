@@ -92,3 +92,7 @@ $env.SSH_AUTH_SOCK = $"($env.XDG_RUNTIME_DIR)/gcr/ssh"
 # Starship
 $env.STARSHIP_CONFIG = $"($env.HOME)/.config/starship/starship.toml"
 starship init nu | save -f ~/.cache/starship/init.nu
+
+$env.CC = "ccache gcc"
+$env.CXX = "ccache g++"
+
