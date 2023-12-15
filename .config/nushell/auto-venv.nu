@@ -18,7 +18,7 @@ def get-new-lib-dirs [_env: record] {
     return $_env.NU_LIB_DIRS
 }
 
-def-env deactivate-venv [_env: record] {
+def --env deactivate-venv [_env: record] {
     hide-env VIRTUAL_ENV    
     hide-env VIRTUAL_ENV_NAME
     
@@ -28,7 +28,7 @@ def-env deactivate-venv [_env: record] {
     }
 }
 
-def-env activate-venv [_env: record, virtual_env: string] {
+def --env activate-venv [_env: record, virtual_env: string] {
     let bin = ([$virtual_env, "bin"] | path join)
     
     let old_path = ($_env.PATH | filter { |entry| ($entry | str contains -n .venv) })
@@ -45,7 +45,7 @@ def-env activate-venv [_env: record, virtual_env: string] {
     }
 }
 
-export def-env auto-venv-toggle [_env: record] {
+export def --env auto-venv-toggle [_env: record] {
     let find_closest_venv_result = find-closest-dir ".venv"
 
     if ($find_closest_venv_result | is-empty) == true {
