@@ -2,6 +2,5 @@
 .ssh/config
 .ssh/personal_main
 .ssh/*.pub
-.config/nushell/*.txt
 Notes/Projects/*
 .config/jippety-commit/*.toml

@@ -18,3 +18,12 @@ name = "json"
 formatter = { command = 'prettier', args = ["--parser", "json"] }
 auto-format = true
 
+[[language]]       
+name = "python"
+language-servers = [ "pylsp" ]
+formatter = { command = "black", args = ["--quiet", "-"] }
+         
+[language-server.pylsp.config.plugins]
+pylsp-mypy = {enabled = false, live_mode = true, strict = false}
+ruff = { enabled = false, ignore = ["F401"], lineLength = 120 }                                                  
+
