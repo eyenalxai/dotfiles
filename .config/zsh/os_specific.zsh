@@ -11,4 +11,5 @@ export PYENV_ROOT="$HOME/.pyenv"
 eval "$(pyenv init -)"
 
 # SSH Agent
-SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/gcr/ssh"
+export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/gcr/ssh"
+
