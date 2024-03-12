@@ -3,4 +3,5 @@
 .ssh/personal_main
 .ssh/*.pub
 Notes/Projects/*
+Notes/Personal/*
 .config/jippety-commit/*.toml
