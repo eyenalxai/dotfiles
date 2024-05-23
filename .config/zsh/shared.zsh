@@ -28,3 +28,7 @@ export FZF_DEFAULT_COMMAND='rg --files --hidden -g "!.git" '
 
 # Zoxide
 eval "$(zoxide init zsh)"
+
+# N - Node Version Manager
+export N_PREFIX="${HOME}/.n"
+export PATH="${HOME}/.n/bin:${PATH}"
