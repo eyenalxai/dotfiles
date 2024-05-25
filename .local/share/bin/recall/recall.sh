@@ -14,8 +14,9 @@ if [[ -z "${SELECTED_FILE}" ]]; then
   exit 1
 fi
 
-SCREENSHOT_FILE="${SELECTED_FILE%.txt}.png"
+SCREENSHOT_FILE="${SELECTED_FILE%.txt}.webp"
 
 SCREENSHOT_PATH="${SCREENSHOTS_DIR}/$(basename "${SCREENSHOT_FILE}")"
 
 xdg-open "${SCREENSHOT_PATH}"
+
