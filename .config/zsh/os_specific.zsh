@@ -12,4 +12,3 @@ eval "$(pyenv init -)"
 
 export SSH_AUTH_SOCK="${HOME}/.1password/agent.sock"
 
-alias docker=podman
