@@ -11,4 +11,5 @@ export PYENV_ROOT="$HOME/.pyenv"
 eval "$(pyenv init -)"
 
 export SSH_AUTH_SOCK="${HOME}/.1password/agent.sock"
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
 
