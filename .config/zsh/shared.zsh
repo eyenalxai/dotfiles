@@ -32,3 +32,6 @@ eval "$(zoxide init zsh)"
 # N - Node Version Manager
 export N_PREFIX="${HOME}/.n"
 export PATH="${HOME}/.n/bin:${PATH}"
+
+# Cargo
+export PATH="${HOME}/.cargo/bin:${PATH}"
