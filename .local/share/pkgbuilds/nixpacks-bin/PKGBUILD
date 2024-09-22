@@ -1,0 +1,14 @@
+pkgname=nixpacks-bin
+pkgver=1.28.1
+pkgrel=2
+pkgdesc="App source + Nix packages + Docker = Image"
+arch=('x86_64')
+url="https://github.com/railwayapp/nixpacks"
+license=('MIT')
+source=("https://github.com/railwayapp/nixpacks/releases/download/v${pkgver}/nixpacks-v${pkgver}-x86_64-unknown-linux-gnu.tar.gz")
+sha256sums=('4584fce19d0e91cd93c0beb2c513843823fd018a7233dcd5506771be2e73351f')
+options=('!debug')
+
+package() {
+	install -Dm755 "$srcdir/nixpacks" "$pkgdir/usr/bin/nixpacks"
+}
