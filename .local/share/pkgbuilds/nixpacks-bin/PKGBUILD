@@ -1,12 +1,12 @@
 pkgname=nixpacks-bin
-pkgver=1.28.1
+pkgver=1.27.1
 pkgrel=2
 pkgdesc="App source + Nix packages + Docker = Image"
 arch=('x86_64')
 url="https://github.com/railwayapp/nixpacks"
 license=('MIT')
 source=("https://github.com/railwayapp/nixpacks/releases/download/v${pkgver}/nixpacks-v${pkgver}-x86_64-unknown-linux-gnu.tar.gz")
-sha256sums=('4584fce19d0e91cd93c0beb2c513843823fd018a7233dcd5506771be2e73351f')
+sha256sums=('46765cc64bb15d410401ba7fee7a909d4c5885d6cf5c2751d03fd0ba53cdae6a')
 options=('!debug')
 
 package() {
