@@ -5,6 +5,4 @@
 Notes/Projects/*
 Notes/Personal/*
 .config/jippety-commit/*.toml
-.config/hiddify/hiddify-config.json
-.config/hiddify/proxy-config.json
 .config/zsh/proxy.zsh
