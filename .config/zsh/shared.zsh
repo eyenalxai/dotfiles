@@ -5,6 +5,7 @@ plugins=(
     alias-finder
     git
     history-substring-search
+    dotenv
 )
 
 # Disable zsh substitution/autocomplete with URL and backslashes
@@ -17,7 +18,7 @@ source $ZSH/oh-my-zsh.sh
 source "${HOME}/.config/zsh/aliases.zsh"
 
 # Proxy
-source "${HOME}/.config/zsh/proxy.zsh"
+# source "${HOME}/.config/zsh/proxy.zsh"
 
 # Starship Prompt
 eval "$(starship init zsh)"
