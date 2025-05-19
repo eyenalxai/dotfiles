@@ -54,3 +54,6 @@ function _node_bin() {
 }
 
 precmd_functions+=(_node_bin)
+
+# Go
+export PATH="$PATH:$(go env GOBIN):$(go env GOPATH)/bin"
