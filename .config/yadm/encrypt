@@ -1,5 +1,4 @@
 .zsh_history
-.config/git/config-personal
 .config/ngrok/ngrok.yml
 .ssh/config
 .ssh/personal_main
