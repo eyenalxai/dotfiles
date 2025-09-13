@@ -1,7 +1,7 @@
 # Maintainer: Your Name <you@example.com>
 
 pkgname=amnezia-vpn-client
-pkgver=4.8.9.2
+pkgver=4.8.10.0
 pkgrel=1
 pkgdesc="Amnezia VPN - A self-hosted VPN client"
 arch=('x86_64')
@@ -28,7 +28,7 @@ build() {
 package() {
   cd "$srcdir/amnezia-client"
   install -Dm755 build/client/AmneziaVPN "$pkgdir/usr/bin/AmneziaVPN"
-  install -Dm755 build/service/server/AmneziaVPNService "$pkgdir/usr/bin/AmneziaVPNService"
+  install -Dm755 build/service/server/AmneziaVPN-service "$pkgdir/usr/bin/AmneziaVPN-service"
   install -Dm644 deploy/installer/config/AmneziaVPN.desktop.in \
     "$pkgdir/usr/share/applications/AmneziaVPN.desktop"
   install -Dm644 client/images/app.icns \
