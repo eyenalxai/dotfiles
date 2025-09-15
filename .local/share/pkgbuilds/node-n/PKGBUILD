@@ -1,0 +1,41 @@
+pkgname=node-n
+_pkgname=n
+pkgver=10.2.0
+pkgrel=1
+pkgdesc="Node.js version management (simple bash script) — tj/n, installed as node-n"
+arch=('any')
+url="https://github.com/tj/n"
+license=('MIT')
+depends=('bash' 'curl' 'tar' 'coreutils' 'grep' 'sed')
+makedepends=()
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('5914f0d5e89aadaaaeb803baa89a7582747b0c57ad30201b3522cd76f504c7d9')
+
+build() {
+  : # script only
+}
+
+check() {
+  cd "${srcdir}/${_pkgname}-${pkgver}"
+  bash -n bin/n
+  ./bin/n --help >/dev/null
+}
+
+package() {
+  cd "${srcdir}/${_pkgname}-${pkgver}"
+
+  install -d "${pkgdir}/usr/bin"
+  # Install the script under the new binary name
+  install -m 0755 bin/n "${pkgdir}/usr/bin/${pkgname}"
+
+  # Docs
+  install -d "${pkgdir}/usr/share/doc/${pkgname}"
+  install -m 0644 README.md "${pkgdir}/usr/share/doc/${pkgname}/"
+  [[ -f CHANGELOG.md ]] && install -m 0644 CHANGELOG.md "${pkgdir}/usr/share/doc/${pkgname}/"
+
+  # License
+  install -d "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -m 0644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
