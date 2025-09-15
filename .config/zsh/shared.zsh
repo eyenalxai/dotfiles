@@ -17,9 +17,6 @@ source $ZSH/oh-my-zsh.sh
 # Aliases
 source "${HOME}/.config/zsh/aliases.zsh"
 
-# Proxy
-# source "${HOME}/.config/zsh/proxy.zsh"
-
 # Starship Prompt
 eval "$(starship init zsh)"
 export STARSHIP_CONFIG=~/.config/starship/starship.toml
