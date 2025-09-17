@@ -1,5 +1,6 @@
 .zsh_history
 .config/ngrok/ngrok.yml
+.config/git/config-personal
 .ssh/config
 .ssh/personal_main
 .ssh/*.pub
