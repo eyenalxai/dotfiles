@@ -1,0 +1,15 @@
+[alias]
+  co = checkout
+  br = branch
+  ci = commit
+  st = status
+  push-all = "!git remote | xargs -n1 git push"
+[pull]
+  rebase = true
+[init]
+  defaultBranch = main
+[include]
+  path = ~/.config/git/config-personal
+[core]
+  autocrlf = input
+  editor = nvim
