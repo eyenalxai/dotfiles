@@ -57,3 +57,4 @@ export GOPATH=$HOME/go
 
 # My Stuff
 export PATH="${HOME}/.local/bin:${PATH}"
+
