@@ -17,6 +17,8 @@ decorations = "None"
 [keyboard]
 bindings = [
 { key = "F11", action = "ToggleFullscreen" },
+{ key = "Insert", mods = "Shift", action = "Paste" },
+{ key = "Insert", mods = "Control", action = "Copy" },
 { key = "C", mods = "Control", action = "Copy" },
 { key = "V", mods = "Control", action = "Paste" },
 { key = "C", mods = "Control|Shift", chars = "\u0003" },
