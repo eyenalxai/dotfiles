@@ -3,6 +3,4 @@
 .config/git/config-personal
 .config/clipse/clipboard_history.json
 .ssh/config
-.ssh/personal_main
-.ssh/*.pub
 
