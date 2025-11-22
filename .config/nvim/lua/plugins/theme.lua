@@ -1,0 +1,1 @@
+/home/xetuly/.config/omarchy/current/theme/neovim.lua
