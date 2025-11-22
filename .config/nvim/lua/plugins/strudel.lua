@@ -2,6 +2,8 @@
 return {
   "gruvw/strudel.nvim",
   build = "npm install",
+  -- Pin to a specific commit to avoid update issues with package-lock.json
+  pin = true,
   config = function()
     local strudel = require("strudel")
 
