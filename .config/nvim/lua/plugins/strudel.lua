@@ -25,7 +25,7 @@ return {
       -- Automatically start playback when launching Strudel
       start_on_launch = true,
       -- Set to `true` to automatically trigger the code evaluation after saving the buffer content
-      update_on_save = false,
+      update_on_save = true,
       -- Enable two-way cursor position sync between Neovim and Strudel editor
       sync_cursor = true,
       -- Report evaluation errors from Strudel as Neovim notifications
