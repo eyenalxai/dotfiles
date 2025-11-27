@@ -3,5 +3,6 @@
 .config/git/config-personal
 .config/clipse/clipboard_history.json
 .config/stuff
+.config/systemd/user/stuff-*.service
 .ssh/config
 
