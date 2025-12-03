@@ -5,7 +5,7 @@
       "models": {
         "deepseek/deepseek-v3.2": {
           "options": {
-            "reasoningEffort": "high",
+            "reasoningEffort": "low",
             "textVerbosity": "low",
             "reasoningSummary": "auto",
             "include": [
