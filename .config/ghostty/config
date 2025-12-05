@@ -2,8 +2,7 @@
 config-file = ?"~/.config/omarchy/current/theme/ghostty.conf"
 
 # Font
-font-family = ""
-font-family = "Iosevka Nerd Font Mono"
+font-family = "Adwaita Mono"
 font-style = Regular
 font-size = 14
 
