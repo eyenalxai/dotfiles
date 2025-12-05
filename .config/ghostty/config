@@ -2,9 +2,9 @@
 config-file = ?"~/.config/omarchy/current/theme/ghostty.conf"
 
 # Font
-font-family = "Adwaita Mono"
+font-family = "JetBrainsMono Nerd Font Mono"
 font-style = Regular
-font-size = 14
+font-size = 13
 
 # Window
 window-padding-x = 14
@@ -32,3 +32,6 @@ keybind = performable:ctrl+c=copy_to_clipboard
 
 # Slowdown mouse scrolling
 mouse-scroll-multiplier = 0.95
+
+# Scrollback
+scrollback-limit = 100000000
