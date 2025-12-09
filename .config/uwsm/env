@@ -1,4 +1,0 @@
-export TERMINAL=ghostty
-export BROWSER=helium-browser
-export EDITOR=nvim
-export GTK_THEME=Adwaita:dark
