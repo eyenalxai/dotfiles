@@ -1,6 +1,3 @@
-# Dynamic theme colors
-config-file = ?"~/.config/omarchy/current/theme/ghostty.conf"
-
 # Font
 font-family = "JetBrainsMono Nerd Font Mono"
 font-style = Regular
