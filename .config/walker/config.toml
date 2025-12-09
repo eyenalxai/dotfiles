@@ -1,5 +1,7 @@
-force_keyboard_focus = true                                                 # forces keyboard forcus to stay in Walker
-selection_wrap = true                                                       # wrap list if at bottom or top
+force_keyboard_focus = true
+selection_wrap = true
+theme = "walker-theme"
+additional_theme_location = "~/.config/theme/current"
 hide_action_hints = true                                                    # globally hide the action hints
 
 [placeholders]
