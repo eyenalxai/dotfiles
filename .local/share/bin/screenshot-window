@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+OUTPUT_DIR="$HOME/Pictures/Screenshots"
+
+log_error() {
+  local msg="$1"
+  printf '%s\n' "$msg" >&2
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Screenshot error" "$msg" -u critical -t 5000
+  fi
+}
+
+require() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    log_error "Required command not found: $1"
+    exit 1
+  fi
+}
+
+require "grim"
+require "slurp"
+
+# wl-copy is optional; if missing we still take the screenshot
+if ! command -v wl-copy >/dev/null 2>&1; then
+  log_error "wl-copy not found; screenshot won't be copied to clipboard"
+fi
+
+if ! mkdir -p "$OUTPUT_DIR"; then
+  log_error "Failed to create screenshot directory: $OUTPUT_DIR"
+  exit 1
+fi
+
+filename="$OUTPUT_DIR/screenshot-$(date +'%Y-%m-%d_%H-%M-%S_grim.png')"
+
+region=""
+
+if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  # Mirror window selection logic from screenrecord-menu
+  if ! region=$(hyprctl clients -j | jq --argjson active $(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]') '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp); then
+    # Selection cancelled or slurp failed; treat as non-error
+    exit 0
+  fi
+else
+  if ! region=$(slurp); then
+    # Selection cancelled; treat as non-error
+    exit 0
+  fi
+fi
+
+if [[ -z "$region" ]]; then
+  log_error "No region selected for screenshot (empty geometry)"
+  exit 1
+fi
+
+if ! grim -g "$region" - | tee "$filename" | wl-copy 2>/dev/null; then
+  log_error "grim failed to capture screenshot (region: $region)"
+  exit 1
+fi
+
+if command -v notify-send >/dev/null 2>&1; then
+  notify-send "Screenshot" "Window saved to ~/Pictures/Screenshots"
+fi
