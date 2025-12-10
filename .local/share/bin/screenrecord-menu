@@ -89,6 +89,28 @@ start_recording() {
     w_value="region"
     region_args=(-region "$region")
     ;;
+  window)
+    require "slurp"
+    local region
+    if command -v swaymsg >/dev/null 2>&1; then
+      require "jq"
+      if ! region=$(swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .visible) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp -f "%wx%h+%x+%y"); then
+        return 1
+      fi
+    elif command -v hyprctl >/dev/null 2>&1; then
+      require "jq"
+      if ! region=$(hyprctl clients -j | jq --argjson active $(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]') '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp -f "%wx%h+%x+%y"); then
+        return 1
+      fi
+    else
+      # Fallback to manual region selection if no supported compositor integration is found
+      if ! region=$(slurp -f "%wx%h+%x+%y"); then
+        return 1
+      fi
+    fi
+    w_value="region"
+    region_args=(-region "$region")
+    ;;
   *)
     return 1
     ;;
@@ -142,8 +164,10 @@ show_menu() {
   local prompt="Screenrecord"
   local options="Region
 Screen
+Window
 Region with audio
-Screen with audio"
+Screen with audio
+Window with audio"
 
   local selection
   selection=$(printf '%s\n' "$options" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…") || return 1
@@ -155,11 +179,17 @@ Screen with audio"
   "Screen")
     printf '%s %s\n' "screen" "none"
     ;;
+  "Window")
+    printf '%s %s\n' "window" "none"
+    ;;
   "Region with audio")
     printf '%s %s\n' "region" "desktop"
     ;;
   "Screen with audio")
     printf '%s %s\n' "screen" "desktop"
+    ;;
+  "Window with audio")
+    printf '%s %s\n' "window" "desktop"
     ;;
   *)
     return 1
