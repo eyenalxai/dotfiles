@@ -92,12 +92,7 @@ start_recording() {
   window)
     require "slurp"
     local region
-    if command -v swaymsg >/dev/null 2>&1; then
-      require "jq"
-      if ! region=$(swaymsg -t get_tree | jq -r '.. | (.nodes? // empty)[] | select(.pid and .visible) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp -f "%wx%h+%x+%y"); then
-        return 1
-      fi
-    elif command -v hyprctl >/dev/null 2>&1; then
+    if command -v hyprctl >/dev/null 2>&1; then
       require "jq"
       if ! region=$(hyprctl clients -j | jq --argjson active $(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]') '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp -f "%wx%h+%x+%y"); then
         return 1
