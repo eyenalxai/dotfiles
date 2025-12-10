@@ -68,3 +68,9 @@ if [[ ! -x "$HOME/.local/share/bin/code-cursor-theme" ]]; then
 fi
 
 ~/.local/share/bin/code-cursor-theme
+
+# Reload user units so any systemd user services
+# can pick up changed unit files.
+if ! systemctl --user daemon-reload; then
+  error_notify "Failed to run: systemctl --user daemon-reload"
+fi
