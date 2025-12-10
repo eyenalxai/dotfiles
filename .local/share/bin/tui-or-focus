@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+require() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    local msg="Required command not found: $1"
+    if command -v notify-send >/dev/null 2>&1; then
+      notify-send "Launcher error" "$msg" -u critical -t 5000
+    fi
+    printf '%s\n' "$msg" >&2
+    exit 1
+  fi
+}
+
+require "hyprctl"
+require "jq"
+
+if (($# == 0)); then
+  printf 'Usage: %s <command> [args...]\n' "$(basename "$0")" >&2
+  exit 1
+fi
+
+cmd="$1"
+if ! command -v "$cmd" >/dev/null 2>&1; then
+  msg="Command not found: $cmd"
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Launcher error" "$msg" -u critical -t 5000
+  fi
+  printf '%s\n' "$msg" >&2
+  exit 1
+fi
+
+pattern="${APP_ID_PATTERN:-$(basename "$1")}" 
+
+window_address=$(hyprctl clients -j |
+  jq -r --arg p "$pattern" '
+    .[]
+    | select(
+        (.class // "" | test($p; "i")) or
+        (.title // "" | test($p; "i"))
+      )
+    | .address
+  ' | head -n1)
+
+if [[ -n "$window_address" && "$window_address" != "null" ]]; then
+  hyprctl dispatch focuswindow "address:$window_address"
+  exit 0
+fi
+
+if command -v uwsm-app >/dev/null 2>&1; then
+  exec setsid uwsm-app -- "$@"
+elif command -v xdg-terminal-exec >/dev/null 2>&1; then
+  exec setsid xdg-terminal-exec "$@"
+else
+  exec "$@"
+fi

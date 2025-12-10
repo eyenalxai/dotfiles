@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+require() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    local msg="Required command not found: $1"
+    if command -v notify-send >/dev/null 2>&1; then
+      notify-send "Bluetooth launcher" "$msg" -u critical -t 5000
+    fi
+    printf '%s\n' "$msg" >&2
+    exit 1
+  fi
+}
+
+if command -v rfkill >/dev/null 2>&1; then
+  rfkill unblock bluetooth || true
+fi
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+if command -v bluetui >/dev/null 2>&1; then
+  exec "$SCRIPT_DIR/tui-or-focus" bluetui
+else
+  msg="No Bluetooth TUI found (bluetui)."
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Bluetooth launcher" "$msg" -u critical -t 5000
+  fi
+  printf '%s\n' "$msg" >&2
+  exit 1
+fi

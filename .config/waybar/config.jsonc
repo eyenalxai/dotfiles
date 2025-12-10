@@ -47,6 +47,7 @@
   "cpu": {
     "interval": 5,
     "format": "󰍛 {usage}%",
+    "on-click": "~/.local/share/bin/tui-or-focus btop",
     "max-length": 8,
   },
   "memory": {
@@ -70,6 +71,7 @@
     "tooltip-format-disconnected": "Disconnected",
     "interval": 3,
     "spacing": 1,
+    "on-click": "~/.local/share/bin/wifi-menu",
   },
   "bluetooth": {
     "format": "",
@@ -78,6 +80,7 @@
     "format-connected": "󰂱",
     "format-no-controller": "",
     "tooltip-format": "Devices connected: {num_connections}",
+    "on-click": "~/.local/share/bin/bluetooth-menu",
   },
   "pulseaudio": {
     "format": "{icon}",
