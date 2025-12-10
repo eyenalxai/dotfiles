@@ -79,7 +79,7 @@ if [[ "$mode" != "fullscreen" ]]; then
     exit 1
   fi
 else
-  if ! grim - - | tee "$filename" | wl-copy 2>/dev/null; then
+  if ! grim - | tee "$filename" | wl-copy 2>/dev/null; then
     log_error "grim failed to capture fullscreen screenshot"
     exit 1
   fi
