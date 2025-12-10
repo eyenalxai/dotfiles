@@ -20,7 +20,6 @@ require() {
 }
 
 require "grim"
-require "slurp"
 
 # wl-copy is optional; if missing we still take the screenshot
 if ! command -v wl-copy >/dev/null 2>&1; then
@@ -32,33 +31,70 @@ if ! mkdir -p "$OUTPUT_DIR"; then
   exit 1
 fi
 
+mode="${1:-window}"
+
 filename="$OUTPUT_DIR/screenshot-$(date +'%Y-%m-%d_%H-%M-%S_grim.png')"
 
 region=""
 
-if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-  # Mirror window selection logic from screenrecord-menu
-  if ! region=$(hyprctl clients -j | jq --argjson active $(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]') '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp); then
-    # Selection cancelled or slurp failed; treat as non-error
-    exit 0
+case "$mode" in
+  window)
+    require "slurp"
+    if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+      # Mirror window selection logic from screenrecord-menu
+      if ! region=$(hyprctl clients -j | jq --argjson active $(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]') '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp); then
+        # Selection cancelled or slurp failed; treat as non-error
+        exit 0
+      fi
+    else
+      if ! region=$(slurp); then
+        # Selection cancelled; treat as non-error
+        exit 0
+      fi
+    fi
+    ;;
+  region)
+    require "slurp"
+    if ! region=$(slurp); then
+      # Selection cancelled; treat as non-error
+      exit 0
+    fi
+    ;;
+  fullscreen)
+    # No region needed
+    ;;
+  *)
+    log_error "Unknown screenshot mode: $mode (expected window|region|fullscreen)"
+    exit 1
+    ;;
+esac
+
+if [[ "$mode" != "fullscreen" ]]; then
+  if [[ -z "$region" ]]; then
+    log_error "No region selected for screenshot (empty geometry)"
+    exit 1
+  fi
+  if ! grim -g "$region" - | tee "$filename" | wl-copy 2>/dev/null; then
+    log_error "grim failed to capture screenshot (region: $region)"
+    exit 1
   fi
 else
-  if ! region=$(slurp); then
-    # Selection cancelled; treat as non-error
-    exit 0
+  if ! grim - - | tee "$filename" | wl-copy 2>/dev/null; then
+    log_error "grim failed to capture fullscreen screenshot"
+    exit 1
   fi
-fi
-
-if [[ -z "$region" ]]; then
-  log_error "No region selected for screenshot (empty geometry)"
-  exit 1
-fi
-
-if ! grim -g "$region" - | tee "$filename" | wl-copy 2>/dev/null; then
-  log_error "grim failed to capture screenshot (region: $region)"
-  exit 1
 fi
 
 if command -v notify-send >/dev/null 2>&1; then
-  notify-send "Screenshot" "Window saved to ~/Pictures/Screenshots"
+  case "$mode" in
+    window)
+      notify-send "Screenshot" "Window saved to ~/Pictures/Screenshots"
+      ;;
+    region)
+      notify-send "Screenshot" "Region saved to ~/Pictures/Screenshots"
+      ;;
+    fullscreen)
+      notify-send "Screenshot" "Fullscreen saved to ~/Pictures/Screenshots"
+      ;;
+  esac
 fi
