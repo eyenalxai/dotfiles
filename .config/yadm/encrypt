@@ -1,5 +1,4 @@
 .zsh_history
-.cache/elephant/clipboard.gob
 .config/ngrok/ngrok.yml
 .config/git/config-personal
 .ssh/config
