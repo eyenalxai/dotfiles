@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-# Simple Walker-based screen recording helper.
+# Walker-based screen recording helper.
 # - If a recording is running (gpu-screen-recorder), stop it.
-# - Otherwise, show a Walker dmenu to start a new recording
-#   with different audio/webcam options.
+# - Otherwise, show a Walker dmenu with four options:
+#   Region, Screen, Region with audio, Screen with audio.
 
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 USER_DIRS_FILE="$CONFIG_DIR/user-dirs.dirs"
@@ -40,50 +40,29 @@ require() {
 require "walker"
 require "gpu-screen-recorder"
 
-start_webcam_overlay() {
-  # Optional webcam overlay using ffplay; silently skip if unavailable.
-  if ! command -v ffplay >/dev/null 2>&1; then
-    return 0
-  fi
-
-  pkill -f "ScreenrecordWebcamOverlay" 2>/dev/null || true
-
-  ffplay -f v4l2 -framerate 30 -video_size 640x360 /dev/video0 \
-    -window_title "ScreenrecordWebcamOverlay" \
-    -noborder \
-    -fflags nobuffer -flags low_delay \
-    -probesize 32 -analyzeduration 0 \
-    -loglevel quiet &
-}
-
-stop_webcam_overlay() {
-  pkill -f "ScreenrecordWebcamOverlay" 2>/dev/null || true
-}
-
 # Notify waybar’s screen recording indicator to refresh
 toggle_screenrecording_indicator() {
   pkill -RTMIN+8 waybar 2>/dev/null || true
 }
 
 start_recording() {
-  local mode="$1"
+  local capture_mode="$1"  # screen, region
+  local audio_mode="$2"    # none, desktop
+
   local filename
   filename="$OUTPUT_DIR/screenrecording-$(date +'%Y-%m-%d_%H-%M-%S').mp4"
 
   local audio_devices=""
 
-  case "$mode" in
-  desktop*)
+  case "$audio_mode" in
+  desktop)
     audio_devices="default_output"
     ;;
-  esac
-
-  case "$mode" in
-  *mic*)
-    if [[ -n "$audio_devices" ]]; then
-      audio_devices+="|"
-    fi
-    audio_devices+="default_input"
+  none)
+    audio_devices=""
+    ;;
+  *)
+    audio_devices=""
     ;;
   esac
 
@@ -92,11 +71,30 @@ start_recording() {
     args+=("-a" "$audio_devices")
   fi
 
-  if [[ "$mode" == *webcam* ]]; then
-    start_webcam_overlay
-  fi
+  local w_value
+  local region_args=()
 
-  gpu-screen-recorder -w portal -f 60 -fallback-cpu-encoding yes -o "$filename" "${args[@]}" -ac aac &
+  case "$capture_mode" in
+  screen)
+    w_value="screen"
+    ;;
+  region)
+    require "slurp"
+    # slurp format is compatible with gpu-screen-recorder -region
+    local region
+    if ! region=$(slurp -f "%wx%h+%x+%y"); then
+      # Selection cancelled
+      return 1
+    fi
+    w_value="region"
+    region_args=(-region "$region")
+    ;;
+  *)
+    return 1
+    ;;
+  esac
+
+  gpu-screen-recorder -w "$w_value" -f 60 -fallback-cpu-encoding yes "${region_args[@]}" -o "$filename" "${args[@]}" -ac aac &
   local pid=$!
 
   # Give gpu-screen-recorder a moment to either start or fail
@@ -106,7 +104,6 @@ start_recording() {
     if command -v notify-send >/dev/null 2>&1; then
       notify-send "Screen recording error" "gpu-screen-recorder failed to start. Check audio devices/defaults." -u critical -t 5000
     fi
-    stop_webcam_overlay
     return 1
   fi
 
@@ -139,29 +136,33 @@ stop_recording() {
       notify-send "Screen recording saved" "$OUTPUT_DIR" -t 2000
     fi
   fi
-
-  stop_webcam_overlay
 }
 
 show_menu() {
   local prompt="Screenrecord"
-  local options="With desktop audio
-With desktop + microphone audio
-With desktop + microphone audio + webcam"
+  local options="Region
+Screen
+Region with audio
+Screen with audio"
 
   local selection
-  selection=$(printf '%s
-' "$options" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…") || exit 0
+  selection=$(printf '%s\n' "$options" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…") || return 1
 
   case "$selection" in
-  "With desktop audio")
-    start_recording "desktop"
+  "Region")
+    printf '%s %s\n' "region" "none"
     ;;
-  "With desktop + microphone audio")
-    start_recording "desktop+mic"
+  "Screen")
+    printf '%s %s\n' "screen" "none"
     ;;
-  "With desktop + microphone audio + webcam")
-    start_recording "desktop+mic+webcam"
+  "Region with audio")
+    printf '%s %s\n' "region" "desktop"
+    ;;
+  "Screen with audio")
+    printf '%s %s\n' "screen" "desktop"
+    ;;
+  *)
+    return 1
     ;;
   esac
 }
@@ -171,4 +172,11 @@ if pgrep -f "^gpu-screen-recorder" >/dev/null 2>&1; then
   exit 0
 fi
 
-show_menu
+# One-step menu: capture + audio in four presets
+selection=$(show_menu) || exit 0
+
+# Split into capture_mode and audio_mode
+capture_mode=${selection%% *}
+audio_mode=${selection##* }
+
+start_recording "$capture_mode" "$audio_mode"
