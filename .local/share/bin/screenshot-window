@@ -3,6 +3,8 @@
 set -euo pipefail
 
 OUTPUT_DIR="$HOME/Pictures/Screenshots"
+CACHE_DIR="$HOME/.cache"
+STATE_FILE="$CACHE_DIR/screenshot-window-last.txt"
 
 log_error() {
   local msg="$1"
@@ -17,6 +19,42 @@ require() {
     log_error "Required command not found: $1"
     exit 1
   fi
+}
+
+notify_success() {
+  local mode="$1"
+  local file="$2"
+
+  if ! command -v notify-send >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local body
+  case "$mode" in
+    window)
+      body="Window saved to ~/Pictures/Screenshots"
+      ;;
+    region)
+      body="Region saved to ~/Pictures/Screenshots"
+      ;;
+    fullscreen)
+      body="Fullscreen saved to ~/Pictures/Screenshots"
+      ;;
+    *)
+      body="Screenshot saved to ~/Pictures/Screenshots"
+      ;;
+  esac
+
+  # Record last screenshot path for mako bindings
+  if ! mkdir -p "$CACHE_DIR"; then
+    log_error "Failed to create screenshot cache directory: $CACHE_DIR"
+  else
+    if ! printf '%s\n' "$file" > "$STATE_FILE"; then
+      log_error "Failed to write last screenshot path to $STATE_FILE"
+    fi
+  fi
+
+  notify-send "Screenshot" "$body"
 }
 
 require "grim"
@@ -85,16 +123,4 @@ else
   fi
 fi
 
-if command -v notify-send >/dev/null 2>&1; then
-  case "$mode" in
-    window)
-      notify-send "Screenshot" "Window saved to ~/Pictures/Screenshots"
-      ;;
-    region)
-      notify-send "Screenshot" "Region saved to ~/Pictures/Screenshots"
-      ;;
-    fullscreen)
-      notify-send "Screenshot" "Fullscreen saved to ~/Pictures/Screenshots"
-      ;;
-  esac
-fi
+notify_success "$mode" "$filename"
