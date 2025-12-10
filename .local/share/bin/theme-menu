@@ -60,6 +60,9 @@ if [[ -f "$MODE_FILE" ]]; then
   if [[ "$mode_lc" == *dark* ]]; then
     gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"
     gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
+  elif [[ "$mode_lc" == *light* ]]; then
+    gsettings set org.gnome.desktop.interface gtk-theme "Adwaita"
+    gsettings set org.gnome.desktop.interface color-scheme "prefer-light"
   fi
 fi
 
