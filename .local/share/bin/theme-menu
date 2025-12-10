@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+THEME_DIR="$HOME/.config/theme"
+CURRENT_LINK="$THEME_DIR/current"
+
+error_notify() {
+  local msg="$1"
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Theme menu error" "$msg" -u critical -t 5000
+  fi
+  printf '%s\n' "$msg" >&2
+  exit 1
+}
+
+require() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    error_notify "Required command not found: $1"
+  fi
+}
+
+require "walker"
+
+if [[ ! -d "$THEME_DIR" ]]; then
+  error_notify "Theme directory does not exist: ~/.config/theme"
+fi
+
+options=""
+for path in "$THEME_DIR"/*; do
+  [[ -e "$path" ]] || continue
+  name="$(basename "$path")"
+  [[ "$name" == "current" ]] && continue
+  options+="$name"$'\n'
+done
+
+if [[ -z "$options" ]]; then
+  error_notify "No themes found in ~/.config/theme (excluding \"current\")."
+fi
+
+prompt="Theme"
+selection="$(printf '%s\n' "$options" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…")" || exit 0
+
+TARGET="$THEME_DIR/$selection"
+
+if [[ ! -e "$TARGET" ]]; then
+  error_notify "Selected theme does not exist: $TARGET"
+fi
+
+if [[ -L "$CURRENT_LINK" || -e "$CURRENT_LINK" ]]; then
+  rm -f "$CURRENT_LINK"
+fi
+
+ln -s "$TARGET" "$CURRENT_LINK"
+
+MODE_FILE="$TARGET/mode"
+if [[ -f "$MODE_FILE" ]]; then
+  mode_content="$(<"$MODE_FILE")"
+  mode_lc="${mode_content,,}"
+  if [[ "$mode_lc" == *dark* ]]; then
+    gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"
+    gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
+  fi
+fi
+
+if [[ ! -x "$HOME/.local/share/bin/code-cursor-theme" ]]; then
+  error_notify "Required script not found: ~/.local/share/bin/code-cursor-theme"
+fi
+
+~/.local/share/bin/code-cursor-theme
