@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Simple screen recording indicator for waybar
+# Shows an icon when gpu-screen-recorder is running.
+
+if pgrep -f "^gpu-screen-recorder" >/dev/null 2>&1; then
+  echo '{"text": "󰻂", "tooltip": "Stop recording", "class": "active"}'
+else
+  echo '{"text": ""}'
+fi

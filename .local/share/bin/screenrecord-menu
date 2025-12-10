@@ -60,6 +60,11 @@ stop_webcam_overlay() {
   pkill -f "ScreenrecordWebcamOverlay" 2>/dev/null || true
 }
 
+# Notify waybar’s screen recording indicator to refresh
+toggle_screenrecording_indicator() {
+  pkill -RTMIN+8 waybar 2>/dev/null || true
+}
+
 start_recording() {
   local mode="$1"
   local filename
@@ -108,6 +113,8 @@ start_recording() {
   if command -v notify-send >/dev/null 2>&1; then
     notify-send "Screen recording started" "$filename" -t 2000
   fi
+
+  toggle_screenrecording_indicator
 }
 
 stop_recording() {
@@ -116,6 +123,9 @@ stop_recording() {
   fi
 
   pkill -SIGINT -f "^gpu-screen-recorder" 2>/dev/null || true
+
+  # Update the waybar indicator immediately
+  toggle_screenrecording_indicator
 
   local count=0
   while pgrep -f "^gpu-screen-recorder" >/dev/null 2>&1 && [[ $count -lt 50 ]]; do
