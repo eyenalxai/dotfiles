@@ -117,3 +117,6 @@ uwsm app -- swaybg -i "$HOME/.config/theme/current/background.webp" >/dev/null 2
 if ! systemctl --user daemon-reload; then
   error_notify "Failed to run: systemctl --user daemon-reload"
 fi
+
+# Stop mako so it does not keep running with the old theme
+pkill -x mako 2>/dev/null || true
