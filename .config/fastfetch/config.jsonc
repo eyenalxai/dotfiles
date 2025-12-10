@@ -1,15 +1,5 @@
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
-  "logo": {
-    "type": "file",
-    "source": "~/.config/omarchy/branding/about.txt",
-    "color": { "1": "green" },
-    "padding": {
-      "top": 2,
-      "right": 6,
-      "left": 2
-    }
-  },
   "modules": [
     "break",
     {
@@ -63,24 +53,6 @@
       "format": "\u001b[90m┌──────────────────────Software──────────────────────┐"
     },
     {
-      "type": "command",
-      "key": "\ue900 OS",
-      "keyColor": "blue",
-      "text": "version=$(omarchy-version); echo \"Omarchy $version\""
-    },
-    {
-      "type": "command",
-      "key": "│ ├󰘬",
-      "keyColor": "blue",
-      "text": "branch=$(omarchy-version-branch); echo \"$branch\""
-    },
-    {
-      "type": "command",
-      "key": "│ ├󰔫",
-      "keyColor": "blue",
-      "text": "channel=$(omarchy-version-channel); echo \"$channel\""
-    },
-    {
       "type": "kernel",
       "key": "│ ├",
       "keyColor": "blue"
@@ -111,12 +83,6 @@
       "keyColor": "blue"
     },
     {
-      "type": "command",
-      "key": "│ ├󰸌",
-      "keyColor": "blue",
-      "text": "theme=$(omarchy-theme-current); echo -e \"$theme \\e[38m●\\e[37m●\\e[36m●\\e[35m●\\e[34m●\\e[33m●\\e[32m●\\e[31m●\""
-    },
-    {
       "type": "terminalfont",
       "key": "└ └",
       "keyColor": "blue"
@@ -128,7 +94,7 @@
     "break",
     {
       "type": "custom",
-      "format": "\u001b[90m┌────────────────Age / Uptime / Update───────────────┐"
+      "format": "\u001b[90m┌────────────────Age / Uptime────────────────────────┐"
     },
     {
       "type": "command",
@@ -140,12 +106,6 @@
       "type": "uptime",
       "key": "󱫐 Uptime",
       "keyColor": "magenta"
-    },
-    {
-      "type": "command",
-      "key": " Update",
-      "keyColor": "magenta",
-      "text": "updated=$(omarchy-version-pkgs); echo \"$updated\""
     },
     {
       "type": "custom",
