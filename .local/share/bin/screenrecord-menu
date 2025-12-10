@@ -73,18 +73,18 @@ start_recording() {
   local audio_devices=""
 
   case "$mode" in
-    desktop* )
-      audio_devices="default_output"
-      ;;
+  desktop*)
+    audio_devices="default_output"
+    ;;
   esac
 
   case "$mode" in
-    *mic* )
-      if [[ -n "$audio_devices" ]]; then
-        audio_devices+="|"
-      fi
-      audio_devices+="default_input"
-      ;;
+  *mic*)
+    if [[ -n "$audio_devices" ]]; then
+      audio_devices+="|"
+    fi
+    audio_devices+="default_input"
+    ;;
   esac
 
   local args=()
@@ -108,10 +108,6 @@ start_recording() {
     fi
     stop_webcam_overlay
     return 1
-  fi
-
-  if command -v notify-send >/dev/null 2>&1; then
-    notify-send "Screen recording started" "$filename" -t 2000
   fi
 
   toggle_screenrecording_indicator
@@ -158,15 +154,15 @@ With desktop + microphone audio + webcam"
 ' "$options" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…") || exit 0
 
   case "$selection" in
-    "With desktop audio")
-      start_recording "desktop"
-      ;;
-    "With desktop + microphone audio")
-      start_recording "desktop+mic"
-      ;;
-    "With desktop + microphone audio + webcam")
-      start_recording "desktop+mic+webcam"
-      ;;
+  "With desktop audio")
+    start_recording "desktop"
+    ;;
+  "With desktop + microphone audio")
+    start_recording "desktop+mic"
+    ;;
+  "With desktop + microphone audio + webcam")
+    start_recording "desktop+mic+webcam"
+    ;;
   esac
 }
 
