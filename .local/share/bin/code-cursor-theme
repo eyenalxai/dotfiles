@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+set -o pipefail
+
+THEME_JSON="$HOME/.config/theme/current/vscode.json"
+
+notify() {
+  local msg="$1"
+
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Editor theme" "$msg"
+  fi
+
+  echo "$msg" >&2
+}
+
+if [[ ! -f "$THEME_JSON" ]]; then
+  notify "Theme file not found: $THEME_JSON"
+  exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  notify "jq is required but not installed"
+  exit 1
+fi
+
+theme_name=$(jq -r '.name // empty' "$THEME_JSON")
+extension=$(jq -r '.extension // empty' "$THEME_JSON")
+
+if [[ -z "$theme_name" ]]; then
+  notify "Missing 'name' in $THEME_JSON"
+  exit 1
+fi
+
+apply_theme() {
+  local editor_cmd="$1"
+  local settings_path="$2"
+  local config_dir="$3"
+
+  # Skip if config directory does not exist
+  if [[ ! -d "$config_dir" ]]; then
+    return 1
+  fi
+
+  # Skip if editor binary is not available
+  if ! command -v "$editor_cmd" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  # Install theme extension if specified and not already installed
+  if [[ -n "$extension" ]] && ! "$editor_cmd" --list-extensions | grep -Fxq "$extension"; then
+    "$editor_cmd" --install-extension "$extension" >/dev/null
+  fi
+
+  # Do not create config directory; it already exists if we got here
+  # Ensure settings file exists
+  if [[ ! -f "$settings_path" ]]; then
+    printf '{\n}\n' >"$settings_path"
+  fi
+
+  # Ensure workbench.colorTheme key exists
+  if ! grep -q '"workbench.colorTheme"' "$settings_path"; then
+    sed -i --follow-symlinks -E '0,/\{/{s/\{/{ "workbench.colorTheme": "",/}' "$settings_path"
+  fi
+
+  # Update theme value
+  sed -i --follow-symlinks -E \
+    "s/(\"workbench.colorTheme\"[[:space:]]*:[[:space:]]*\")[^\"]*(\")/\1$theme_name\2/" \
+    "$settings_path"
+
+  return 0
+}
+
+applied_any=0
+
+if apply_theme code "$HOME/.config/Code/User/settings.json" "$HOME/.config/Code"; then
+  applied_any=1
+fi
+
+if apply_theme cursor "$HOME/.config/Cursor/User/settings.json" "$HOME/.config/Cursor"; then
+  applied_any=1
+fi
+
+if [[ "$applied_any" -eq 0 ]]; then
+  notify "No supported editors (Code/Cursor) found or configured"
+  exit 1
+fi
+
+exit 0
