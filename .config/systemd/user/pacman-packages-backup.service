@@ -1,0 +1,6 @@
+[Unit]
+Description=Save list of explicitly installed pacman packages
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash -c 'mkdir -p "$HOME/.local/share" && pacman -Qqe > "$HOME/.local/share/.packages"'
