@@ -110,9 +110,7 @@ fi
 
 # Restart swaybg with the new background
 pkill -x swaybg 2>/dev/null || true
-if ! uwsm app -- swaybg -i "$HOME/.config/theme/current/background.webp"; then
-  error_notify "Failed to start swaybg via uwsm"
-fi
+uwsm app -- swaybg -i "$HOME/.config/theme/current/background.webp" >/dev/null 2>&1 &
 
 # Reload user units so any systemd user services
 # can pick up changed unit files.
