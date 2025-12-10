@@ -21,17 +21,31 @@ require() {
 }
 
 require "walker"
+require "uwsm"
+require "swaybg"
 
 if [[ ! -d "$THEME_DIR" ]]; then
   error_notify "Theme directory does not exist: ~/.config/theme"
 fi
 
 options=""
+declare -a display_names=()
+declare -a dir_names=()
 for path in "$THEME_DIR"/*; do
   [[ -e "$path" ]] || continue
   name="$(basename "$path")"
   [[ "$name" == "current" ]] && continue
-  options+="$name"$'\n'
+
+  display="$name"
+  name_file="$path/name"
+  if [[ -f "$name_file" ]]; then
+    display="$(<"$name_file")"
+    display="${display%%$'\n'*}"
+  fi
+
+  display_names+=("$display")
+  dir_names+=("$name")
+  options+="$display"$'\n'
 done
 
 if [[ -z "$options" ]]; then
@@ -41,7 +55,20 @@ fi
 prompt="Theme"
 selection="$(printf '%s\n' "$options" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…")" || exit 0
 
-TARGET="$THEME_DIR/$selection"
+# Find the directory corresponding to the selected display name
+selected_index=-1
+for i in "${!display_names[@]}"; do
+  if [[ "${display_names[$i]}" == "$selection" ]]; then
+    selected_index="$i"
+    break
+  fi
+done
+
+if [[ "$selected_index" -lt 0 ]]; then
+  error_notify "Unknown theme selected: $selection"
+fi
+
+TARGET="$THEME_DIR/${dir_names[$selected_index]}"
 
 if [[ ! -e "$TARGET" ]]; then
   error_notify "Selected theme does not exist: $TARGET"
@@ -66,11 +93,26 @@ if [[ -f "$MODE_FILE" ]]; then
   fi
 fi
 
+ICON_FILE="$TARGET/icons"
+if [[ -f "$ICON_FILE" ]]; then
+  icon_theme="$(<"$ICON_FILE")"
+  icon_theme="${icon_theme%%$'\n'*}"
+  if [[ -n "$icon_theme" ]]; then
+    gsettings set org.gnome.desktop.interface icon-theme "$icon_theme"
+  fi
+fi
+
 if [[ ! -x "$HOME/.local/share/bin/code-cursor-theme" ]]; then
   error_notify "Required script not found: ~/.local/share/bin/code-cursor-theme"
 fi
 
 ~/.local/share/bin/code-cursor-theme
+
+# Restart swaybg with the new background
+pkill -x swaybg 2>/dev/null || true
+if ! uwsm app -- swaybg -i "$HOME/.config/theme/current/background.webp"; then
+  error_notify "Failed to start swaybg via uwsm"
+fi
 
 # Reload user units so any systemd user services
 # can pick up changed unit files.
