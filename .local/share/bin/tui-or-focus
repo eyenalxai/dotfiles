@@ -31,7 +31,8 @@ if ! command -v "$cmd" >/dev/null 2>&1; then
   exit 1
 fi
 
-pattern="${APP_ID_PATTERN:-$(basename "$1")}" 
+app_id="${APP_ID:-sys.$cmd}"
+pattern="${APP_ID_PATTERN:-$app_id}" 
 
 window_address=$(hyprctl clients -j |
   jq -r --arg p "$pattern" '
@@ -48,10 +49,17 @@ if [[ -n "$window_address" && "$window_address" != "null" ]]; then
   exit 0
 fi
 
-if command -v uwsm-app >/dev/null 2>&1; then
-  exec setsid uwsm-app -- "$@"
+# Launch TUI in a new window with a dedicated class
+if command -v ghostty >/dev/null 2>&1; then
+  exec setsid uwsm app -- ghostty --class="$app_id" -e "$@"
 elif command -v xdg-terminal-exec >/dev/null 2>&1; then
-  exec setsid xdg-terminal-exec "$@"
+  exec setsid xdg-terminal-exec -e "$@"
+elif command -v uwsm >/dev/null 2>&1; then
+  if [[ -n "${TERMINAL:-}" ]]; then
+    exec setsid uwsm app -- "$TERMINAL" -e "$@"
+  else
+    exec setsid uwsm app -- "$@"
+  fi
 else
   exec "$@"
 fi
