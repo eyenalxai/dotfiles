@@ -28,7 +28,11 @@ fi
 
 require() {
   if ! command -v "$1" >/dev/null 2>&1; then
-    printf 'Required command not found: %s\n' "$1" >&2
+    local msg="Required command not found: $1"
+    if command -v notify-send >/dev/null 2>&1; then
+      notify-send "Screen recording error" "$msg" -u critical -t 5000
+    fi
+    printf '%s\n' "$msg" >&2
     exit 1
   fi
 }
@@ -88,6 +92,18 @@ start_recording() {
   fi
 
   gpu-screen-recorder -w portal -f 60 -fallback-cpu-encoding yes -o "$filename" "${args[@]}" -ac aac &
+  local pid=$!
+
+  # Give gpu-screen-recorder a moment to either start or fail
+  sleep 0.5
+  if ! kill -0 "$pid" >/dev/null 2>&1; then
+    # Recorder failed to start (e.g. no default audio device)
+    if command -v notify-send >/dev/null 2>&1; then
+      notify-send "Screen recording error" "gpu-screen-recorder failed to start. Check audio devices/defaults." -u critical -t 5000
+    fi
+    stop_webcam_overlay
+    return 1
+  fi
 
   if command -v notify-send >/dev/null 2>&1; then
     notify-send "Screen recording started" "$filename" -t 2000
