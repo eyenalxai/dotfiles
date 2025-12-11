@@ -5,7 +5,6 @@ plugins=(
     alias-finder
     git
     history-substring-search
-    dotenv
 )
 
 # Disable zsh substitution/autocomplete with URL and backslashes
@@ -56,5 +55,5 @@ precmd_functions+=(_node_bin)
 export GOPATH=$HOME/go
 
 # My Stuff
-export PATH="${HOME}/.local/bin:${PATH}"
+export PATH="${HOME}/.local/share/bin:${PATH}"
 
