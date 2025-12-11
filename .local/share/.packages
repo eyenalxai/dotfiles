@@ -10,6 +10,8 @@ btop
 btrfs-progs
 clipse
 cursor-bin
+datagrip
+datagrip-jre
 deadbeef
 docker
 docker-buildx
@@ -79,6 +81,7 @@ polkit-gnome
 polkit-kde-agent
 qt5-wayland
 qt6-wayland
+satty
 sddm
 shfmt
 slurp
