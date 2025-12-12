@@ -84,7 +84,6 @@ polkit-kde-agent
 postgresql-libs
 qt5-wayland
 qt6-wayland
-reflector
 satty
 sddm
 shfmt
