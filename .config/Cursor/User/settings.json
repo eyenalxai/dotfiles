@@ -25,5 +25,6 @@
     "oxc.typeAware": true,
     "git.confirmSync": false,
     "window.openFoldersInNewWindow": "on",
-    "window.restoreWindows": "none"
+    "window.restoreWindows": "none",
+    "git.autofetch": true
 }
