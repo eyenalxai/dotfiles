@@ -1,5 +1,5 @@
 alias n=nvim
 alias node-n='command n'
-alias yaas="yay -S --noconfirm"
-alias yaasu="yay -Suy --noconfirm"
+alias yaas="yay -S"
+alias yaasu="yay -Suy"
 
