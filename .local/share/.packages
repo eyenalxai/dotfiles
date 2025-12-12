@@ -8,6 +8,7 @@ bluez
 bluez-utils
 btop
 btrfs-progs
+bun-bin
 clipse
 cursor-bin
 datagrip
@@ -36,6 +37,7 @@ fastfetch
 ghostty
 git
 git-filter-repo
+github-cli
 gnome-keyring
 gpu-screen-recorder
 grim
@@ -79,8 +81,10 @@ pipewire-pulse
 pnpm
 polkit-gnome
 polkit-kde-agent
+postgresql-libs
 qt5-wayland
 qt6-wayland
+reflector
 satty
 sddm
 shfmt
