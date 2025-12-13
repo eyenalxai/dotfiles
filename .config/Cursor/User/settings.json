@@ -26,5 +26,10 @@
     "git.confirmSync": false,
     "window.openFoldersInNewWindow": "on",
     "window.restoreWindows": "none",
-    "git.autofetch": true
+    "git.autofetch": true,
+    "oxc.fmt.experimental": true,
+    "cursor.composer.queueMessageDefaultBehavior": "stop-and-send",
+    "[jsonc]": {
+        "editor.defaultFormatter": "biomejs.biome"
+    }
 }
