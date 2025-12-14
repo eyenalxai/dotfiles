@@ -1,0 +1,6 @@
+[Unit]
+Description=Scrub Clipse clipboard history JSON
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/share/bin/scrub_clipboard_history.sh

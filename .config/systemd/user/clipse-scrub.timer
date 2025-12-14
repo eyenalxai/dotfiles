@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Clipse clipboard scrub every minute
+
+[Timer]
+OnUnitActiveSec=1min
+Persistent=true
+Unit=clipse-scrub.service
+
+[Install]
+WantedBy=timers.target
