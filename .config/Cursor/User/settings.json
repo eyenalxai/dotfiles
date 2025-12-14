@@ -1,5 +1,5 @@
 {
-    "workbench.colorTheme": "Catppuccin Mocha",
+    "workbench.colorTheme": "Catppuccin Latte",
     "window.commandCenter": true,
     "[typescript]": {
         "editor.defaultFormatter": "biomejs.biome"
