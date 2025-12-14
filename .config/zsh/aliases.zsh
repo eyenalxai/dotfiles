@@ -1,5 +1,7 @@
 alias n=nvim
 alias node-n='command n'
+
 alias yaas="yay -S"
-alias yaasu="yay -Suy"
+alias yaasu="sudo pacman -Suy --noconfirm && yay -Suy"
+alias yaac="yay -Rscnd $(yay -Qdtq | xargs)"
 

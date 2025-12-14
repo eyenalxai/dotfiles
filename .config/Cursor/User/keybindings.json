@@ -13,5 +13,15 @@
         "key": "ctrl+.",
         "command": "editor.action.quickFix",
         "when": "editorHasCodeActionsProvider && textInputFocus && !editorReadonly"
+    },
+    {
+        "key": "ctrl+shift+c",
+        "command": "workbench.action.toggleAuxiliaryBar",
+        "when": "!isAuxiliaryWindowFocusedContext"
+    },
+    {
+        "key": "ctrl+alt+b",
+        "command": "-workbench.action.toggleAuxiliaryBar",
+        "when": "!isAuxiliaryWindowFocusedContext"
     }
 ]
