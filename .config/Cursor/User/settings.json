@@ -1,5 +1,5 @@
 {
-    "workbench.colorTheme": "Catppuccin Latte",
+    "workbench.colorTheme": "Catppuccin Mocha",
     "window.commandCenter": true,
     "[typescript]": {
         "editor.defaultFormatter": "biomejs.biome"
@@ -22,7 +22,6 @@
     "typescript.updateImportsOnFileMove.enabled": "always",
     "workbench.editor.enablePreview": false,
     "oxc.requireConfig": true,
-    "oxc.typeAware": true,
     "git.confirmSync": false,
     "window.openFoldersInNewWindow": "on",
     "window.restoreWindows": "none",

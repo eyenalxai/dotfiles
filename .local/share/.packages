@@ -34,6 +34,7 @@ elephant-todo
 elephant-unicode
 elephant-websearch
 fastfetch
+flatpak
 ghostty
 git
 git-filter-repo
@@ -84,6 +85,7 @@ polkit-kde-agent
 postgresql-libs
 qt5-wayland
 qt6-wayland
+rustdesk-bin
 satty
 sddm
 shfmt
