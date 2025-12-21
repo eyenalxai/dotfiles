@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TUN_DEV="${THRONE_TUN_DEV:-throne-tun}"
+ROUTE_TABLE="${THRONE_ROUTE_TABLE:-2022}"
+FWMARK="${THRONE_FWMARK:-0x2023}"
+
+usage() {
+  cat <<'EOF'
+Usage: throne-vpn-status [--details] [--json]
+
+Checks whether Throne/Nekoray TUN-mode VPN looks active.
+
+Heuristics:
+- TUN interface exists (default: throne-tun)
+- A policy route table (default: 2022) has default route via that interface
+- Or an ip rule referencing fwmark (default: 0x2023) points to that table
+
+Exit codes:
+  0  active
+  1  inactive
+  2  unknown/error
+
+Env overrides:
+  THRONE_TUN_DEV, THRONE_ROUTE_TABLE, THRONE_FWMARK
+EOF
+}
+
+want_details=0
+want_json=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --details) want_details=1; shift ;;
+    --json) want_json=1; shift ;;
+    *) echo "Unknown arg: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+have_ip() {
+  command -v ip >/dev/null 2>&1
+}
+
+link_exists() {
+  ip link show dev "$TUN_DEV" >/dev/null 2>&1
+}
+
+table_default_via_tun() {
+  ip route show table "$ROUTE_TABLE" 2>/dev/null | grep -Eq "^default .* dev ${TUN_DEV}([[:space:]]|$)"
+}
+
+rule_points_to_table() {
+  ip rule show 2>/dev/null | grep -Eq "fwmark ${FWMARK}.*lookup ${ROUTE_TABLE}"
+}
+
+core_running() {
+  pgrep -fa '/usr/lib/throne/(Core|Throne)' >/dev/null 2>&1
+}
+
+status="unknown"
+
+if ! have_ip; then
+  status="unknown"
+elif link_exists; then
+  if table_default_via_tun || rule_points_to_table; then
+    status="active"
+  else
+    # Interface exists but routing rule/table might be different in your setup.
+    # Still report active-ish if the core is running.
+    if core_running; then
+      status="active"
+    else
+      status="inactive"
+    fi
+  fi
+else
+  status="inactive"
+fi
+
+if [[ "$want_json" -eq 1 ]]; then
+  # Minimal JSON without jq dependency.
+  printf '{"status":"%s","tun":"%s","table":%s,"fwmark":"%s"}\n' "$status" "$TUN_DEV" "$ROUTE_TABLE" "$FWMARK"
+else
+  echo "$status"
+fi
+
+if [[ "$want_details" -eq 1 ]]; then
+  echo "tun_dev=$TUN_DEV" >&2
+  echo "route_table=$ROUTE_TABLE" >&2
+  echo "fwmark=$FWMARK" >&2
+  ip -o link show dev "$TUN_DEV" 2>/dev/null || true
+  ip route show table "$ROUTE_TABLE" 2>/dev/null || true
+  ip rule show 2>/dev/null | grep -E "fwmark ${FWMARK}|lookup ${ROUTE_TABLE}" || true
+fi
+
+case "$status" in
+  active) exit 0 ;;
+  inactive) exit 1 ;;
+  *) exit 2 ;;
+esac
