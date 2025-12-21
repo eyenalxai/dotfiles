@@ -74,6 +74,7 @@ neovim
 ngrok
 nodejs
 nodejs-n
+noto-fonts-cjk
 npm
 opencode-bin
 openssh
@@ -89,12 +90,14 @@ rustdesk-bin
 satty
 sddm
 shfmt
+sing-box
 slurp
 smartmontools
 snapper
 starship
 swaybg
 telegram-desktop
+throne
 traceroute
 tree
 ttf-apple-emoji

@@ -7,3 +7,6 @@ source /usr/share/fzf/key-bindings.zsh
 export SSH_AUTH_SOCK="${HOME}/.1password/agent.sock"
 export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
 
+alias shutdown="systemctl poweroff"
+alias reboot="systemctl reboot"
+
