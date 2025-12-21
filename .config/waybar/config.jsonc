@@ -11,6 +11,7 @@
     "memory",
     "hyprland/language",
     "bluetooth",
+    "custom/vpn",
     "network",
     "pulseaudio",
   ],
@@ -91,6 +92,11 @@
     "format-icons": {
       "default": ["", "", ""]
     }
+  },
+  "custom/vpn": {
+    "exec": "~/.local/share/bin/vpn-status --waybar",
+    "return-type": "json",
+    "interval": 5
   },
   "custom/screenrecording-indicator": {
     "on-click": "~/.local/share/bin/screenrecord-menu",

@@ -7,7 +7,7 @@ FWMARK="${THRONE_FWMARK:-0x2023}"
 
 usage() {
   cat <<'EOF'
-Usage: throne-vpn-status [--details] [--json]
+Usage: vpn-status [--details] [--json] [--waybar]
 
 Checks whether Throne/Nekoray TUN-mode VPN looks active.
 
@@ -28,12 +28,14 @@ EOF
 
 want_details=0
 want_json=0
+want_waybar=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
     --details) want_details=1; shift ;;
     --json) want_json=1; shift ;;
+    --waybar) want_waybar=1; shift ;;
     *) echo "Unknown arg: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
@@ -78,7 +80,18 @@ else
   status="inactive"
 fi
 
-if [[ "$want_json" -eq 1 ]]; then
+if [[ "$want_waybar" -eq 1 ]]; then
+  # Waybar JSON output (no jq dependency).
+  text="VPN"
+  class="$status"
+  case "$status" in
+    active) tooltip="VPN active (Throne)" ;;
+    inactive) tooltip="VPN inactive" ;;
+    *) text="VPN?"; tooltip="VPN status unknown" ;;
+  esac
+
+  printf '{"text":"%s","class":"%s","tooltip":"%s"}\n' "$text" "$class" "$tooltip"
+elif [[ "$want_json" -eq 1 ]]; then
   # Minimal JSON without jq dependency.
   printf '{"status":"%s","tun":"%s","table":%s,"fwmark":"%s"}\n' "$status" "$TUN_DEV" "$ROUTE_TABLE" "$FWMARK"
 else

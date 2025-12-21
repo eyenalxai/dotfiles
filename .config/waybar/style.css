@@ -36,6 +36,7 @@
 #pulseaudio,
 #custom-screenrecording-indicator,
 #custom-update,
+#custom-vpn,
 #language {
   min-width: 12px;
   margin: 0 7.5px;
@@ -81,6 +82,18 @@ tooltip {
 
 #custom-screenrecording-indicator.active {
   color: #a55555;
+}
+
+#custom-vpn.active {
+  color: #55a555;
+}
+
+#custom-vpn.inactive {
+  opacity: 0.5;
+}
+
+#custom-vpn.unknown {
+  color: #a5a555;
 }
 
 
