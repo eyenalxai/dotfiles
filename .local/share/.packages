@@ -35,6 +35,8 @@ elephant-unicode
 elephant-websearch
 fastfetch
 flatpak
+flatseal
+game-devices-udev
 ghostty
 git
 git-filter-repo
@@ -76,6 +78,7 @@ nodejs
 nodejs-n
 noto-fonts-cjk
 npm
+obsidian
 opencode-bin
 openssh
 pamixer
