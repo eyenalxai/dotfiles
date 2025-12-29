@@ -11,6 +11,7 @@
     "memory",
     "hyprland/language",
     "bluetooth",
+    "custom/bluetooth-battery",
     "custom/vpn",
     "network",
     "pulseaudio",
@@ -81,6 +82,13 @@
     "format-connected": "󰂱",
     "format-no-controller": "",
     "tooltip-format": "Devices connected: {num_connections}",
+    "on-click": "~/.local/share/bin/bluetooth-menu",
+  },
+  "custom/bluetooth-battery": {
+    "exec": "~/.local/share/bin/bluetooth-battery --waybar",
+    "exec-if": "~/.local/share/bin/bluetooth-battery --check",
+    "return-type": "json",
+    "interval": 10,
     "on-click": "~/.local/share/bin/bluetooth-menu",
   },
   "pulseaudio": {

@@ -47,7 +47,19 @@
 }
 
 #bluetooth {
-  margin-right: 17px;
+  margin-right: 4px;
+}
+
+#custom-bluetooth-battery {
+  margin-right: 7.5px;
+}
+
+#custom-bluetooth-battery.low {
+  color: #a5a555;
+}
+
+#custom-bluetooth-battery.critical {
+  color: #a55555;
 }
 
 #network {

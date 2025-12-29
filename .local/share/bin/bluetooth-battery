@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Waybar custom module: show battery of connected Bluetooth devices.
+# - Uses UPower when available (preferred)
+# - Falls back to bluetoothctl Battery Percentage when present
+#
+# Usage:
+#   bluetooth-battery --check   # exit 0 if something to show
+#   bluetooth-battery --waybar  # print waybar JSON
+
+json_escape() {
+  # Minimal JSON string escaping.
+  local s=${1//\\/\\\\}
+  s=${s//"/\\"}
+  s=${s//$'\n'/\\n}
+  printf '%s' "$s"
+}
+
+mode="--waybar"
+if [[ ${1-} == "--check" || ${1-} == "--waybar" ]]; then
+  mode="$1"
+fi
+
+connected_lines="$(bluetoothctl devices Connected 2>/dev/null || true)"
+if [[ -z "$connected_lines" ]]; then
+  if [[ "$mode" == "--check" ]]; then
+    exit 1
+  fi
+  printf '{"text":"","tooltip":"","class":"disconnected"}\n'
+  exit 0
+fi
+
+# Build MAC->battery map from UPower (system bus).
+declare -A upower_pct=()
+declare -A upower_model=()
+declare -A upower_state=()
+
+if command -v upower >/dev/null 2>&1; then
+  while IFS= read -r dev; do
+    [[ -z "$dev" ]] && continue
+    info="$(upower -i "$dev" 2>/dev/null || true)"
+    [[ -z "$info" ]] && continue
+
+    native_path="$(awk -F': *' '/native-path/{print $2; exit}' <<<"$info")"
+    [[ "$native_path" != *"/org/bluez/"*"/dev_"* ]] && continue
+
+    if [[ "$native_path" =~ dev_([A-Fa-f0-9_]+) ]]; then
+      key="${BASH_REMATCH[1]}"
+      pct="$(awk -F': *' '/percentage/{print $2; exit}' <<<"$info")"
+      model="$(awk -F': *' '/model/{print $2; exit}' <<<"$info")"
+      state="$(awk -F': *' '/state/{print $2; exit}' <<<"$info")"
+      [[ -n "$pct" ]] || continue
+      upower_pct["$key"]="$pct"
+      upower_model["$key"]="$model"
+      upower_state["$key"]="$state"
+    fi
+  done < <(upower -e 2>/dev/null || true)
+fi
+
+entries=()
+
+while IFS= read -r line; do
+  [[ -z "$line" ]] && continue
+
+  # Format: "Device AA:BB:CC:DD:EE:FF Name With Spaces"
+  mac="$(awk '{print $2}' <<<"$line")"
+  name="${line#Device $mac }"
+  key="${mac//:/_}"
+
+  pct="${upower_pct[$key]-}"
+  model="${upower_model[$key]-}"
+  state="${upower_state[$key]-}"
+
+  # Fallback to bluetoothctl if UPower doesn't expose it.
+  if [[ -z "$pct" ]]; then
+    info="$(bluetoothctl info "$mac" 2>/dev/null || true)"
+    if [[ "$info" =~ Battery\ Percentage:[^\(]*\(([0-9]+)\) ]]; then
+      pct="${BASH_REMATCH[1]}%"
+    elif [[ "$info" =~ Battery\ Percentage:[^0-9]*([0-9]+)% ]]; then
+      pct="${BASH_REMATCH[1]}%"
+    fi
+  fi
+
+  [[ -n "$pct" ]] || continue
+
+  # Prefer UPower's model if present.
+  if [[ -n "$model" ]]; then
+    display_name="$model"
+  else
+    display_name="$name"
+  fi
+
+  entries+=("$display_name|$pct|$state")
+done <<<"$connected_lines"
+
+if (( ${#entries[@]} == 0 )); then
+  if [[ "$mode" == "--check" ]]; then
+    exit 1
+  fi
+  printf '{"text":"","tooltip":"","class":"connected"}\n'
+  exit 0
+fi
+
+if [[ "$mode" == "--check" ]]; then
+  exit 0
+fi
+
+# Choose the lowest battery to display (most useful at a glance).
+chosen_name=""
+chosen_pct=""
+chosen_state=""
+chosen_num=101
+
+tooltip_lines=()
+for e in "${entries[@]}"; do
+  IFS='|' read -r ename epct estate <<<"$e"
+
+  num="${epct%%%}"
+  if [[ "$num" =~ ^[0-9]+$ ]]; then
+    if (( num < chosen_num )); then
+      chosen_num="$num"
+      chosen_name="$ename"
+      chosen_pct="$epct"
+      chosen_state="$estate"
+    fi
+  else
+    # If we can't parse a number, still allow a pick.
+    if [[ -z "$chosen_pct" ]]; then
+      chosen_name="$ename"
+      chosen_pct="$epct"
+      chosen_state="$estate"
+    fi
+  fi
+
+  if [[ -n "$estate" ]]; then
+    tooltip_lines+=("$ename: $epct ($estate)")
+  else
+    tooltip_lines+=("$ename: $epct")
+  fi
+done
+
+tooltip="$(printf '%s\n' "${tooltip_lines[@]}")"
+
+class="ok"
+if [[ "$chosen_num" =~ ^[0-9]+$ ]]; then
+  if (( chosen_num <= 15 )); then
+    class="critical"
+  elif (( chosen_num <= 30 )); then
+    class="low"
+  fi
+fi
+
+# Keep the bar compact: show only the percentage (you already have a BT icon).
+text="$chosen_pct"
+
+printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' \
+  "$(json_escape "$text")" \
+  "$(json_escape "$tooltip")" \
+  "$(json_escape "$class")"
