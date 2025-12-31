@@ -14,7 +14,7 @@
     "custom/bluetooth-battery",
     "custom/vpn",
     "network",
-    "pulseaudio",
+    "wireplumber",
   ],
   "hyprland/workspaces": {
     "all-outputs": false,
@@ -94,12 +94,12 @@
     "interval": 10,
     "on-click": "~/.local/share/bin/bluetooth-menu",
   },
-  "pulseaudio": {
-    "format": "{icon}",
-    "on-click-right": "pamixer -t",
+  "wireplumber": {
+    "format": "{icon} {volume}%",
+    "format-muted": " muted",
     "tooltip-format": "Playing at {volume}%",
+    "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "scroll-step": 5,
-    "format-muted": "",
     "format-icons": {
       "default": ["", "", ""]
     }
