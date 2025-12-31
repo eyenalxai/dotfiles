@@ -2,3 +2,6 @@
 @define-color background #eff1f5; /* base */
 @define-color border     #dce0e8; /* crust */
 @define-color accent     #1e66f5; /* blue */
+
+@define-color workspace_focused @accent;
+@define-color workspace_visible rgba(76, 79, 105, 0.35);
