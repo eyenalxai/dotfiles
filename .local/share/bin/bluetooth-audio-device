@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+json_escape() {
+  local s="${1-}"
+  s=${s//\\/\\\\}
+  s=${s//"/\\"}
+  s=${s//$'\n'/ }
+  printf '%s' "$s"
+}
+
+inspect="$(wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null || true)"
+
+if [[ -z "$inspect" ]]; then
+  printf '{"text":"","class":"unknown"}\n'
+  exit 0
+fi
+
+if ! grep -q 'device.api = "bluez5"' <<<"$inspect"; then
+  printf '{"text":"","class":"not-bt"}\n'
+  exit 0
+fi
+
+name="$(grep -m1 -oP 'node\.description = "\K[^"]+' <<<"$inspect" || true)"
+if [[ -z "$name" ]]; then
+  name="$(grep -m1 -oP 'media\.name = "\K[^"]+' <<<"$inspect" || true)"
+fi
+if [[ -z "$name" ]]; then
+  name="Bluetooth Audio"
+fi
+
+text="$(json_escape "$name")"
+tooltip="$(json_escape "Bluetooth audio: $name")"
+
+printf '{"text":"%s","class":"connected","tooltip":"%s"}\n' "$text" "$tooltip"
