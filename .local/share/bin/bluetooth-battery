@@ -27,7 +27,7 @@ if [[ -z "$connected_lines" ]]; then
   if [[ "$mode" == "--check" ]]; then
     exit 1
   fi
-  printf '{"text":"--","tooltip":"No Bluetooth devices connected","class":"disconnected"}\n'
+  printf '{"text":"","tooltip":"No Bluetooth devices connected","class":"disconnected"}\n'
   exit 0
 fi
 
@@ -98,7 +98,7 @@ if (( ${#entries[@]} == 0 )); then
   if [[ "$mode" == "--check" ]]; then
     exit 1
   fi
-  printf '{"text":"--","tooltip":"No Bluetooth battery information","class":"connected"}\n'
+  printf '{"text":"","tooltip":"No Bluetooth battery information","class":"connected"}\n'
   exit 0
 fi
 
