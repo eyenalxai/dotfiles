@@ -54,6 +54,7 @@ inkscape
 inotify-tools
 iwd
 jq
+kew
 kvantum
 kvantum-qt5
 lazydocker
@@ -72,6 +73,7 @@ mako
 man-db
 mpv
 nautilus
+ncdu
 neovim
 ngrok
 nodejs
