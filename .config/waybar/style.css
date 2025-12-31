@@ -60,7 +60,7 @@
 #custom-vpn,
 #language {
   min-width: 12px;
-  margin: 0 7.5px;
+  margin: 0 15px;
 }
 
 #tray {
@@ -71,8 +71,12 @@
   margin-right: 4px;
 }
 
-#custom-bluetooth-battery {
+#custom-bluetooth-audio-device {
   margin-right: 7.5px;
+}
+
+#custom-bluetooth-battery {
+  margin-right: 15px;
 }
 
 #custom-bluetooth-battery.low {

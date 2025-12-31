@@ -151,8 +151,24 @@ if [[ "$chosen_num" =~ ^[0-9]+$ ]]; then
   fi
 fi
 
-# Keep the bar compact: show only the percentage (you already have a BT icon).
+# Keep the bar compact: show battery icon + percentage.
 text="$chosen_pct"
+
+# Add a battery icon when we have a numeric percentage.
+if [[ "$chosen_num" =~ ^[0-9]+$ ]]; then
+  if (( chosen_num <= 10 )); then
+    icon=""
+  elif (( chosen_num <= 35 )); then
+    icon=""
+  elif (( chosen_num <= 60 )); then
+    icon=""
+  elif (( chosen_num <= 85 )); then
+    icon=""
+  else
+    icon=""
+  fi
+  text="$icon $chosen_pct"
+fi
 
 printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' \
   "$(json_escape "$text")" \
