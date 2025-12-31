@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+log_error() {
+  local msg="$1"
+  printf '%s\n' "$msg" >&2
+}
+
+require() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    log_error "Required command not found: $1"
+    exit 1
+  fi
+}
+
+usage() {
+  cat <<'EOF' >&2
+Usage:
+  hypr-workspace-1to7 focus <1-7>
+  hypr-workspace-1to7 move <1-7>
+  hypr-workspace-1to7 move-silent <1-7>
+
+Maps per-monitor workspaces:
+  - HDMI-A-1 (right/primary Samsung): 1-7
+  - HDMI-A-2 (left/secondary Dell): 8-14 (offset +7)
+
+Override monitors with env vars:
+  HYPR_PRIMARY_MONITOR, HYPR_SECONDARY_MONITOR
+EOF
+}
+
+require hyprctl
+require jq
+
+action="${1:-}"
+index="${2:-}"
+
+if [[ -z "$action" || -z "$index" ]]; then
+  usage
+  exit 2
+fi
+
+if [[ ! "$index" =~ ^[1-7]$ ]]; then
+  log_error "Index must be 1-7 (got: $index)"
+  exit 2
+fi
+
+primary_monitor="${HYPR_PRIMARY_MONITOR:-HDMI-A-1}"
+secondary_monitor="${HYPR_SECONDARY_MONITOR:-HDMI-A-2}"
+
+focused_monitor="$(hyprctl -j monitors | jq -r '.[] | select(.focused == true) | .name')"
+
+if [[ -z "$focused_monitor" || "$focused_monitor" == "null" ]]; then
+  log_error "Failed to determine focused monitor"
+  exit 1
+fi
+
+# Default mapping: primary gets 1-7, secondary gets 8-14.
+workspace_id="$index"
+if [[ "$focused_monitor" == "$secondary_monitor" ]]; then
+  workspace_id=$((index + 7))
+elif [[ "$focused_monitor" == "$primary_monitor" ]]; then
+  workspace_id="$index"
+else
+  # Unknown monitor: fall back to global 1-7
+  workspace_id="$index"
+fi
+
+case "$action" in
+  focus)
+    hyprctl dispatch workspace "$workspace_id"
+    ;;
+  move)
+    hyprctl dispatch movetoworkspace "$workspace_id"
+    ;;
+  move-silent)
+    hyprctl dispatch movetoworkspacesilent "$workspace_id"
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
