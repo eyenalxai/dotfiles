@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: $(basename "$0") up|down" >&2
+  exit 2
+}
+
+if [[ $# -ne 1 ]]; then
+  usage
+fi
+
+dir="$1"
+case "$dir" in
+  up|down) ;;
+  *) usage ;;
+esac
+
+v="$(pamixer --get-volume)"
+r=$((v % 5))
+
+if [[ "$dir" == "up" ]]; then
+  if [[ "$r" -eq 0 ]]; then
+    n=$((v + 5))
+  else
+    n=$((v + (5 - r)))
+  fi
+else
+  if [[ "$r" -eq 0 ]]; then
+    n=$((v - 5))
+  else
+    n=$((v - r))
+  fi
+fi
+
+if [[ "$n" -gt 100 ]]; then
+  n=100
+elif [[ "$n" -lt 0 ]]; then
+  n=0
+fi
+
+pamixer --set-volume "$n"
+notify-send -r 9991 "Volume" "$(pamixer --get-volume-human)"
