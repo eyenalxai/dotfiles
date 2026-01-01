@@ -71,6 +71,7 @@ linux-firmware
 localsend
 mako
 man-db
+minio-client
 mpv
 nautilus
 ncdu
