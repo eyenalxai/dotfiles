@@ -29,10 +29,12 @@ return {
       require("nvim-treesitter.parsers").strudel = {
         install_info = {
           url = "https://github.com/pedrozappa/tree-sitter-strdl",
+          revision = "main",
           branch = "main",
           generate = false,
           generate_from_json = false,
         },
+        tier = 3,
       }
 
       -- Also register in TSUpdate autocmd for consistency
@@ -42,10 +44,12 @@ return {
           require("nvim-treesitter.parsers").strudel = {
             install_info = {
               url = "https://github.com/pedrozappa/tree-sitter-strdl",
+              revision = "main",
               branch = "main",
               generate = false,
               generate_from_json = false,
             },
+            tier = 3,
           }
         end,
       })
