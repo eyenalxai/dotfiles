@@ -92,9 +92,11 @@ polkit-kde-agent
 postgresql-libs
 qt5-wayland
 qt6-wayland
+railwayapp-cli
 rustdesk-bin
 satty
 sddm
+seafile-client
 shfmt
 slurp
 smartmontools
