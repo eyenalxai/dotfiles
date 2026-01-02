@@ -17,4 +17,49 @@ return {
       })
     end,
   },
+  {
+    "pedrozappa/tree-sitter-strdl",
+    build = "npm run local_install",
+  },
+  {
+    "nvim-treesitter/nvim-treesitter",
+    dependencies = { "pedrozappa/tree-sitter-strdl" },
+    config = function()
+      -- Register strudel parser immediately
+      require("nvim-treesitter.parsers").strudel = {
+        install_info = {
+          url = "https://github.com/pedrozappa/tree-sitter-strdl",
+          branch = "main",
+          generate = false,
+          generate_from_json = false,
+        },
+      }
+
+      -- Also register in TSUpdate autocmd for consistency
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "TSUpdate",
+        callback = function()
+          require("nvim-treesitter.parsers").strudel = {
+            install_info = {
+              url = "https://github.com/pedrozappa/tree-sitter-strdl",
+              branch = "main",
+              generate = false,
+              generate_from_json = false,
+            },
+          }
+        end,
+      })
+
+      -- Register filetype mapping
+      vim.treesitter.language.register("strudel", { "strdl" })
+
+      -- Set up filetype detection for .strdl and .strudel files
+      vim.filetype.add({
+        extension = {
+          strdl = "strdl",
+          strudel = "strdl",
+        },
+      })
+    end,
+  },
 }
