@@ -9,3 +9,11 @@
 
 -- Disable LazyVim's default wrap+spell autocmds so spell never auto-enables
 pcall(vim.api.nvim_del_augroup_by_name, "lazyvim_wrap_spell")
+
+-- Set commentstring for strudel files (JavaScript-style comments)
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "strdl",
+  callback = function()
+    vim.bo.commentstring = "// %s"
+  end,
+})

@@ -14,6 +14,8 @@ return {
 
       require("strudel").setup({
         browser_exec_path = browser_exec_path,
+        update_on_save = true,
+        sync_cursor = false,
       })
     end,
   },
