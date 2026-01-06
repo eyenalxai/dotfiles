@@ -44,6 +44,7 @@ github-cli
 gnome-keyring
 gpu-screen-recorder
 grim
+gst-plugins-good
 happ-desktop-bin
 helium-browser-bin
 htop
@@ -84,6 +85,7 @@ noto-fonts-cjk
 npm
 obsidian
 opencode-bin
+opencode-desktop-bin
 openssh
 pamixer
 pipewire-pulse
