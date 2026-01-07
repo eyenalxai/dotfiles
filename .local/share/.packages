@@ -93,6 +93,7 @@ pnpm
 polkit-gnome
 polkit-kde-agent
 postgresql-libs
+qbittorrent
 qt5-wayland
 qt6-wayland
 railwayapp-cli
