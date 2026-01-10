@@ -37,6 +37,7 @@ fastfetch
 flatpak
 flatseal
 game-devices-udev
+gamescope
 ghostty
 git
 git-filter-repo
@@ -61,6 +62,22 @@ kvantum
 kvantum-qt5
 lazydocker
 lazygit
+lib32-freetype2
+lib32-glibc
+lib32-libglvnd
+lib32-libx11
+lib32-libxcb
+lib32-libxcomposite
+lib32-libxcursor
+lib32-libxdamage
+lib32-libxext
+lib32-libxfixes
+lib32-libxi
+lib32-libxinerama
+lib32-libxrandr
+lib32-libxrender
+lib32-libxxf86vm
+lib32-mesa
 libnewt
 libnotify
 libqalculate
@@ -73,6 +90,7 @@ linux-firmware
 localsend
 mako
 man-db
+mangohud
 minio-client
 mpv
 nautilus
@@ -97,6 +115,7 @@ qbittorrent
 qt5-wayland
 qt6-wayland
 railwayapp-cli
+reflector
 rustdesk-bin
 satty
 sddm

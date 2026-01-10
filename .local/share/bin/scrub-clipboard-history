@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$HOME/.config/clipse"
+
+# Create timestamped backup of the original file
+backup="clipboard_history.json.bak-$(date +%Y%m%d%H%M%S)"
+cp "clipboard_history.json" "$backup"
+
+# Create a temporary output file in the same directory
+tmp_file="$(mktemp clipboard_history.json.tmp.XXXXXX)"
+
+cleanup() {
+  rm -f "$tmp_file"
+}
+trap cleanup EXIT
+
+# Count total entries for progress tracking
+echo "Counting clipboard entries..." >&2
+total=$(jq '.clipboardHistory | length' "clipboard_history.json")
+echo "Processing $total entries..." >&2
+
+# Show a spinner while jq processes
+{
+  jq '
+    def scrub:
+      explode
+      | map(select(. == 9 or . == 10 or . == 13 or (. >= 32 and . != 127)))
+      | implode;
+    .clipboardHistory |= map(
+      if (.value|type) == "string" then .value |= scrub else . end
+    )
+  ' "clipboard_history.json" > "$tmp_file"
+} &
+jq_pid=$!
+
+# Show spinner while jq is running
+spinner=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+i=0
+while kill -0 $jq_pid 2>/dev/null; do
+  echo -ne "\rProcessing... ${spinner[$i]}" >&2
+  i=$(( (i + 1) % 10 ))
+  sleep 0.1
+done
+
+# Wait for jq to finish and get exit code
+wait $jq_pid
+jq_result=$?
+
+# Check if jq succeeded
+if [ "$jq_result" -eq 0 ]; then
+  echo -e "\rProcessing complete! ✓  " >&2
+  mv "$tmp_file" "clipboard_history.json"
+  trap - EXIT
+  rm -f "$tmp_file"
+else
+  echo -e "\rjq scrub failed; leaving original and backup intact" >&2
+  exit 1
+fi
