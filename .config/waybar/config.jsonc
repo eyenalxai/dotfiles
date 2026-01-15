@@ -47,50 +47,59 @@
     }
   },
   "hyprland/language": {
-    "format": "{}",
+    "format": "<span alpha=\"60%\">LNG</span> {}",
     "format-en": "ENG",
     "format-ru": "RUS",
     "keyboard-name": "microsoft-wired-keyboard-600",
     "tooltip": false,
+    "markup": "pango",
     "on-click": "hyprctl switchxkblayout current next"
   },
+  "custom/clock": {
+    "exec": "~/.local/share/bin/waybar-clock",
+    "return-type": "json",
+    "format": "<span alpha=\"60%\">CLK</span> {text}",
+    "interval": 30,
+    "tooltip": false,
+    "markup": "pango"
+  },
+
   "cpu": {
     "interval": 5,
-    "format": "CPU {usage}%",
+    "format": "<span alpha=\"60%\">CPU</span> {usage}%",
+    "format-alt": "CPU {usage}%",
+    "markup": "pango",
     "on-click": "~/.local/share/bin/tui-or-focus btop",
     "max-length": 10,
   },
   "memory": {
     "interval": 5,
-    "format": "MEM {percentage}%",
+    "format": "<span alpha=\"60%\">MEM</span> {percentage}%",
+    "markup": "pango",
     "tooltip": true
   },
-  "custom/clock": {
-    "exec": "~/.local/share/bin/waybar-clock",
-    "return-type": "json",
-    "interval": 30,
-    "tooltip": false
-  },
   "network": {
-    "format": "NET",
-    "format-wifi": "WIF {essid}",
-    "format-ethernet": "ETH",
-    "format-disconnected": "OFF",
+    "format": "<span alpha=\"60%\">NET</span>",
+    "format-wifi": "<span alpha=\"60%\">WIF</span> {essid}",
+    "format-ethernet": "<span alpha=\"60%\">ETH</span>",
+    "format-disconnected": "<span alpha=\"60%\">NET</span> OFF",
     "tooltip-format-wifi": "{essid} ({frequency} GHz)\n⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
     "tooltip-format-ethernet": "⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
     "tooltip-format-disconnected": "Disconnected",
     "interval": 3,
     "max-length": 20,
     "spacing": 1,
+    "markup": "pango",
     "on-click": "~/.local/share/bin/wifi-menu",
   },
   "bluetooth": {
-    "format": "BT",
-    "format-disabled": "BT",
-    "format-off": "BT",
-    "format-connected": "BT",
+    "format": "<span alpha=\"60%\">BT</span>",
+    "format-disabled": "<span alpha=\"60%\">BT</span>",
+    "format-off": "<span alpha=\"60%\">BT</span>",
+    "format-connected": "<span alpha=\"60%\">BT</span>",
     "format-no-controller": "",
     "tooltip-format": "Devices connected: {num_connections}",
+    "markup": "pango",
     "on-click": "~/.local/share/bin/bluetooth-menu",
   },
   "custom/bluetooth-audio-device": {
@@ -107,16 +116,19 @@
     "on-click": "~/.local/share/bin/bluetooth-menu",
   },
   "wireplumber": {
-    "format": "VOL {volume}%",
-    "format-muted": "MUT",
+    "format": "<span alpha=\"60%\">VOL</span> {volume}%",
+    "format-muted": "<span alpha=\"60%\">VOL</span> MUT",
     "tooltip-format": "Playing at {volume}%",
+    "markup": "pango",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "scroll-step": 5
   },
   "custom/vpn": {
     "exec": "~/.local/share/bin/vpn-status --waybar",
     "return-type": "json",
-    "interval": 5
+    "interval": 5,
+    "format": "<span alpha=\"60%\">VPN</span> {text}",
+    "markup": "pango"
   },
   "custom/screenrecording-indicator": {
     "on-click": "~/.local/share/bin/screenrecord-menu",

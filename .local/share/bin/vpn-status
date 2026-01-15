@@ -82,13 +82,12 @@ fi
 
 if [[ "$want_waybar" -eq 1 ]]; then
   # Waybar JSON output (no jq dependency).
-  icon="󰖂"
-  text="$icon VPN"
+  text="ON"
   class="$status"
   case "$status" in
     active) tooltip="VPN active (Throne)" ;;
-    inactive) tooltip="VPN inactive" ;;
-    *) text="$icon VPN?"; tooltip="VPN status unknown" ;;
+    inactive) text="OFF"; tooltip="VPN inactive" ;;
+    *) text="UNK"; tooltip="VPN status unknown" ;;
   esac
 
   printf '{"text":"%s","class":"%s","tooltip":"%s"}\n' "$text" "$class" "$tooltip"
