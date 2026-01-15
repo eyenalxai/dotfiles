@@ -77,6 +77,18 @@
   padding-bottom: 1px;
 }
 
+#custom-bluetooth-battery.hidden {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+#custom-bluetooth-battery.hidden * {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
 #tray {
   margin-right: 6px;
 }

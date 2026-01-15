@@ -104,9 +104,10 @@
     "exec": "~/.local/share/bin/bluetooth-battery --waybar",
     "return-type": "json",
     "interval": 10,
-    "format": "{text}",
+    "format": "<span alpha=\"60%\">BT BAT</span> {text}",
     "markup": "pango",
     "on-click": "~/.local/share/bin/bluetooth-menu",
+    "exec-if": "~/.local/share/bin/bluetooth-battery --check"
   },
   "wireplumber": {
     "format": "<span alpha=\"60%\">VOL</span> {volume}%",

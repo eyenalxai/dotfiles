@@ -27,7 +27,7 @@ if [[ -z "$connected_lines" ]]; then
   if [[ "$mode" == "--check" ]]; then
     exit 1
   fi
-  printf '{"text":"","tooltip":"No Bluetooth devices connected","class":"disconnected"}\n'
+  printf '{"text":"","tooltip":"No Bluetooth devices connected","class":"hidden"}\n'
   exit 0
 fi
 
@@ -98,7 +98,7 @@ if (( ${#entries[@]} == 0 )); then
   if [[ "$mode" == "--check" ]]; then
     exit 1
   fi
-  printf '{"text":"","tooltip":"No Bluetooth battery information","class":"connected"}\n'
+  printf '{"text":"","tooltip":"No Bluetooth battery information","class":"hidden"}\n'
   exit 0
 fi
 
@@ -146,7 +146,7 @@ if [[ "$chosen_num" =~ ^[0-9]+$ ]]; then
 fi
 
 # Keep the bar compact: show battery percentage.
-text="<span alpha=\"60%\">BT BAT</span> $chosen_pct"
+text="$chosen_pct"
 
 printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' \
   "$(json_escape "$text")" \
