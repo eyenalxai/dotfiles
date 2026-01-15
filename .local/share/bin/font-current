@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Returns the name of the current monospace font used by Waybar.
+grep -oP 'font-family:\s*["'"'"']?\K[^;"'"'"']+' "$HOME/.config/waybar/style.css" | head -n1

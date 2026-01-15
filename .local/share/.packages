@@ -108,6 +108,7 @@ reflector
 satty
 sddm
 seafile-client
+shellcheck
 shfmt
 slurp
 smartmontools

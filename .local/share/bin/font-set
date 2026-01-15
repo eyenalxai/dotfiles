@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Set the system-wide monospace font that should be used by the terminal, hyprlock, waybar, swayosd, etc.
+# The font name must be one of the ones returned by font-list.
+
+font_name="${1:-}"
+
+if [[ -n "$font_name" ]]; then
+  if fc-list | grep -iq "$font_name"; then
+    if [[ -f "$HOME/.config/ghostty/config" ]]; then
+      sed -i "s/font-family = \".*\"/font-family = \"$font_name\"/g" "$HOME/.config/ghostty/config"
+      pkill -SIGUSR2 ghostty
+    fi
+
+    if [[ -f "$HOME/.config/hypr/hyprlock.conf" ]]; then
+      sed -i "s/font_family = .*/font_family = $font_name/g" "$HOME/.config/hypr/hyprlock.conf"
+    fi
+
+    if [[ -f "$HOME/.config/waybar/style.css" ]]; then
+      sed -i "s/font-family: .*/font-family: '$font_name';/g" "$HOME/.config/waybar/style.css"
+    fi
+
+    if [[ -f "$HOME/.config/swayosd/style.css" ]]; then
+      sed -i "s/font-family: .*/font-family: '$font_name';/g" "$HOME/.config/swayosd/style.css"
+    fi
+
+    if [[ -f "$HOME/.config/walker/themes/system-theme/style.css" ]]; then
+      sed -i "s/font-family: .*/font-family: '$font_name';/g" "$HOME/.config/walker/themes/system-theme/style.css"
+    fi
+
+    if [[ -f "$HOME/.config/fontconfig/fonts.conf" ]]; then
+      xmlstarlet ed -L \
+        -u '//match[@target="pattern"][test/string="monospace"]/edit[@name="family"]/string' \
+        -v "$font_name" \
+        "$HOME/.config/fontconfig/fonts.conf"
+    fi
+
+    if pgrep -x waybar >/dev/null; then
+      pkill -SIGUSR2 waybar 2>/dev/null
+    fi
+
+    if pgrep -x swayosd-server >/dev/null; then
+      pkill -x swayosd-server
+      setsid uwsm-app -- swayosd-server >/dev/null 2>&1 &
+    fi
+
+    if pgrep -x ghostty >/dev/null; then
+      notify-send "    You must restart Ghostty to see font change"
+    fi
+  else
+    echo "Font '$font_name' not found."
+    exit 1
+  fi
+else
+  echo "Usage: font-set <font-name>"
+fi

@@ -4,11 +4,14 @@ set -euo pipefail
 
 THEME_DIR="$HOME/.config/theme"
 THEMES_DIR="$THEME_DIR/themes"
+THEME_SET="$HOME/.local/share/bin/theme-set"
+FONT_SET="$HOME/.local/share/bin/font-set"
+FONT_LIST="$HOME/.local/share/bin/font-list"
 
 error_notify() {
   local msg="$1"
   if command -v notify-send >/dev/null 2>&1; then
-    notify-send "Theme menu error" "$msg" -u critical -t 5000
+    notify-send "Theme menu error" "$msg" -u critical -t 5000 >/dev/null 2>&1 || true
   fi
   printf '%s\n' "$msg" >&2
   exit 1
@@ -22,58 +25,105 @@ require() {
 
 require "walker"
 
-THEME_SET="$HOME/.local/share/bin/theme-set"
 if [[ ! -x "$THEME_SET" ]]; then
   error_notify "Required script not found: $THEME_SET"
+fi
+
+if [[ ! -x "$FONT_SET" ]]; then
+  error_notify "Required script not found: $FONT_SET"
+fi
+
+if [[ ! -x "$FONT_LIST" ]]; then
+  error_notify "Required script not found: $FONT_LIST"
 fi
 
 if [[ ! -d "$THEME_DIR" ]]; then
   error_notify "Theme directory does not exist: ~/.config/theme"
 fi
 
-options=""
-declare -a display_names=()
-declare -a dir_names=()
-for path in "$THEMES_DIR"/*; do
-  [[ -e "$path" ]] || continue
-  name="$(basename "$path")"
+run_menu() {
+  local prompt="$1"
+  printf '%s\n' "$2" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…"
+}
 
-  display="$name"
-  name_file="$path/name"
-  if [[ -f "$name_file" ]]; then
-    display="$(<"$name_file")"
-    display="${display%%$'\n'*}"
+choose_theme() {
+  local options=""
+  local name
+  local name_file
+  local display
+
+  declare -a display_names=()
+  declare -a dir_names=()
+
+  for path in "$THEMES_DIR"/*; do
+    [[ -e "$path" ]] || continue
+    name="$(basename "$path")"
+
+    display="$name"
+    name_file="$path/name"
+    if [[ -f "$name_file" ]]; then
+      display="$(<"$name_file")"
+      display="${display%%$'\n'*}"
+    fi
+
+    display_names+=("$display")
+    dir_names+=("$name")
+    options+="$display"$'\n'
+  done
+
+  if [[ -z "$options" ]]; then
+    error_notify "No themes found in ~/.config/theme/themes."
   fi
 
-  display_names+=("$display")
-  dir_names+=("$name")
-  options+="$display"$'\n'
-done
+  local selection
+  selection="$(run_menu "Theme" "$options")" || exit 0
 
-if [[ -z "$options" ]]; then
-  error_notify "No themes found in ~/.config/theme/themes."
-fi
+  local selected_index=-1
+  for i in "${!display_names[@]}"; do
+    if [[ "${display_names[$i]}" == "$selection" ]]; then
+      selected_index="$i"
+      break
+    fi
+  done
 
-prompt="Theme"
-selection="$(printf '%s\n' "$options" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…")" || exit 0
-
-# Find the directory corresponding to the selected display name
-selected_index=-1
-for i in "${!display_names[@]}"; do
-  if [[ "${display_names[$i]}" == "$selection" ]]; then
-    selected_index="$i"
-    break
+  if [[ "$selected_index" -lt 0 ]]; then
+    error_notify "Unknown theme selected: $selection"
   fi
-done
 
-if [[ "$selected_index" -lt 0 ]]; then
-  error_notify "Unknown theme selected: $selection"
-fi
+  local target="$THEMES_DIR/${dir_names[$selected_index]}"
+  if [[ ! -e "$target" ]]; then
+    error_notify "Selected theme does not exist: $target"
+  fi
 
-TARGET="$THEMES_DIR/${dir_names[$selected_index]}"
+  "$THEME_SET" "${dir_names[$selected_index]}"
+}
 
-if [[ ! -e "$TARGET" ]]; then
-  error_notify "Selected theme does not exist: $TARGET"
-fi
+choose_font() {
+  local options
+  options="$($FONT_LIST)"
 
-"$THEME_SET" "${dir_names[$selected_index]}"
+  if [[ -z "$options" ]]; then
+    error_notify "No fonts available from font-list."
+  fi
+
+  local selection
+  selection="$(run_menu "Font" "$options")" || exit 0
+
+  if [[ -n "$selection" ]]; then
+    "$FONT_SET" "$selection"
+  fi
+}
+
+main_selection="$(run_menu "Mode" $'Theme\nFont')" || exit 0
+
+case "$main_selection" in
+  Theme)
+    choose_theme
+    ;;
+  Font)
+    choose_font
+    ;;
+  *)
+    exit 0
+    ;;
+esac
