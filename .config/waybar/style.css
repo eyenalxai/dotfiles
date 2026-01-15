@@ -1,7 +1,7 @@
 @import "../theme/current/theme/waybar.css";
 
 * {
-  background-color: @background;
+  background-color: transparent;
   color: @foreground;
 
   border: none;
@@ -9,6 +9,10 @@
   min-height: 0;
   font-family: 'Iosevka Nerd Font Mono';
   font-size: 16px;
+}
+
+window {
+  background-color: @background;
 }
 
 .modules-left {
