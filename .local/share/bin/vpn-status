@@ -4,6 +4,7 @@ set -euo pipefail
 VPN_CLIENTS_DEFAULT=(
   "THR:throne-tun"
   "AMN:amn0"
+  "HAP:tun0"
 )
 VPN_CLIENTS_RAW="${VPN_CLIENTS:-}"
 
