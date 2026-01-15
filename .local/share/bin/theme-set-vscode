@@ -3,13 +3,15 @@
 set -euo pipefail
 
 VS_CODE_THEME="$HOME/.config/theme/current/theme/vscode.json"
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+THEME_CMD_PRESENT="$BIN_DIR/theme-cmd-present"
 
 set_theme() {
   local editor_cmd="$1"
   local settings_path="$2"
   local skip_flag="$3"
 
-  theme-cmd-present "$editor_cmd" && [[ ! -f "$skip_flag" ]] || return 0
+  "$THEME_CMD_PRESENT" "$editor_cmd" && [[ ! -f "$skip_flag" ]] || return 0
 
   if [[ -f "$VS_CODE_THEME" ]]; then
     theme_name=$(jq -r '.name' "$VS_CODE_THEME")
