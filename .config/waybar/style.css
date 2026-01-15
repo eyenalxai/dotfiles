@@ -62,8 +62,8 @@
 #network,
 #custom-bluetooth-audio-device,
 #custom-bluetooth-battery {
-  min-width: 12px;
-  margin: 0 6px;
+  min-width: 16px;
+  margin: 0 8px;
 }
 
 #cpu,
@@ -73,8 +73,7 @@
 #wireplumber,
 #language,
 #custom-screenrecording-indicator {
-  border-bottom: 1px solid @color6;
-  padding-bottom: 1px;
+  border-bottom: 1px solid @accent;
 }
 
 #custom-bluetooth-battery.hidden {
