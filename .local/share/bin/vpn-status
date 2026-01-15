@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TUN_DEV="${THRONE_TUN_DEV:-throne-tun}"
+VPN_CLIENTS_DEFAULT=(
+  "THR:throne-tun"
+  "AMN:amn0"
+)
+VPN_CLIENTS_RAW="${VPN_CLIENTS:-}"
+
 ROUTE_TABLE="${THRONE_ROUTE_TABLE:-2022}"
 FWMARK="${THRONE_FWMARK:-0x2023}"
 
@@ -9,12 +14,11 @@ usage() {
   cat <<'EOF'
 Usage: vpn-status [--details] [--json] [--waybar]
 
-Checks whether Throne/Nekoray TUN-mode VPN looks active.
+Checks whether known VPN TUN interfaces are active.
 
 Heuristics:
-- TUN interface exists (default: throne-tun)
-- A policy route table (default: 2022) has default route via that interface
-- Or an ip rule referencing fwmark (default: 0x2023) points to that table
+- Interface exists and is UP
+- Optional Throne-specific policy routes/rules also checked
 
 Exit codes:
   0  active
@@ -22,7 +26,8 @@ Exit codes:
   2  unknown/error
 
 Env overrides:
-  THRONE_TUN_DEV, THRONE_ROUTE_TABLE, THRONE_FWMARK
+  VPN_CLIENTS (comma-separated CODE:IFACE entries)
+  THRONE_ROUTE_TABLE, THRONE_FWMARK
 EOF
 }
 
@@ -45,11 +50,15 @@ have_ip() {
 }
 
 link_exists() {
-  ip link show dev "$TUN_DEV" >/dev/null 2>&1
+  ip link show dev "$1" >/dev/null 2>&1
+}
+
+link_is_up() {
+  ip -o link show dev "$1" 2>/dev/null | grep -Eq "<([^>]*,)?UP(,|>)"
 }
 
 table_default_via_tun() {
-  ip route show table "$ROUTE_TABLE" 2>/dev/null | grep -Eq "^default .* dev ${TUN_DEV}([[:space:]]|$)"
+  ip route show table "$ROUTE_TABLE" 2>/dev/null | grep -Eq "^default .* dev ${1}([[:space:]]|$)"
 }
 
 rule_points_to_table() {
@@ -60,55 +69,111 @@ core_running() {
   pgrep -fa '/usr/lib/throne/(Core|Throne)' >/dev/null 2>&1
 }
 
+parse_clients() {
+  local -a entries=()
+  local raw="$1"
+  local IFS=','
+  if [[ -n "$raw" ]]; then
+    read -ra entries <<<"$raw"
+  else
+    entries=("${VPN_CLIENTS_DEFAULT[@]}")
+  fi
+  printf '%s\n' "${entries[@]}"
+}
+
+active_clients=()
+unknown_clients=()
 status="unknown"
 
 if ! have_ip; then
   status="unknown"
-elif link_exists; then
-  if table_default_via_tun || rule_points_to_table; then
+else
+  while IFS= read -r entry; do
+    [[ -z "$entry" ]] && continue
+    code="${entry%%:*}"
+    iface="${entry#*:}"
+    if [[ -z "$code" || -z "$iface" || "$entry" == "$code" ]]; then
+      unknown_clients+=("${entry:-unknown}")
+      continue
+    fi
+
+    if link_exists "$iface"; then
+      if link_is_up "$iface"; then
+        active_clients+=("$code")
+      else
+        unknown_clients+=("$code")
+      fi
+    fi
+  done < <(parse_clients "$VPN_CLIENTS_RAW")
+
+  if [[ ${#active_clients[@]} -gt 0 ]]; then
+    status="active"
+  elif [[ ${#unknown_clients[@]} -gt 0 ]]; then
+    status="unknown"
+  else
+    status="inactive"
+  fi
+fi
+
+if [[ ${#active_clients[@]} -eq 1 && "${active_clients[0]}" == "THR" ]]; then
+  if table_default_via_tun "throne-tun" || rule_points_to_table || core_running; then
     status="active"
   else
-    # Interface exists but routing rule/table might be different in your setup.
-    # Still report active-ish if the core is running.
-    if core_running; then
-      status="active"
-    else
-      status="inactive"
-    fi
+    status="inactive"
+    active_clients=()
   fi
-else
-  status="inactive"
 fi
 
 if [[ "$want_waybar" -eq 1 ]]; then
   # Waybar JSON output (no jq dependency).
-  text="ON"
-  class="$status"
-  case "$status" in
-    active) tooltip="VPN active (Throne)" ;;
-    inactive) text="OFF"; tooltip="VPN inactive" ;;
-    *) text="UNK"; tooltip="VPN status unknown" ;;
-  esac
+  text="OFF"
+  tooltip="VPN inactive"
 
-  printf '{"text":"%s","class":"%s","tooltip":"%s"}\n' "$text" "$class" "$tooltip"
+  if [[ ${#active_clients[@]} -gt 1 ]]; then
+    text="MULT"
+    tooltip="Multiple VPNs active: ${active_clients[*]}"
+  elif [[ ${#active_clients[@]} -eq 1 ]]; then
+    text="${active_clients[0]}"
+    tooltip="VPN active: ${active_clients[0]}"
+  else
+    case "$status" in
+      inactive) text="OFF"; tooltip="VPN inactive" ;;
+      *) text="UNK"; tooltip="VPN status unknown" ;;
+    esac
+  fi
+
+  printf '{"text":"%s","tooltip":"%s"}\n' "$text" "$tooltip"
 elif [[ "$want_json" -eq 1 ]]; then
   # Minimal JSON without jq dependency.
-  printf '{"status":"%s","tun":"%s","table":%s,"fwmark":"%s"}\n' "$status" "$TUN_DEV" "$ROUTE_TABLE" "$FWMARK"
+  active_list="${active_clients[*]}"
+  printf '{"status":"%s","active":"%s","table":%s,"fwmark":"%s"}\n' "$status" "$active_list" "$ROUTE_TABLE" "$FWMARK"
 else
   echo "$status"
 fi
 
 if [[ "$want_details" -eq 1 ]]; then
-  echo "tun_dev=$TUN_DEV" >&2
+  echo "clients=${VPN_CLIENTS_RAW:-default}" >&2
   echo "route_table=$ROUTE_TABLE" >&2
   echo "fwmark=$FWMARK" >&2
-  ip -o link show dev "$TUN_DEV" 2>/dev/null || true
+  if [[ ${#active_clients[@]} -gt 0 ]]; then
+    printf 'active=%s\n' "${active_clients[*]}" >&2
+  fi
+  if [[ ${#unknown_clients[@]} -gt 0 ]]; then
+    printf 'unknown=%s\n' "${unknown_clients[*]}" >&2
+  fi
+  for entry in $(parse_clients "$VPN_CLIENTS_RAW"); do
+    iface="${entry#*:}"
+    [[ -n "$iface" ]] && ip -o link show dev "$iface" 2>/dev/null || true
+  done
   ip route show table "$ROUTE_TABLE" 2>/dev/null || true
   ip rule show 2>/dev/null | grep -E "fwmark ${FWMARK}|lookup ${ROUTE_TABLE}" || true
 fi
 
+if [[ ${#active_clients[@]} -gt 0 ]]; then
+  exit 0
+fi
+
 case "$status" in
-  active) exit 0 ;;
   inactive) exit 1 ;;
   *) exit 2 ;;
 esac
