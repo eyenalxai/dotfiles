@@ -3,8 +3,10 @@
 set -euo pipefail
 
 CHROMIUM_THEME="$HOME/.config/theme/current/theme/chromium.theme"
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+THEME_CMD_PRESENT="$BIN_DIR/theme-cmd-present"
 
-if theme-cmd-present chromium || theme-cmd-present helium-browser || theme-cmd-present brave; then
+if "$THEME_CMD_PRESENT" chromium || "$THEME_CMD_PRESENT" helium-browser || "$THEME_CMD_PRESENT" brave; then
   if [[ -f "$CHROMIUM_THEME" ]]; then
     THEME_RGB_COLOR=$(<"$CHROMIUM_THEME")
     THEME_RGB_COLOR=${THEME_RGB_COLOR//,/ }
@@ -15,7 +17,7 @@ if theme-cmd-present chromium || theme-cmd-present helium-browser || theme-cmd-p
     THEME_HEX_COLOR="#1c2027"
   fi
 
-  if theme-cmd-present chromium; then
+  if "$THEME_CMD_PRESENT" chromium; then
     sudo rm -f /etc/chromium/policies/managed/color.json
     chromium --no-startup-window --set-theme-color="$THEME_RGB_COLOR" >/dev/null
 
@@ -26,7 +28,7 @@ if theme-cmd-present chromium || theme-cmd-present helium-browser || theme-cmd-p
     fi
   fi
 
-  if theme-cmd-present brave; then
+  if "$THEME_CMD_PRESENT" brave; then
     echo "{\"BrowserThemeColor\": \"$THEME_HEX_COLOR\"}" | sudo tee "/etc/brave/policies/managed/color.json" >/dev/null
     brave --refresh-platform-policy --no-startup-window >/dev/null
   fi
