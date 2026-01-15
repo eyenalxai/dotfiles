@@ -58,25 +58,17 @@
 #custom-screenrecording-indicator,
 #custom-update,
 #custom-vpn,
-#language {
+#language,
+#network,
+#bluetooth,
+#custom-bluetooth-audio-device,
+#custom-bluetooth-battery {
   min-width: 12px;
-  margin: 0 15px;
+  margin: 0 6px;
 }
 
 #tray {
-  margin-right: 16px;
-}
-
-#bluetooth {
-  margin-right: 4px;
-}
-
-#custom-bluetooth-audio-device {
-  margin-right: 7.5px;
-}
-
-#custom-bluetooth-battery {
-  margin-right: 15px;
+  margin-right: 6px;
 }
 
 #custom-bluetooth-battery.low {
@@ -87,14 +79,6 @@
   color: #a55555;
 }
 
-#network {
-  margin-right: 13px;
-}
-
-#custom-expand-icon {
-  margin-right: 18px;
-}
-
 tooltip {
   padding: 2px;
 }
@@ -103,8 +87,8 @@ tooltip {
   font-size: 10px;
 }
 
-#clock {
-  margin-left: 8.75px;
+#custom-clock {
+  margin-left: 6px;
 }
 
 .hidden {
@@ -113,7 +97,7 @@ tooltip {
 
 #custom-screenrecording-indicator {
   min-width: 12px;
-  margin-left: 8.75px;
+  margin-left: 6px;
   font-size: 10px;
 }
 
