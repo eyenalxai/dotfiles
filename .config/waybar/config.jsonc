@@ -9,7 +9,6 @@
   "modules-right": [
     "cpu",
     "memory",
-    "bluetooth",
     "custom/bluetooth-audio-device",
     "custom/bluetooth-battery",
     "custom/vpn",
@@ -106,6 +105,8 @@
     "exec": "~/.local/share/bin/bluetooth-audio-device",
     "return-type": "json",
     "interval": 5,
+    "format": "<span alpha=\"60%\">BT</span> {text}",
+    "markup": "pango",
     "on-click": "~/.local/share/bin/bluetooth-menu",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
   },
@@ -113,6 +114,8 @@
     "exec": "~/.local/share/bin/bluetooth-battery --waybar",
     "return-type": "json",
     "interval": 10,
+    "format": "<span alpha=\"60%\">BT BAT</span> {text}",
+    "markup": "pango",
     "on-click": "~/.local/share/bin/bluetooth-menu",
   },
   "wireplumber": {

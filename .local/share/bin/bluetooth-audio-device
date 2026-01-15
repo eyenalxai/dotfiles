@@ -12,25 +12,26 @@ json_escape() {
 
 inspect="$(wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null || true)"
 
-if [[ -z "$inspect" ]]; then
-  printf '{"text":"","class":"unknown"}\n'
-  exit 0
+if [[ -n "$inspect" ]] && grep -q 'device.api = "bluez5"' <<<"$inspect"; then
+  name="$(grep -m1 -oP 'node\.description = "\K[^"]+' <<<"$inspect" || true)"
+  if [[ -z "$name" ]]; then
+    name="$(grep -m1 -oP 'media\.name = "\K[^"]+' <<<"$inspect" || true)"
+  fi
 fi
 
-if ! grep -q 'device.api = "bluez5"' <<<"$inspect"; then
-  printf '{"text":"","class":"not-bt"}\n'
-  exit 0
+if [[ -z "${name-}" ]]; then
+  connected="$(bluetoothctl devices Connected 2>/dev/null | head -n 1)"
+  if [[ -n "$connected" ]]; then
+    name="${connected#Device * }"
+  fi
 fi
 
-name="$(grep -m1 -oP 'node\.description = "\K[^"]+' <<<"$inspect" || true)"
-if [[ -z "$name" ]]; then
-  name="$(grep -m1 -oP 'media\.name = "\K[^"]+' <<<"$inspect" || true)"
-fi
-if [[ -z "$name" ]]; then
-  name="Bluetooth Audio"
+if [[ -z "${name-}" ]]; then
+  printf '{"text":"","class":"disconnected"}\n'
+  exit 0
 fi
 
 text="$(json_escape "$name")"
-tooltip="$(json_escape "Bluetooth audio: $name")"
+tooltip="$(json_escape "Bluetooth: $name")"
 
 printf '{"text":"%s","class":"connected","tooltip":"%s"}\n' "$text" "$tooltip"
