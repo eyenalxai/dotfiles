@@ -47,9 +47,7 @@ if pgrep -x btop >/dev/null; then
   pkill -SIGUSR2 btop 2>/dev/null
 fi
 
-if pgrep -f "walker --gapplication-service" >/dev/null; then
-  pkill -SIGUSR2 walker 2>/dev/null
-fi
+theme-restart-walker
 
 theme-set-gnome
 theme-set-browser
