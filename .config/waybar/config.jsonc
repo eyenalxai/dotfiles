@@ -68,7 +68,7 @@
   "custom/clock": {
     "exec": "~/.local/share/bin/waybar-clock",
     "return-type": "json",
-    "interval": 60,
+    "interval": 30,
     "tooltip": false
   },
   "network": {
