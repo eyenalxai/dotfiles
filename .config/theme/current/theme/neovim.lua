@@ -1,9 +1,9 @@
 return {
-  { "tahayvr/matteblack.nvim", lazy = false, priority = 1000 },
-  {
+	{ "ellisonleao/gruvbox.nvim" },
+	{
 		"LazyVim/LazyVim",
 		opts = {
-			colorscheme = "matteblack",
+			colorscheme = "gruvbox",
 		},
 	},
 }

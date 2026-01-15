@@ -66,6 +66,17 @@
   margin: 0 6px;
 }
 
+#cpu,
+#network,
+#custom-bluetooth-audio-device,
+#custom-bluetooth-battery,
+#wireplumber,
+#language,
+#custom-screenrecording-indicator {
+  border-bottom: 1px solid alpha(@foreground, 0.6);
+  padding-bottom: 1px;
+}
+
 #tray {
   margin-right: 6px;
 }

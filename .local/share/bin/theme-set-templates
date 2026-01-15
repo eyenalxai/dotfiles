@@ -2,10 +2,24 @@
 
 set -euo pipefail
 
-TEMPLATES_DIR="$THEME_PATH/default/themed"
 USER_TEMPLATES_DIR="$HOME/.config/theme/themed"
 NEXT_THEME_DIR="$HOME/.config/theme/current/next-theme"
 COLORS_FILE="$NEXT_THEME_DIR/colors.toml"
+
+TEMPLATES_DIR=""
+if [[ -n "${THEME_PATH:-}" ]]; then
+  TEMPLATES_DIR="$THEME_PATH/default/themed"
+elif [[ -f "$NEXT_THEME_DIR/theme.name" ]]; then
+  current_theme=$(<"$NEXT_THEME_DIR/theme.name")
+  if [[ -n "$current_theme" ]]; then
+    TEMPLATES_DIR="$HOME/.config/theme/themes/$current_theme/default/themed"
+  fi
+elif [[ -f "$HOME/.config/theme/current/theme.name" ]]; then
+  current_theme=$(<"$HOME/.config/theme/current/theme.name")
+  if [[ -n "$current_theme" ]]; then
+    TEMPLATES_DIR="$HOME/.config/theme/themes/$current_theme/default/themed"
+  fi
+fi
 
 hex_to_rgb() {
   local hex="${1#\#}"
@@ -28,7 +42,7 @@ if [[ -f "$COLORS_FILE" ]]; then
 
   shopt -s nullglob
 
-  for tpl in "$USER_TEMPLATES_DIR"/*.tpl "$TEMPLATES_DIR"/*.tpl; do
+  for tpl in "$USER_TEMPLATES_DIR"/*.tpl ${TEMPLATES_DIR:+"$TEMPLATES_DIR"/*.tpl}; do
     filename=$(basename "$tpl" .tpl)
     output_path="$NEXT_THEME_DIR/$filename"
 

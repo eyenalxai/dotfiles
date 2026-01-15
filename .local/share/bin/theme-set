@@ -10,7 +10,7 @@ fi
 CURRENT_THEME_PATH="$HOME/.config/theme/current/theme"
 NEXT_THEME_PATH="$HOME/.config/theme/current/next-theme"
 USER_THEMES_PATH="$HOME/.config/theme/themes"
-SYSTEM_THEMES_PATH="$THEME_PATH/themes"
+SYSTEM_THEMES_PATH="/usr/share/themes"
 
 THEME_NAME=$(echo "$1" | sed -E 's/<[^>]+>//g' | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 

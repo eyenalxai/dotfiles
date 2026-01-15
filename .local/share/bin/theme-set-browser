@@ -7,7 +7,8 @@ CHROMIUM_THEME="$HOME/.config/theme/current/theme/chromium.theme"
 if theme-cmd-present chromium || theme-cmd-present helium-browser || theme-cmd-present brave; then
   if [[ -f "$CHROMIUM_THEME" ]]; then
     THEME_RGB_COLOR=$(<"$CHROMIUM_THEME")
-    IFS=, read -r red green blue <<<"${THEME_RGB_COLOR//,/ }"
+    THEME_RGB_COLOR=${THEME_RGB_COLOR//,/ }
+    read -r red green blue <<<"$THEME_RGB_COLOR"
     THEME_HEX_COLOR=$(printf '#%02x%02x%02x' "$red" "$green" "$blue")
   else
     THEME_RGB_COLOR="28,32,39"

@@ -1,5 +1,5 @@
 {
-    "workbench.colorTheme": "Matte Black",
+    "workbench.colorTheme": "Gruvbox Dark Medium",
     "window.commandCenter": true,
     "[typescript]": {
         "editor.defaultFormatter": "biomejs.biome"
