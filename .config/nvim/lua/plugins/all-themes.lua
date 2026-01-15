@@ -7,6 +7,21 @@ return {
     priority = 1000,
   },
   {
+    "bjarneo/aether.nvim",
+    lazy = true,
+    priority = 1000,
+  },
+  {
+    "bjarneo/ethereal.nvim",
+    lazy = true,
+    priority = 1000,
+  },
+  {
+    "bjarneo/hackerman.nvim",
+    lazy = true,
+    priority = 1000,
+  },
+  {
     "catppuccin/nvim",
     name = "catppuccin",
     lazy = true,

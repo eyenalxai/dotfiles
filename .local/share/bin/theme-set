@@ -56,3 +56,10 @@ fi
 "$BIN_DIR/theme-set-browser"
 "$BIN_DIR/theme-set-vscode"
 "$BIN_DIR/theme-set-obsidian"
+
+# Hot-reload Neovim theme if servers are running
+if ls /run/user/1000/nvim.* >/dev/null 2>&1; then
+  for server in /run/user/1000/nvim.*; do
+    nvim --server "$server" --remote-expr 'execute("doautocmd User LazyReload")' >/dev/null 2>&1 || true
+  done
+fi
