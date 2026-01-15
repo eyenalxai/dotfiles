@@ -75,9 +75,12 @@ window {
 #custom-bluetooth-audio-device,
 #custom-bluetooth-battery,
 #wireplumber,
-#language,
-#custom-screenrecording-indicator {
+#language {
   border-bottom: 1px solid @accent;
+}
+
+#custom-screenrecording-indicator {
+  border-bottom: 1px solid @color1;
 }
 
 #custom-bluetooth-battery.hidden {
@@ -106,6 +109,9 @@ window {
 
 tooltip {
   padding: 2px;
+  background-color: @background;
+  color: @foreground;
+  border: 1px solid @accent;
 }
 
 #custom-update {
@@ -120,26 +126,5 @@ tooltip {
   opacity: 0;
 }
 
-#custom-screenrecording-indicator {
-  min-width: 12px;
-  margin-left: 6px;
-  font-size: 10px;
-}
-
-#custom-screenrecording-indicator.active {
-  color: #a55555;
-}
-
-#custom-vpn.active {
-  color: #55a555;
-}
-
-#custom-vpn.inactive {
-  opacity: 0.5;
-}
-
-#custom-vpn.unknown {
-  color: #a5a555;
-}
 
 
