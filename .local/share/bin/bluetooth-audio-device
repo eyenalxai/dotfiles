@@ -27,7 +27,7 @@ if [[ -z "${name-}" ]]; then
 fi
 
 if [[ -z "${name-}" ]]; then
-  printf '{"text":"","class":"disconnected"}\n'
+  printf '{"text":"EMPT","class":"disconnected"}\n'
   exit 0
 fi
 

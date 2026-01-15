@@ -36,12 +36,12 @@
  * - button.hosting-monitor: workspace belongs to this bar's output
  */
 #workspaces button.hosting-monitor.active {
-  border-bottom: 2px solid @workspace_focused;
+  border-bottom: 2px solid @accent;
   opacity: 1;
 }
 
 #workspaces button.hosting-monitor.visible {
-  border-bottom: 2px solid @workspace_visible;
+  border-bottom: 2px solid @color8;
   opacity: 0.85;
 }
 
@@ -73,7 +73,7 @@
 #wireplumber,
 #language,
 #custom-screenrecording-indicator {
-  border-bottom: 1px solid alpha(@foreground, 0.6);
+  border-bottom: 1px solid @color6;
   padding-bottom: 1px;
 }
 

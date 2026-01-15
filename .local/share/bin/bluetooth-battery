@@ -145,8 +145,8 @@ if [[ "$chosen_num" =~ ^[0-9]+$ ]]; then
   fi
 fi
 
-# Keep the bar compact: show battery icon + percentage.
-text="$chosen_pct"
+# Keep the bar compact: show battery percentage.
+text="<span alpha=\"60%\">BT BAT</span> $chosen_pct"
 
 printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' \
   "$(json_escape "$text")" \
