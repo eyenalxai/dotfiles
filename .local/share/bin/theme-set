@@ -11,6 +11,7 @@ CURRENT_THEME_PATH="$HOME/.config/theme/current/theme"
 NEXT_THEME_PATH="$HOME/.config/theme/current/next-theme"
 USER_THEMES_PATH="$HOME/.config/theme/themes"
 SYSTEM_THEMES_PATH="/usr/share/themes"
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 THEME_NAME=$(echo "$1" | sed -E 's/<[^>]+>//g' | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 
@@ -28,14 +29,14 @@ mkdir -p "$NEXT_THEME_PATH"
 
 cp -r "$THEME_PATH/"* "$NEXT_THEME_PATH/" 2>/dev/null
 
-theme-set-templates
+"$BIN_DIR/theme-set-templates"
 
 rm -rf "$CURRENT_THEME_PATH"
 mv "$NEXT_THEME_PATH" "$CURRENT_THEME_PATH"
 
 echo "$THEME_NAME" > "$HOME/.config/theme/current/theme.name"
 
-theme-bg-next
+"$BIN_DIR/theme-bg-next"
 
 if pgrep -x waybar >/dev/null; then
   pkill -SIGUSR2 waybar 2>/dev/null
@@ -49,9 +50,9 @@ if pgrep -x btop >/dev/null; then
   pkill -SIGUSR2 btop 2>/dev/null
 fi
 
-theme-restart-walker
+"$BIN_DIR/theme-restart-walker"
 
-theme-set-gnome
-theme-set-browser
-theme-set-vscode
-theme-set-obsidian
+"$BIN_DIR/theme-set-gnome"
+"$BIN_DIR/theme-set-browser"
+"$BIN_DIR/theme-set-vscode"
+"$BIN_DIR/theme-set-obsidian"
