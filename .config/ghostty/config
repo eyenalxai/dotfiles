@@ -4,7 +4,7 @@ config-file = ?"~/.config/theme/current/theme/ghostty.conf"
 # Font
 font-family = "Iosevka Nerd Font Mono"
 font-style = Regular
-font-size = 13
+font-size = 14
 
 # Window
 window-padding-x = 14
