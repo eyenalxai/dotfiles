@@ -22,7 +22,11 @@ require() {
 }
 
 require "walker"
-require "theme-set"
+
+THEME_SET="$HOME/.local/share/bin/theme-set"
+if [[ ! -x "$THEME_SET" ]]; then
+  error_notify "Required script not found: $THEME_SET"
+fi
 
 if [[ ! -d "$THEME_DIR" ]]; then
   error_notify "Theme directory does not exist: ~/.config/theme"
@@ -73,4 +77,4 @@ if [[ ! -e "$TARGET" ]]; then
   error_notify "Selected theme does not exist: $TARGET"
 fi
 
-theme-set "${dir_names[$selected_index]}"
+"$THEME_SET" "${dir_names[$selected_index]}"
