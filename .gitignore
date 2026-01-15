@@ -1,2 +1,4 @@
 .config/theme/themes/**/backgrounds/**
 .config/theme/themes/**/preview.png
+.config/theme/current/theme/backgrounds/**
+.config/theme/current/theme/preview.png
