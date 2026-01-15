@@ -1,7 +1,7 @@
 force_keyboard_focus = true
 selection_wrap = true
 theme = "walker-theme"
-additional_theme_location = "~/.config/theme/current"
+additional_theme_location = "~/.config/theme/current/theme"
 hide_action_hints = true                                                    # globally hide the action hints
 
 [placeholders]

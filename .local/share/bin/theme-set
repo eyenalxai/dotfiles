@@ -1,0 +1,57 @@
+#!/bin/bash
+
+if [[ -z $1 ]]; then
+  echo "Usage: theme-set <theme-name>"
+  exit 1
+fi
+
+CURRENT_THEME_PATH="$HOME/.config/theme/current/theme"
+NEXT_THEME_PATH="$HOME/.config/theme/current/next-theme"
+USER_THEMES_PATH="$HOME/.config/theme/themes"
+SYSTEM_THEMES_PATH="$THEME_PATH/themes"
+
+THEME_NAME=$(echo "$1" | sed -E 's/<[^>]+>//g' | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+
+if [[ -d "$USER_THEMES_PATH/$THEME_NAME" ]]; then
+  THEME_PATH="$USER_THEMES_PATH/$THEME_NAME"
+elif [[ -d "$SYSTEM_THEMES_PATH/$THEME_NAME" ]]; then
+  THEME_PATH="$SYSTEM_THEMES_PATH/$THEME_NAME"
+else
+  echo "Theme '$THEME_NAME' does not exist"
+  exit 1
+fi
+
+rm -rf "$NEXT_THEME_PATH"
+mkdir -p "$NEXT_THEME_PATH"
+
+cp -r "$THEME_PATH/"* "$NEXT_THEME_PATH/" 2>/dev/null
+
+theme-set-templates
+
+rm -rf "$CURRENT_THEME_PATH"
+mv "$NEXT_THEME_PATH" "$CURRENT_THEME_PATH"
+
+echo "$THEME_NAME" > "$HOME/.config/theme/current/theme.name"
+
+theme-bg-next
+
+if pgrep -x waybar >/dev/null; then
+  pkill -SIGUSR2 waybar 2>/dev/null
+fi
+
+if pgrep -x mako >/dev/null; then
+  pkill -SIGUSR1 mako 2>/dev/null
+fi
+
+if pgrep -x btop >/dev/null; then
+  pkill -SIGUSR2 btop 2>/dev/null
+fi
+
+if pgrep -f "walker --gapplication-service" >/dev/null; then
+  pkill -SIGUSR2 walker 2>/dev/null
+fi
+
+theme-set-gnome
+theme-set-browser
+theme-set-vscode
+theme-set-obsidian

@@ -3,7 +3,8 @@
 set -euo pipefail
 
 THEME_DIR="$HOME/.config/theme"
-CURRENT_LINK="$THEME_DIR/current"
+THEMES_DIR="$THEME_DIR/themes"
+CURRENT_LINK="$THEME_DIR/current/theme"
 
 error_notify() {
   local msg="$1"
@@ -21,8 +22,7 @@ require() {
 }
 
 require "walker"
-require "uwsm"
-require "swaybg"
+require "theme-set"
 
 if [[ ! -d "$THEME_DIR" ]]; then
   error_notify "Theme directory does not exist: ~/.config/theme"
@@ -31,10 +31,9 @@ fi
 options=""
 declare -a display_names=()
 declare -a dir_names=()
-for path in "$THEME_DIR"/*; do
+for path in "$THEMES_DIR"/*; do
   [[ -e "$path" ]] || continue
   name="$(basename "$path")"
-  [[ "$name" == "current" ]] && continue
 
   display="$name"
   name_file="$path/name"
@@ -49,7 +48,7 @@ for path in "$THEME_DIR"/*; do
 done
 
 if [[ -z "$options" ]]; then
-  error_notify "No themes found in ~/.config/theme (excluding \"current\")."
+  error_notify "No themes found in ~/.config/theme/themes."
 fi
 
 prompt="Theme"
@@ -68,55 +67,10 @@ if [[ "$selected_index" -lt 0 ]]; then
   error_notify "Unknown theme selected: $selection"
 fi
 
-TARGET="$THEME_DIR/${dir_names[$selected_index]}"
+TARGET="$THEMES_DIR/${dir_names[$selected_index]}"
 
 if [[ ! -e "$TARGET" ]]; then
   error_notify "Selected theme does not exist: $TARGET"
 fi
 
-if [[ -L "$CURRENT_LINK" || -e "$CURRENT_LINK" ]]; then
-  rm -f "$CURRENT_LINK"
-fi
-
-ln -s "$TARGET" "$CURRENT_LINK"
-
-MODE_FILE="$TARGET/mode"
-if [[ -f "$MODE_FILE" ]]; then
-  mode_content="$(<"$MODE_FILE")"
-  mode_lc="${mode_content,,}"
-  if [[ "$mode_lc" == *dark* ]]; then
-    gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"
-    gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
-  elif [[ "$mode_lc" == *light* ]]; then
-    gsettings set org.gnome.desktop.interface gtk-theme "Adwaita"
-    gsettings set org.gnome.desktop.interface color-scheme "prefer-light"
-  fi
-fi
-
-ICON_FILE="$TARGET/icons"
-if [[ -f "$ICON_FILE" ]]; then
-  icon_theme="$(<"$ICON_FILE")"
-  icon_theme="${icon_theme%%$'\n'*}"
-  if [[ -n "$icon_theme" ]]; then
-    gsettings set org.gnome.desktop.interface icon-theme "$icon_theme"
-  fi
-fi
-
-if [[ ! -x "$HOME/.local/share/bin/code-cursor-theme" ]]; then
-  error_notify "Required script not found: ~/.local/share/bin/code-cursor-theme"
-fi
-
-~/.local/share/bin/code-cursor-theme
-
-# Restart swaybg with the new background
-pkill -x swaybg 2>/dev/null || true
-uwsm app -- swaybg -i "$HOME/.config/theme/current/background.webp" >/dev/null 2>&1 &
-
-# Reload user units so any systemd user services
-# can pick up changed unit files.
-if ! systemctl --user daemon-reload; then
-  error_notify "Failed to run: systemctl --user daemon-reload"
-fi
-
-# Stop mako so it does not keep running with the old theme
-pkill -x mako 2>/dev/null || true
+theme-set "${dir_names[$selected_index]}"

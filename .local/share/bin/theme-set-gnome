@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [[ -f "$HOME/.config/theme/current/theme/light.mode" ]]; then
+  gsettings set org.gnome.desktop.interface color-scheme "prefer-light"
+  gsettings set org.gnome.desktop.interface gtk-theme "Adwaita"
+else
+  gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
+  gsettings set org.gnome.desktop.interface gtk-theme "Adwaita-dark"
+fi
+
+GNOME_ICONS_THEME="$HOME/.config/theme/current/theme/icons.theme"
+if [[ -f $GNOME_ICONS_THEME ]]; then
+  gsettings set org.gnome.desktop.interface icon-theme "$(<$GNOME_ICONS_THEME)"
+else
+  gsettings set org.gnome.desktop.interface icon-theme "Yaru-blue"
+fi

@@ -1,5 +1,5 @@
 # Dynamic theme colors
-config-file = ?"~/.config/theme/current/ghostty.conf"
+config-file = ?"~/.config/theme/current/theme/ghostty.conf"
 
 # Font
 font-family = "JetBrainsMono Nerd Font Mono"
