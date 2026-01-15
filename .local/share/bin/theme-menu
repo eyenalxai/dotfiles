@@ -4,7 +4,6 @@ set -euo pipefail
 
 THEME_DIR="$HOME/.config/theme"
 THEMES_DIR="$THEME_DIR/themes"
-CURRENT_LINK="$THEME_DIR/current/theme"
 
 error_notify() {
   local msg="$1"

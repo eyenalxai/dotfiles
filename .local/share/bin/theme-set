@@ -1,6 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-if [[ -z $1 ]]; then
+set -euo pipefail
+
+if [[ -z ${1:-} ]]; then
   echo "Usage: theme-set <theme-name>"
   exit 1
 fi

@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -euo pipefail
 
 for cmd in "$@"; do
   command -v "$cmd" &>/dev/null || exit 1

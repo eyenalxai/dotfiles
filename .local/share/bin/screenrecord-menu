@@ -92,17 +92,19 @@ start_recording() {
   window)
     require "slurp"
     local region
-    if command -v hyprctl >/dev/null 2>&1; then
-      require "jq"
-      if ! region=$(hyprctl clients -j | jq --argjson active $(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]') '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp -f "%wx%h+%x+%y"); then
-        return 1
+      if command -v hyprctl >/dev/null 2>&1; then
+        require "jq"
+        active_workspaces=$(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]')
+        if ! region=$(hyprctl clients -j | jq --argjson active "$active_workspaces" '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp -f "%wx%h+%x+%y"); then
+          return 1
+        fi
+      else
+        # Fallback to manual region selection if no supported compositor integration is found
+        if ! region=$(slurp -f "%wx%h+%x+%y"); then
+          return 1
+        fi
       fi
-    else
-      # Fallback to manual region selection if no supported compositor integration is found
-      if ! region=$(slurp -f "%wx%h+%x+%y"); then
-        return 1
-      fi
-    fi
+
     w_value="region"
     region_args=(-region "$region")
     ;;

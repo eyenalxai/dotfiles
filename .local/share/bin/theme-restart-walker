@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -euo pipefail
 
 restart_services() {
   if systemctl --user is-enabled elephant.service &>/dev/null; then

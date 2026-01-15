@@ -80,7 +80,8 @@ case "$mode" in
     require "slurp"
     if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
       # Mirror window selection logic from screenrecord-menu
-      if ! region=$(hyprctl clients -j | jq --argjson active $(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]') '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp); then
+      active_workspaces=$(hyprctl monitors -j | jq -c '[.[].activeWorkspace.id]')
+      if ! region=$(hyprctl clients -j | jq --argjson active "$active_workspaces" '.[] | select((.hidden | not) and (.workspace.id as $id | $active | contains([$id]))) | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' -r | slurp); then
         # Selection cancelled or slurp failed; treat as non-error
         exit 0
       fi

@@ -65,7 +65,7 @@ while IFS= read -r line; do
 
   # Format: "Device AA:BB:CC:DD:EE:FF Name With Spaces"
   mac="$(awk '{print $2}' <<<"$line")"
-  name="${line#Device $mac }"
+  name="${line#Device "$mac" }"
   key="${mac//:/_}"
 
   pct="${upower_pct[$key]-}"
@@ -107,9 +107,7 @@ if [[ "$mode" == "--check" ]]; then
 fi
 
 # Choose the lowest battery to display (most useful at a glance).
-chosen_name=""
 chosen_pct=""
-chosen_state=""
 chosen_num=101
 
 tooltip_lines=()
@@ -120,16 +118,12 @@ for e in "${entries[@]}"; do
   if [[ "$num" =~ ^[0-9]+$ ]]; then
     if (( num < chosen_num )); then
       chosen_num="$num"
-      chosen_name="$ename"
       chosen_pct="$epct"
-      chosen_state="$estate"
     fi
   else
     # If we can't parse a number, still allow a pick.
     if [[ -z "$chosen_pct" ]]; then
-      chosen_name="$ename"
       chosen_pct="$epct"
-      chosen_state="$estate"
     fi
   fi
 
