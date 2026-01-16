@@ -50,6 +50,11 @@ if pgrep -x btop >/dev/null; then
   pkill -SIGUSR2 btop 2>/dev/null
 fi
 
+if pgrep -x swayosd-server >/dev/null; then
+  pkill -x swayosd-server
+  setsid uwsm-app -- swayosd-server >/dev/null 2>&1 &
+fi
+
 "$BIN_DIR/theme-restart-walker"
 
 "$BIN_DIR/theme-set-gnome"
