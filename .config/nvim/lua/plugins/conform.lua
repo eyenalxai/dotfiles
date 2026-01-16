@@ -4,7 +4,7 @@ return {
     formatters_by_ft = {
       strdl = { "oxfmt" },
 
-      -- Prefer oxfmt; fall back to Biome if available.
+      -- Prefer oxfmt, fall back to Biome.
       javascript = { "oxfmt", "biome" },
       javascriptreact = { "oxfmt", "biome" },
       typescript = { "oxfmt", "biome" },
