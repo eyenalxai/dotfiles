@@ -1,0 +1,3 @@
+[mgr]
+# Show hidden files and folders by default
+show_hidden = true
