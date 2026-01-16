@@ -9,6 +9,8 @@ case "$(uname -s)" in
     source_if_exists /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     source_if_exists /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
     source_if_exists /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+    export COPYFILE_DISABLE=1
+    export TAR_OPTIONS="--no-xattrs"
     ;;
   Linux)
     source_if_exists /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
