@@ -12,3 +12,6 @@ vim.keymap.set({ "n", "v" }, "c", '"_c', { desc = "Change without yanking" })
 vim.keymap.set({ "n", "v" }, "C", '"_C', { desc = "Change to end of line without yanking" })
 vim.keymap.set({ "n", "v" }, "s", '"_s', { desc = "Substitute without yanking" })
 vim.keymap.set({ "n", "v" }, "S", '"_S', { desc = "Substitute line without yanking" })
+
+-- Show diagnostics under cursor
+vim.keymap.set("n", "<leader>cd", vim.diagnostic.open_float, { desc = "Line diagnostics" })
