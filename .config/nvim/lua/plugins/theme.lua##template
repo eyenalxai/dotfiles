@@ -1,0 +1,1 @@
+return dofile("{{ env.HOME }}/.config/theme/current/theme/neovim.lua")
