@@ -17,14 +17,14 @@ case "$(uname -s)" in
     ;;
 esac
 
-case "$(uname -s)" in
-  Darwin)
-    export SSH_AUTH_SOCK="${HOME}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-    ;;
-  Linux)
-    export SSH_AUTH_SOCK="${HOME}/.1password/agent.sock"
-    ;;
-esac
+macos_1p_sock="${HOME}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+linux_1p_sock="${HOME}/.1password/agent.sock"
+
+if [[ -S "$macos_1p_sock" ]]; then
+  export SSH_AUTH_SOCK="$macos_1p_sock"
+elif [[ -S "$linux_1p_sock" ]]; then
+  export SSH_AUTH_SOCK="$linux_1p_sock"
+fi
 
 if [[ "$(uname -s)" == "Linux" ]]; then
   export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
