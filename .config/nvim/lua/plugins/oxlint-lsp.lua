@@ -72,11 +72,6 @@ return {
       end
 
       opts.servers.oxlint = {
-        enabled = true,
-        autostart = true,
-        mason = false,
-        -- Project-local oxlint (pnpm): resolve from workspace root.
-        cmd = { "node", "node_modules/oxlint/bin/oxlint", "--lsp" },
         filetypes = {
           "javascript",
           "javascriptreact",
@@ -88,9 +83,10 @@ return {
           "svelte",
           "astro",
         },
-        workspace_required = true,
+        init_options = {
+          settings = {},
+        },
         on_attach = function(client, bufnr)
-          log_oxlint("on_attach client=" .. client.name .. " root_dir=" .. tostring(client.config.root_dir))
           vim.api.nvim_buf_create_user_command(bufnr, "LspOxlintFixAll", function()
             client:exec_cmd({
               title = "Apply Oxlint automatic fixes",
@@ -99,9 +95,6 @@ return {
             })
           end, { desc = "Apply Oxlint automatic fixes" })
         end,
-        init_options = {
-          settings = {},
-        },
       }
     end,
   },
