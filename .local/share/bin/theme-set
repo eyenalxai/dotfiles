@@ -29,6 +29,16 @@ mkdir -p "$NEXT_THEME_PATH"
 
 cp -r "$THEME_PATH/"* "$NEXT_THEME_PATH/" 2>/dev/null
 
+# Make light/dark detection explicit for downstream scripts.
+# Some themes include a light.mode marker; ensure it is present only for light themes.
+if [[ -f "$THEME_PATH/light.mode" ]]; then
+  : > "$NEXT_THEME_PATH/light.mode"
+else
+  rm -f "$NEXT_THEME_PATH/light.mode"
+fi
+
+# Let theme-set-templates resolve the correct theme templates.
+export THEME_PATH
 "$BIN_DIR/theme-set-templates"
 
 rm -rf "$CURRENT_THEME_PATH"
@@ -61,6 +71,13 @@ fi
 "$BIN_DIR/theme-set-browser"
 "$BIN_DIR/theme-set-vscode"
 "$BIN_DIR/theme-set-obsidian"
+
+# Hyprland may auto-reload config while we swap theme dirs.
+# Force a reload at the end so `source = ~/.config/theme/current/theme/hyprland.conf`
+# is definitely present when Hyprland parses the config.
+if command -v hyprctl >/dev/null 2>&1 && pgrep -x Hyprland >/dev/null 2>&1; then
+  hyprctl reload >/dev/null 2>&1 || true
+fi
 
 # Hot-reload Neovim theme if servers are running
 runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
