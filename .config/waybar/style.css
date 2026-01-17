@@ -12,7 +12,7 @@
 }
 
 window {
-  background-color: @background;
+  background-color: transparent;
 }
 
 .modules-left {
@@ -21,6 +21,12 @@ window {
 
 .modules-right {
   margin-right: 8px;
+}
+
+.modules-left,
+.modules-right {
+  background-color: @background;
+  padding: 0 8px;
 }
 
 #workspaces button {
