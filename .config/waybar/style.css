@@ -23,10 +23,14 @@ window {
   margin-right: 8px;
 }
 
-.modules-left,
+.modules-left {
+  background-color: @background;
+  padding: 0;
+}
+
 .modules-right {
   background-color: @background;
-  padding: 0 8px;
+  padding: 0 8px 0 0;
 }
 
 #workspaces button {
@@ -68,11 +72,15 @@ window {
 #custom-screenrecording-indicator,
 #custom-update,
 #custom-vpn,
-#language,
 #network,
 #custom-bluetooth-audio-device,
 #custom-bluetooth-battery {
   min-width: 16px;
+  margin: 0 8px;
+}
+
+#language {
+  min-width: 60px;
   margin: 0 8px;
 }
 
