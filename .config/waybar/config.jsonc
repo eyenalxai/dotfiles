@@ -8,7 +8,6 @@
   "margin-left": 8,
   "margin-right": 8,
   "modules-left": ["hyprland/workspaces"],
-  "modules-center": [],
   "modules-right": [
     "cpu",
     "memory",
@@ -72,8 +71,7 @@
     "format": "<span alpha=\"60%\">CPU</span> {usage}%",
     "format-alt": "CPU {usage}%",
     "markup": "pango",
-    "on-click": "~/.local/share/bin/tui-or-focus btop",
-    "max-length": 10,
+    "on-click": "~/.local/share/bin/tui-or-focus btop"
   },
   "memory": {
     "interval": 5,
@@ -90,7 +88,6 @@
     "tooltip-format-ethernet": "DOWN {bandwidthDownBytes}  UP {bandwidthUpBytes}",
     "tooltip-format-disconnected": "NET OFF",
     "interval": 3,
-    "max-length": 20,
     "spacing": 1,
     "markup": "pango",
     "on-click": "~/.local/share/bin/wifi-menu",
