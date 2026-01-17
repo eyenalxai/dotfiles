@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Set nvim.desktop as default so it takes priority in Nautilus
 xdg-mime default nvim.desktop text/plain
 xdg-mime default nvim.desktop text/english

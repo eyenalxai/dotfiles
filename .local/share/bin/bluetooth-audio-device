@@ -19,19 +19,44 @@ if [[ -n "$inspect" ]] && grep -q 'device.api = "bluez5"' <<<"$inspect"; then
   fi
 fi
 
-if [[ -z "${name-}" ]]; then
-  connected="$(bluetoothctl devices Connected 2>/dev/null | head -n 1)"
-  if [[ -n "$connected" ]]; then
-    name="${connected#Device * }"
-  fi
+connected_devices="$(bluetoothctl devices Connected 2>/dev/null || true)"
+names_all=()
+audio_names=()
+
+if [[ -n "$connected_devices" ]]; then
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    mac="${line#Device }"
+    mac="${mac%% *}"
+    device_name="${line#Device "$mac" }"
+    names_all+=("$device_name")
+
+    info="$(bluetoothctl info "$mac" 2>/dev/null || true)"
+    if grep -qE 'Audio Sink|Audio Source|Headset|Handsfree|LE Audio' <<<"$info"; then
+      audio_names+=("$device_name")
+    fi
+  done <<<"$connected_devices"
+fi
+
+if [[ -z "${name-}" ]] && [[ ${#audio_names[@]} -gt 0 ]]; then
+  name="${audio_names[0]}"
+fi
+
+if [[ ${#names_all[@]} -gt 0 ]]; then
+  tooltip_list="$(printf '%s, ' "${names_all[@]}")"
+  tooltip_list="${tooltip_list%, }"
+  tooltip="Connected Bluetooth devices: $tooltip_list"
+else
+  tooltip="No Bluetooth devices connected"
 fi
 
 if [[ -z "${name-}" ]]; then
-  printf '{"text":"EMPT","class":"disconnected"}\n'
+  tooltip="$(json_escape "$tooltip")"
+  printf '{"text":"EMPT","class":"disconnected","tooltip":"%s"}\n' "$tooltip"
   exit 0
 fi
 
 text="$(json_escape "$name")"
-tooltip="$(json_escape "Bluetooth: $name")"
+tooltip="$(json_escape "$tooltip")"
 
 printf '{"text":"%s","class":"connected","tooltip":"%s"}\n' "$text" "$tooltip"
