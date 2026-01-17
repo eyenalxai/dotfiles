@@ -35,9 +35,11 @@ elephant-unicode
 elephant-websearch
 fastfetch
 flatpak
+flatpak-xdg-utils
 flatseal
 game-devices-udev
 gameconqueror
+gamemode
 gamescope
 ghostty
 git
@@ -63,7 +65,9 @@ kvantum
 kvantum-qt5
 lazydocker
 lazygit
+lib32-gamemode
 lib32-glibc
+lib32-mangohud
 libnewt
 libnotify
 libqalculate
@@ -114,6 +118,7 @@ slurp
 smartmontools
 snapper
 starship
+steam
 swaybg
 swayosd
 telegram-desktop
