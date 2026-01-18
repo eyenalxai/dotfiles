@@ -1,0 +1,6 @@
+[mgr]
+# Drag & drop selected files via ripdrag
+# - `%s` expands to all selected paths (or hovered if none selected)
+prepend_keymap = [
+	{ on = "<C-n>", run = "shell -- ripdrag %s -x 2>/dev/null &" },
+]
