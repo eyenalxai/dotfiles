@@ -113,7 +113,11 @@ get_game_name() {
 	local manifest
 
 	# Check common Steam library paths
-	for lib in /games/steam/steamapps ~/.steam/steam/steamapps ~/.local/share/Steam/steamapps; do
+	for lib in \
+		/games/steam/steamapps \
+		~/.steam/steam/steamapps \
+		~/.local/share/Steam/steamapps \
+		~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps; do
 		manifest="$lib/appmanifest_$appid.acf"
 		if [[ -f $manifest ]]; then
 			grep -oP '^\s*"name"\s*"\K[^"]+' "$manifest" && return
