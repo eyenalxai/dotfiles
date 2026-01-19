@@ -2,13 +2,6 @@
 
 set -euo pipefail
 
-STEAM_LIBS=(
-	/games/steam/steamapps
-	~/.steam/steam/steamapps
-	~/.local/share/Steam/steamapps
-	~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps
-)
-
 die() {
 	printf '%s\n' "$*" >&2
 	exit 1
@@ -33,63 +26,65 @@ usage() {
 	EOF
 }
 
-find_in_libs() {
-	local relpath=$1
-	for lib in "${STEAM_LIBS[@]}"; do
-		lib="${lib/#\~/$HOME}"
-		if [[ -e "$lib/$relpath" ]]; then
-			printf '%s' "$lib/$relpath"
-			return 0
-		fi
+get_running_games() {
+	local pid appid compatdata
+	for pid in /proc/[0-9]*; do
+		[[ -r "$pid/comm" ]] || continue
+		[[ $(<"$pid/comm") == "wineserver" ]] || continue
+
+		local env
+		env=$(tr '\0' '\n' <"$pid/environ" 2>/dev/null) || continue
+		appid=$(sed -n 's/^SteamAppId=//p' <<<"$env")
+		[[ -n $appid ]] || continue
+		compatdata=$(sed -n 's/^STEAM_COMPAT_DATA_PATH=//p' <<<"$env")
+		printf '%s:%s:%s\n' "${pid##*/}" "$appid" "$compatdata"
 	done
-	return 1
 }
 
 get_game_name() {
-	local appid=$1
-	local manifest
-	if manifest=$(find_in_libs "appmanifest_$appid.acf"); then
+	local compatdata=$1 appid=$2
+	local steamapps="${compatdata%/compatdata/*}"
+	local manifest="$steamapps/appmanifest_$appid.acf"
+	if [[ -f $manifest ]]; then
 		grep -oP '^\s*"name"\s*"\K[^"]+' "$manifest" && return
 	fi
 	echo "(unknown)"
 }
 
-find_wineserver() {
+get_wineserver_info() {
 	local target_appid=$1
-	local pid appid
+	local pid appid compatdata
 	for pid in /proc/[0-9]*; do
 		[[ -r "$pid/comm" ]] || continue
 		[[ $(<"$pid/comm") == "wineserver" ]] || continue
-		appid=$(tr '\0' '\n' <"$pid/environ" 2>/dev/null | sed -n 's/^SteamAppId=//p')
+		ENV=$(tr '\0' '\n' <"$pid/environ" 2>/dev/null) || continue
+		appid=$(sed -n 's/^SteamAppId=//p' <<<"$ENV")
 		if [[ $appid == "$target_appid" ]]; then
-			printf '%s' "${pid##*/}"
+			PID="${pid##*/}"
+			COMPATDATA=$(sed -n 's/^STEAM_COMPAT_DATA_PATH=//p' <<<"$ENV")
+			local wineserver_path
+			wineserver_path=$(readlink "/proc/$PID/exe")
+			WINE64="${wineserver_path%/*}/wine64"
 			return 0
 		fi
 	done
 	return 1
 }
 
-get_wine64() {
-	local pid=$1
-	local wineserver_path
-	wineserver_path=$(readlink "/proc/$pid/exe")
-	printf '%s' "${wineserver_path%/*}/wine64"
-}
-
-get_wineprefix() {
-	local pid=$1
-	tr '\0' '\n' <"/proc/$pid/environ" | sed -n 's/^WINEPREFIX=//p'
+export_sync_vars() {
+	local env=$1
+	local var val
+	for var in WINEFSYNC WINEESYNC; do
+		val=$(sed -n "s/^$var=//p" <<<"$env")
+		[[ -n $val ]] && export "$var=$val"
+	done
 }
 
 cmd_ls() {
-	local pid appid
-	for pid in /proc/[0-9]*; do
-		[[ -r "$pid/comm" ]] || continue
-		[[ $(<"$pid/comm") == "wineserver" ]] || continue
-		appid=$(tr '\0' '\n' <"$pid/environ" 2>/dev/null | sed -n 's/^SteamAppId=//p')
-		[[ -n $appid ]] || continue
-		printf '%s\t%s\n' "$appid" "$(get_game_name "$appid")"
-	done
+	local pid appid compatdata
+	while IFS=: read -r pid appid compatdata; do
+		printf '%s\t%s\n' "$appid" "$(get_game_name "$compatdata" "$appid")"
+	done < <(get_running_games)
 }
 
 cmd_run() {
@@ -116,22 +111,20 @@ cmd_run() {
 
 	local appid=$1
 	shift
-	local pid wine64 wineprefix
 
-	pid=$(find_wineserver "$appid") || die "No running game with appid $appid"
-	wine64=$(get_wine64 "$pid")
-	wineprefix=$(get_wineprefix "$pid")
+	local PID COMPATDATA WINE64 ENV
+	get_wineserver_info "$appid" || die "No running game with appid $appid"
 
-	[[ -x $wine64 ]] || die "wine64 not found at $wine64"
-	[[ -n $wineprefix ]] || die "Could not determine WINEPREFIX"
+	[[ -x $WINE64 ]] || die "wine64 not found at $WINE64"
+	[[ -n $COMPATDATA ]] || die "Could not determine STEAM_COMPAT_DATA_PATH"
 
-	export WINEPREFIX="$wineprefix"
-	export WINEFSYNC=1
+	export WINEPREFIX="$COMPATDATA/pfx"
+	export_sync_vars "$ENV"
 
 	if [[ $bypass_gamescope -eq 1 ]]; then
-		exec "$wine64" explorer "/desktop=parton,$bypass_res" "$@"
+		exec "$WINE64" explorer "/desktop=parton,$bypass_res" "$@"
 	else
-		exec "$wine64" "$@"
+		exec "$WINE64" "$@"
 	fi
 }
 

@@ -108,6 +108,7 @@ ripdrag
 satty
 sddm
 shellcheck
+shfmt
 slurp
 smartmontools
 snapper
