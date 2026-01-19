@@ -16,150 +16,150 @@ host_xdg_backend=${XDG_BACKEND-}
 phd=${XDG_RUNTIME_DIR:-/run/user/$UID}/protonhax
 
 usage() {
-  echo "Usage:"
-  echo "protonhax init <cmd>"
-  printf "\tShould only be called by Steam with \"protonhax init %%COMMAND%%\"\n"
-  echo "protonhax ls"
-  printf "\tLists all currently running games\n"
-  echo "protonhax run [--no-gamescope] <appid> <cmd>"
-  printf "\tRuns <cmd> in the context of <appid> with proton\n"
-  echo "protonhax cmd [--no-gamescope] <appid>"
-  printf "\tRuns cmd.exe in the context of <appid>\n"
-  echo "protonhax exec [--no-gamescope] <appid> <cmd>"
-  printf "\tRuns <cmd> in the context of <appid>\n"
+	echo "Usage:"
+	echo "protonhax init <cmd>"
+	printf "\tShould only be called by Steam with \"protonhax init %%COMMAND%%\"\n"
+	echo "protonhax ls"
+	printf "\tLists all currently running games\n"
+	echo "protonhax run [--no-gamescope] <appid> <cmd>"
+	printf "\tRuns <cmd> in the context of <appid> with proton\n"
+	echo "protonhax cmd [--no-gamescope] <appid>"
+	printf "\tRuns cmd.exe in the context of <appid>\n"
+	echo "protonhax exec [--no-gamescope] <appid> <cmd>"
+	printf "\tRuns <cmd> in the context of <appid>\n"
 }
 
 if [[ $# -lt 1 ]]; then
-  usage
-  exit 1
+	usage
+	exit 1
 fi
 
 c=$1
 shift
 
 if [[ "$c" == "init" ]]; then
-  mkdir -p "$phd/$SteamAppId"
-  printf "%s\n" "${@}" | grep -m 1 "/proton" >"$phd/$SteamAppId/exe"
-  printf "%s" "$STEAM_COMPAT_DATA_PATH/pfx" >"$phd/$SteamAppId/pfx"
-  declare -px >"$phd/$SteamAppId/env"
-  "$@"
-  ec=$?
-  rm -r "${phd:?}/${SteamAppId:?}"
-  exit $ec
+	mkdir -p "$phd/$SteamAppId"
+	printf "%s\n" "${@}" | grep -m 1 "/proton" >"$phd/$SteamAppId/exe"
+	printf "%s" "$STEAM_COMPAT_DATA_PATH/pfx" >"$phd/$SteamAppId/pfx"
+	declare -px >"$phd/$SteamAppId/env"
+	"$@"
+	ec=$?
+	rm -r "${phd:?}/${SteamAppId:?}"
+	exit $ec
 elif [[ "$c" == "ls" ]]; then
-  if [[ -d "$phd" ]]; then
-    ls -1 "$phd"
-  fi
+	if [[ -d "$phd" ]]; then
+		ls -1 "$phd"
+	fi
 elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
-  if [[ $# -lt 1 ]]; then
-    usage
-    exit 1
-  fi
+	if [[ $# -lt 1 ]]; then
+		usage
+		exit 1
+	fi
 
-  no_gamescope=0
-  while [[ $# -gt 0 ]]; do
-    if [[ "$1" == "--no-gamescope" ]]; then
-      no_gamescope=1
-      shift
-      continue
-    fi
-    break
-  done
+	no_gamescope=0
+	while [[ $# -gt 0 ]]; do
+		if [[ "$1" == "--no-gamescope" ]]; then
+			no_gamescope=1
+			shift
+			continue
+		fi
+		break
+	done
 
-  if [[ $# -lt 1 ]]; then
-    usage
-    exit 1
-  fi
-  if [[ ! -d $phd ]]; then
-    printf "No app running with appid \"%s\"\n" "$1"
-    exit 2
-  fi
-  if [[ ! -d $phd/$1 ]]; then
-    printf "No app running with appid \"%s\"\n" "$1"
-    exit 2
-  fi
-  SteamAppId=$1
-  shift
+	if [[ $# -lt 1 ]]; then
+		usage
+		exit 1
+	fi
+	if [[ ! -d $phd ]]; then
+		printf "No app running with appid \"%s\"\n" "$1"
+		exit 2
+	fi
+	if [[ ! -d $phd/$1 ]]; then
+		printf "No app running with appid \"%s\"\n" "$1"
+		exit 2
+	fi
+	SteamAppId=$1
+	shift
 
-  # shellcheck source=/dev/null
-  source "$phd/$SteamAppId/env"
+	# shellcheck source=/dev/null
+	source "$phd/$SteamAppId/env"
 
-  # Set WINEPREFIX from STEAM_COMPAT_DATA_PATH if not already set
-  if [[ -z ${WINEPREFIX-} ]] && [[ -n ${STEAM_COMPAT_DATA_PATH-} ]]; then
-    export WINEPREFIX="$STEAM_COMPAT_DATA_PATH/pfx"
-  fi
+	# Set WINEPREFIX from STEAM_COMPAT_DATA_PATH if not already set
+	if [[ -z ${WINEPREFIX-} ]] && [[ -n ${STEAM_COMPAT_DATA_PATH-} ]]; then
+		export WINEPREFIX="$STEAM_COMPAT_DATA_PATH/pfx"
+	fi
 
-  # Enable fsync to match the running wineserver
-  export WINEFSYNC=1
+	# Enable fsync to match the running wineserver
+	export WINEFSYNC=1
 
-  if [[ $no_gamescope -eq 1 ]]; then
-    if [[ -n ${host_xdg_runtime_dir-} ]]; then
-      export XDG_RUNTIME_DIR="$host_xdg_runtime_dir"
-    fi
-    if [[ -n ${host_wayland_display-} ]]; then
-      export WAYLAND_DISPLAY="$host_wayland_display"
-    else
-      unset WAYLAND_DISPLAY
-    fi
-    if [[ -n ${host_display-} ]]; then
-      export DISPLAY="$host_display"
-    else
-      unset DISPLAY
-    fi
-    if [[ -n ${host_xdg_current_desktop-} ]]; then
-      export XDG_CURRENT_DESKTOP="$host_xdg_current_desktop"
-    else
-      unset XDG_CURRENT_DESKTOP
-    fi
-    if [[ -n ${host_xdg_session_desktop-} ]]; then
-      export XDG_SESSION_DESKTOP="$host_xdg_session_desktop"
-    else
-      unset XDG_SESSION_DESKTOP
-    fi
-    if [[ -n ${host_xdg_session_type-} ]]; then
-      export XDG_SESSION_TYPE="$host_xdg_session_type"
-    else
-      unset XDG_SESSION_TYPE
-    fi
-    if [[ -n ${host_xdg_session_class-} ]]; then
-      export XDG_SESSION_CLASS="$host_xdg_session_class"
-    else
-      unset XDG_SESSION_CLASS
-    fi
-    if [[ -n ${host_xdg_session_id-} ]]; then
-      export XDG_SESSION_ID="$host_xdg_session_id"
-    else
-      unset XDG_SESSION_ID
-    fi
-    if [[ -n ${host_xdg_session_path-} ]]; then
-      export XDG_SESSION_PATH="$host_xdg_session_path"
-    else
-      unset XDG_SESSION_PATH
-    fi
-    if [[ -n ${host_xdg_backend-} ]]; then
-      export XDG_BACKEND="$host_xdg_backend"
-    else
-      unset XDG_BACKEND
-    fi
-  fi
+	if [[ $no_gamescope -eq 1 ]]; then
+		if [[ -n ${host_xdg_runtime_dir-} ]]; then
+			export XDG_RUNTIME_DIR="$host_xdg_runtime_dir"
+		fi
+		if [[ -n ${host_wayland_display-} ]]; then
+			export WAYLAND_DISPLAY="$host_wayland_display"
+		else
+			unset WAYLAND_DISPLAY
+		fi
+		if [[ -n ${host_display-} ]]; then
+			export DISPLAY="$host_display"
+		else
+			unset DISPLAY
+		fi
+		if [[ -n ${host_xdg_current_desktop-} ]]; then
+			export XDG_CURRENT_DESKTOP="$host_xdg_current_desktop"
+		else
+			unset XDG_CURRENT_DESKTOP
+		fi
+		if [[ -n ${host_xdg_session_desktop-} ]]; then
+			export XDG_SESSION_DESKTOP="$host_xdg_session_desktop"
+		else
+			unset XDG_SESSION_DESKTOP
+		fi
+		if [[ -n ${host_xdg_session_type-} ]]; then
+			export XDG_SESSION_TYPE="$host_xdg_session_type"
+		else
+			unset XDG_SESSION_TYPE
+		fi
+		if [[ -n ${host_xdg_session_class-} ]]; then
+			export XDG_SESSION_CLASS="$host_xdg_session_class"
+		else
+			unset XDG_SESSION_CLASS
+		fi
+		if [[ -n ${host_xdg_session_id-} ]]; then
+			export XDG_SESSION_ID="$host_xdg_session_id"
+		else
+			unset XDG_SESSION_ID
+		fi
+		if [[ -n ${host_xdg_session_path-} ]]; then
+			export XDG_SESSION_PATH="$host_xdg_session_path"
+		else
+			unset XDG_SESSION_PATH
+		fi
+		if [[ -n ${host_xdg_backend-} ]]; then
+			export XDG_BACKEND="$host_xdg_backend"
+		else
+			unset XDG_BACKEND
+		fi
+	fi
 
-  if [[ "$c" == "run" ]]; then
-    if [[ $# -lt 1 ]]; then
-      usage
-      exit 1
-    fi
-    exec "$(cat "$phd/$SteamAppId/exe")" run "$@"
-  elif [[ "$c" == "cmd" ]]; then
-    exec "$(cat "$phd/$SteamAppId/exe")" run "$(cat "$phd/$SteamAppId/pfx")/drive_c/windows/system32/cmd.exe"
-  elif [[ "$c" == "exec" ]]; then
-    if [[ $# -lt 1 ]]; then
-      usage
-      exit 1
-    fi
-    exec "$@"
-  fi
+	if [[ "$c" == "run" ]]; then
+		if [[ $# -lt 1 ]]; then
+			usage
+			exit 1
+		fi
+		exec "$(cat "$phd/$SteamAppId/exe")" run "$@"
+	elif [[ "$c" == "cmd" ]]; then
+		exec "$(cat "$phd/$SteamAppId/exe")" run "$(cat "$phd/$SteamAppId/pfx")/drive_c/windows/system32/cmd.exe"
+	elif [[ "$c" == "exec" ]]; then
+		if [[ $# -lt 1 ]]; then
+			usage
+			exit 1
+		fi
+		exec "$@"
+	fi
 else
-  printf "Unknown command %s\n" "$c"
-  usage
-  exit 1
+	printf "Unknown command %s\n" "$c"
+	usage
+	exit 1
 fi
