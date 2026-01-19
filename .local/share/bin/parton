@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# protonhax - run commands in the context of a running Proton game
+# parton - run parallel commands in the context of a running Proton game
 #
 
 set -euo pipefail
 
-readonly PHD="${XDG_RUNTIME_DIR:-/run/user/$UID}/protonhax"
+readonly PHD="${XDG_RUNTIME_DIR:-/run/user/$UID}/parton"
 
 # Capture host display environment before gamescope overwrites them
 declare -A HOST_ENV=(
@@ -29,19 +29,19 @@ die() {
 usage() {
 	cat <<-EOF
 	Usage:
-	  protonhax init <command>
+	  parton catch <command>
 	      Wrap a Steam launch command to capture the Proton environment.
-	      Use in Steam launch options: protonhax init %command%
+	      Use in Steam launch options: parton catch %command%
 
-	  protonhax ls
+	  parton ls
 	      List running games (by AppID).
 
-	  protonhax run [--bypass-gamescope[=WxH]] <appid> <exe> [args...]
+	  parton run [--bypass-gamescope[=WxH]] <appid> <exe> [args...]
 	      Run a Windows executable via Proton.
 	      --bypass-gamescope  Run on host display in a Wine virtual desktop.
 	                          Optional resolution (default: 1280x720).
 
-	  protonhax exec [--bypass-gamescope] <appid> <command> [args...]
+	  parton exec [--bypass-gamescope] <appid> <command> [args...]
 	      Run a raw command with the game's environment (no Proton wrapper).
 	EOF
 }
@@ -89,7 +89,7 @@ get_wine64() {
 }
 
 cmd_init() {
-	[[ $# -ge 1 ]] || die "init requires a command"
+	[[ $# -ge 1 ]] || die "catch requires a command"
 	[[ -n ${SteamAppId-} ]] || die "SteamAppId not set (not launched from Steam?)"
 
 	local app_dir="$PHD/$SteamAppId"
@@ -132,7 +132,7 @@ cmd_run() {
 		restore_host_env
 		local wine64
 		wine64="$(get_wine64 "$(get_proton_exe "$appid")")"
-		exec "$wine64" explorer "/desktop=protonhax,$desktop_res" "$@"
+		exec "$wine64" explorer "/desktop=parton,$desktop_res" "$@"
 	else
 		exec "$(get_proton_exe "$appid")" run "$@"
 	fi
@@ -164,7 +164,7 @@ main() {
 	local cmd=$1; shift
 
 	case $cmd in
-		init) cmd_init "$@" ;;
+		catch) cmd_init "$@" ;;
 		ls)   cmd_ls ;;
 		run)  cmd_run "$@" ;;
 		exec) cmd_exec "$@" ;;
