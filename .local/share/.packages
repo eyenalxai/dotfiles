@@ -9,12 +9,10 @@ bluez-utils
 btop
 btrfs-progs
 bun-bin
-ceserver
 clipse
 cursor-bin
 datagrip
 datagrip-jre
-deadbeef
 docker
 docker-buildx
 docker-compose
@@ -35,11 +33,7 @@ elephant-todo
 elephant-unicode
 elephant-websearch
 fastfetch
-flatpak
-flatpak-xdg-utils
-flatseal
 game-devices-udev
-gameconqueror
 gamemode
 gamescope
 ghostty
@@ -85,7 +79,6 @@ mangohud
 minio-client
 mpv
 nautilus
-ncdu
 neovim
 ngrok
 nodejs
@@ -93,10 +86,8 @@ nodejs-n
 noto-fonts-cjk
 npm
 ntfs-3g
-nvme-cli
 obsidian
 opencode-bin
-opencode-desktop-bin
 openssh
 pacman-contrib
 pamixer
@@ -106,7 +97,6 @@ pnpm
 polkit-gnome
 polkit-kde-agent
 postgresql-libs
-protontricks
 qbittorrent
 qt5-wayland
 qt6-wayland
@@ -115,9 +105,7 @@ reflector
 ripdrag
 satty
 sddm
-seafile-client
 shellcheck
-shfmt
 slurp
 smartmontools
 snapper
@@ -133,7 +121,6 @@ ttf-apple-emoji
 ttf-iosevka-nerd
 ttf-jetbrains-mono-nerd
 uwsm
-visual-studio-code-bin
 vulkan-radeon
 walker
 waybar
@@ -149,8 +136,6 @@ xdg-utils
 xf86-video-amdgpu
 xorg-server
 xorg-xinit
-xorg-xkill
-xorg-xwininfo
 yadm
 yaru-icon-theme
 yay
