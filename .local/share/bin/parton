@@ -10,11 +10,17 @@ die() {
 usage() {
 	cat <<-EOF
 		Usage:
+		  parton ls
+		      List currently running games.
+
 		  parton run [options] <appid> <exe> [args...]
 		      Run a Windows executable in a running game's Proton context.
 
-		  parton ls
-		      List currently running games.
+		  parton cmd [options] <appid>
+		      Open cmd.exe in a running game's Proton context.
+
+		  parton exec <appid> <command...>
+		      Run a native Linux command with the game's Proton environment.
 
 		Options:
 		  --bypass-gamescope[=WxH]   Run on host display in Wine virtual desktop (default: 1280x720)
@@ -22,7 +28,9 @@ usage() {
 		Examples:
 		  parton run 1888160 "C:/Program Files/Cheat Engine/cheatengine.exe"
 		  parton run --bypass-gamescope 1888160 "/path/to/app.exe"
-		  parton run --bypass-gamescope=1920x1080 1888160 "C:/tools/x64dbg/x64dbg.exe"
+		  parton cmd --bypass-gamescope 1888160
+		  parton exec 1888160 winetricks
+		  parton exec 1888160 bash
 	EOF
 }
 
@@ -71,10 +79,10 @@ get_wineserver_info() {
 	return 1
 }
 
-export_sync_vars() {
+export_wineserver_env() {
 	local env=$1
 	local var val
-	for var in WINEFSYNC WINEESYNC; do
+	for var in WINEFSYNC WINEESYNC SteamAppId STEAM_COMPAT_DATA_PATH; do
 		val=$(sed -n "s/^$var=//p" <<<"$env")
 		[[ -n $val ]] && export "$var=$val"
 	done
@@ -119,13 +127,70 @@ cmd_run() {
 	[[ -n $COMPATDATA ]] || die "Could not determine STEAM_COMPAT_DATA_PATH"
 
 	export WINEPREFIX="$COMPATDATA/pfx"
-	export_sync_vars "$ENV"
+	export_wineserver_env "$ENV"
 
 	if [[ $bypass_gamescope -eq 1 ]]; then
 		exec "$WINE64" explorer "/desktop=parton,$bypass_res" "$@"
 	else
 		exec "$WINE64" "$@"
 	fi
+}
+
+cmd_cmd() {
+	local bypass_gamescope=0
+	local bypass_res="1280x720"
+
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		--bypass-gamescope)
+			bypass_gamescope=1
+			shift
+			;;
+		--bypass-gamescope=*)
+			bypass_gamescope=1
+			bypass_res="${1#*=}"
+			shift
+			;;
+		-*) die "Unknown option: $1" ;;
+		*) break ;;
+		esac
+	done
+
+	[[ $# -ge 1 ]] || die "cmd requires <appid>"
+
+	local appid=$1
+
+	local PID COMPATDATA WINE64 ENV
+	get_wineserver_info "$appid" || die "No running game with appid $appid"
+
+	[[ -x $WINE64 ]] || die "wine64 not found at $WINE64"
+	[[ -n $COMPATDATA ]] || die "Could not determine STEAM_COMPAT_DATA_PATH"
+
+	export WINEPREFIX="$COMPATDATA/pfx"
+	export_wineserver_env "$ENV"
+
+	if [[ $bypass_gamescope -eq 1 ]]; then
+		exec "$WINE64" explorer "/desktop=parton,$bypass_res" cmd.exe
+	else
+		exec "$WINE64" cmd.exe
+	fi
+}
+
+cmd_exec() {
+	[[ $# -ge 2 ]] || die "exec requires <appid> <command...>"
+
+	local appid=$1
+	shift
+
+	local PID COMPATDATA WINE64 ENV
+	get_wineserver_info "$appid" || die "No running game with appid $appid"
+
+	[[ -n $COMPATDATA ]] || die "Could not determine STEAM_COMPAT_DATA_PATH"
+
+	export WINEPREFIX="$COMPATDATA/pfx"
+	export_wineserver_env "$ENV"
+
+	exec "$@"
 }
 
 main() {
@@ -140,6 +205,8 @@ main() {
 	case $cmd in
 	ls) cmd_ls ;;
 	run) cmd_run "$@" ;;
+	cmd) cmd_cmd "$@" ;;
+	exec) cmd_exec "$@" ;;
 	-h | --help | help) usage ;;
 	*) die "Unknown command: $cmd" ;;
 	esac
