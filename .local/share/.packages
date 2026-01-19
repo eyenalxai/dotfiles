@@ -13,6 +13,7 @@ clipse
 cursor-bin
 datagrip
 datagrip-jre
+debuginfod
 docker
 docker-buildx
 docker-compose
@@ -36,6 +37,7 @@ fastfetch
 game-devices-udev
 gamemode
 gamescope
+gdb
 ghostty
 git
 git-filter-repo
@@ -126,6 +128,7 @@ walker
 waybar
 wget
 wine
+wine-mono
 wireless_tools
 wireplumber
 wpa_supplicant
@@ -133,9 +136,12 @@ xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland
 xdg-user-dirs
 xdg-utils
+xdotool
 xf86-video-amdgpu
 xorg-server
+xorg-xdpyinfo
 xorg-xeyes
+xorg-xhost
 xorg-xinit
 xorg-xkill
 yadm
