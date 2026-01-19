@@ -2,6 +2,17 @@
 
 set -euo pipefail
 
+host_wayland_display=${WAYLAND_DISPLAY-}
+host_display=${DISPLAY-}
+host_xdg_runtime_dir=${XDG_RUNTIME_DIR-}
+host_xdg_current_desktop=${XDG_CURRENT_DESKTOP-}
+host_xdg_session_desktop=${XDG_SESSION_DESKTOP-}
+host_xdg_session_type=${XDG_SESSION_TYPE-}
+host_xdg_session_class=${XDG_SESSION_CLASS-}
+host_xdg_session_id=${XDG_SESSION_ID-}
+host_xdg_session_path=${XDG_SESSION_PATH-}
+host_xdg_backend=${XDG_BACKEND-}
+
 phd=${XDG_RUNTIME_DIR:-/run/user/$UID}/protonhax
 
 usage() {
@@ -10,11 +21,11 @@ usage() {
   printf "\tShould only be called by Steam with \"protonhax init %%COMMAND%%\"\n"
   echo "protonhax ls"
   printf "\tLists all currently running games\n"
-  echo "protonhax run <appid> <cmd>"
+  echo "protonhax run [--no-gamescope] <appid> <cmd>"
   printf "\tRuns <cmd> in the context of <appid> with proton\n"
-  echo "protonhax cmd <appid>"
+  echo "protonhax cmd [--no-gamescope] <appid>"
   printf "\tRuns cmd.exe in the context of <appid>\n"
-  echo "protonhax exec <appid> <cmd>"
+  echo "protonhax exec [--no-gamescope] <appid> <cmd>"
   printf "\tRuns <cmd> in the context of <appid>\n"
 }
 
@@ -44,6 +55,21 @@ elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
     usage
     exit 1
   fi
+
+  no_gamescope=0
+  while [[ $# -gt 0 ]]; do
+    if [[ "$1" == "--no-gamescope" ]]; then
+      no_gamescope=1
+      shift
+      continue
+    fi
+    break
+  done
+
+  if [[ $# -lt 1 ]]; then
+    usage
+    exit 1
+  fi
   if [[ ! -d $phd ]]; then
     printf "No app running with appid \"%s\"\n" "$1"
     exit 2
@@ -56,6 +82,79 @@ elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
   shift
 
   source $phd/$SteamAppId/env
+
+  if [[ $no_gamescope -eq 1 ]]; then
+    unset GAMESCOPE_WAYLAND_DISPLAY
+    unset STEAM_GAME_DISPLAY_0 STEAM_GAME_DISPLAY_1 STEAM_GAME_DISPLAY_2
+    unset STEAM_GAMESCOPE
+    unset STEAM_GAMESCOPE_REFRESHED
+    unset STEAM_GAMESCOPE_DEPTH
+    unset STEAM_GAMESCOPE_HDR
+    unset STEAM_GAMESCOPE_HDR_FIRST
+    unset STEAM_GAMESCOPE_HDR_LUMINANCE
+    unset STEAM_GAMESCOPE_HDR_FRAMES
+    unset STEAM_GAMESCOPE_DYNAMIC
+    unset STEAM_GAMESCOPE_DYNAMIC_REFRESH_RATE
+    unset STEAM_GAMESCOPE_SCALING
+    unset STEAM_GAMESCOPE_FPS_LIMIT
+    unset STEAM_GAMESCOPE_VRR
+    unset STEAM_GAMESCOPE_VRR_SUPPORTED
+    unset STEAM_GAMESCOPE_PREFERRED_MODE
+    unset STEAM_GAMESCOPE_SCREEN_WIDTH
+    unset STEAM_GAMESCOPE_SCREEN_HEIGHT
+    unset STEAM_GAMESCOPE_CURSOR_VISIBLE
+    unset GAMESCOPE_LIMITER_FILE
+    unset LIBEI_SOCKET
+
+    if [[ -n ${host_xdg_runtime_dir-} ]]; then
+      export XDG_RUNTIME_DIR="$host_xdg_runtime_dir"
+    fi
+    if [[ -n ${host_wayland_display-} ]]; then
+      export WAYLAND_DISPLAY="$host_wayland_display"
+    else
+      unset WAYLAND_DISPLAY
+    fi
+    if [[ -n ${host_display-} ]]; then
+      export DISPLAY="$host_display"
+    else
+      unset DISPLAY
+    fi
+    if [[ -n ${host_xdg_current_desktop-} ]]; then
+      export XDG_CURRENT_DESKTOP="$host_xdg_current_desktop"
+    else
+      unset XDG_CURRENT_DESKTOP
+    fi
+    if [[ -n ${host_xdg_session_desktop-} ]]; then
+      export XDG_SESSION_DESKTOP="$host_xdg_session_desktop"
+    else
+      unset XDG_SESSION_DESKTOP
+    fi
+    if [[ -n ${host_xdg_session_type-} ]]; then
+      export XDG_SESSION_TYPE="$host_xdg_session_type"
+    else
+      unset XDG_SESSION_TYPE
+    fi
+    if [[ -n ${host_xdg_session_class-} ]]; then
+      export XDG_SESSION_CLASS="$host_xdg_session_class"
+    else
+      unset XDG_SESSION_CLASS
+    fi
+    if [[ -n ${host_xdg_session_id-} ]]; then
+      export XDG_SESSION_ID="$host_xdg_session_id"
+    else
+      unset XDG_SESSION_ID
+    fi
+    if [[ -n ${host_xdg_session_path-} ]]; then
+      export XDG_SESSION_PATH="$host_xdg_session_path"
+    else
+      unset XDG_SESSION_PATH
+    fi
+    if [[ -n ${host_xdg_backend-} ]]; then
+      export XDG_BACKEND="$host_xdg_backend"
+    else
+      unset XDG_BACKEND
+    fi
+  fi
 
   if [[ "$c" == "run" ]]; then
     if [[ $# -lt 1 ]]; then
