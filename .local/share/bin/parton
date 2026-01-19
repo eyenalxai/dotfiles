@@ -2,19 +2,11 @@
 
 set -euo pipefail
 
-readonly PHD="${XDG_RUNTIME_DIR:-/run/user/$UID}/parton"
-
-declare -A HOST_ENV=(
-	[DISPLAY]="${DISPLAY-}"
-	[WAYLAND_DISPLAY]="${WAYLAND_DISPLAY-}"
-	[XDG_RUNTIME_DIR]="${XDG_RUNTIME_DIR-}"
-	[XDG_CURRENT_DESKTOP]="${XDG_CURRENT_DESKTOP-}"
-	[XDG_SESSION_DESKTOP]="${XDG_SESSION_DESKTOP-}"
-	[XDG_SESSION_TYPE]="${XDG_SESSION_TYPE-}"
-	[XDG_SESSION_CLASS]="${XDG_SESSION_CLASS-}"
-	[XDG_SESSION_ID]="${XDG_SESSION_ID-}"
-	[XDG_SESSION_PATH]="${XDG_SESSION_PATH-}"
-	[XDG_BACKEND]="${XDG_BACKEND-}"
+STEAM_LIBS=(
+	/games/steam/steamapps
+	~/.steam/steam/steamapps
+	~/.local/share/Steam/steamapps
+	~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps
 )
 
 die() {
@@ -25,127 +17,162 @@ die() {
 usage() {
 	cat <<-EOF
 		Usage:
-		  parton catch <command>
-		      Wrap a Steam launch command to capture the Proton environment.
-		      Use in Steam launch options: parton catch %command%
+		  parton run [options] <appid> <exe> [args...]
+		      Run a Windows executable using game's Proton/wineprefix.
 
 		  parton ls
-		      List running games (by AppID).
+		      List games with existing wineprefixes.
 
-		  parton run [--bypass-gamescope[=WxH]] <appid> <exe> [args...]
-		      Run a Windows executable via Proton.
-		      --bypass-gamescope  Run on host display in a Wine virtual desktop.
-		                          Optional resolution (default: 1280x720).
+		Options:
+		  --desktop[=WxH]   Run in Wine virtual desktop (default: 1280x720)
+		  --proton <path>   Override Proton path (default: auto-detect from Steam)
 
-		  parton exec [--bypass-gamescope] <appid> <command> [args...]
-		      Run a raw command with the game's environment (no Proton wrapper).
+		Examples:
+		  parton run 1888160 "C:/Program Files/Cheat Engine/cheatengine.exe"
+		  parton run --desktop 1888160 "/path/to/app.exe"
+		  parton run --desktop=1920x1080 1888160 "C:/tools/x64dbg/x64dbg.exe"
 	EOF
 }
 
-# Restore host display environment variables
-restore_host_env() {
-	for var in "${!HOST_ENV[@]}"; do
-		if [[ -n ${HOST_ENV[$var]} ]]; then
-			export "$var=${HOST_ENV[$var]}"
-		else
-			unset "$var"
+find_in_libs() {
+	local relpath=$1
+	for lib in "${STEAM_LIBS[@]}"; do
+		lib="${lib/#\~/$HOME}"
+		if [[ -e "$lib/$relpath" ]]; then
+			printf '%s' "$lib/$relpath"
+			return 0
 		fi
 	done
-}
-
-# Load saved environment for an appid
-load_app_env() {
-	local appid=$1
-	local app_dir="$PHD/$appid"
-
-	[[ -d $app_dir ]] || die "No app running with appid \"$appid\""
-
-	# shellcheck source=/dev/null
-	source "$app_dir/env"
-
-	# Ensure WINEPREFIX is set for direct wine calls
-	if [[ -z ${WINEPREFIX-} && -n ${STEAM_COMPAT_DATA_PATH-} ]]; then
-		export WINEPREFIX="$STEAM_COMPAT_DATA_PATH/pfx"
-	fi
-
-	# Match the running wineserver's sync mode
-	export WINEFSYNC=1
-}
-
-get_proton_exe() {
-	local appid=$1
-	cat "$PHD/$appid/exe"
-}
-
-get_wine64() {
-	local proton_exe=$1
-	local proton_dir
-	proton_dir="$(dirname "$proton_exe")"
-	echo "$proton_dir/files/bin/wine64"
-}
-
-cmd_init() {
-	[[ $# -ge 1 ]] || die "catch requires a command"
-	[[ -n ${SteamAppId-} ]] || die "SteamAppId not set (not launched from Steam?)"
-
-	local app_dir="$PHD/$SteamAppId"
-	mkdir -p "$app_dir"
-
-	# Find proton executable in args
-	printf '%s\n' "$@" | grep -m1 "/proton" >"$app_dir/exe"
-	printf '%s' "$STEAM_COMPAT_DATA_PATH/pfx" >"$app_dir/pfx"
-	declare -px >"$app_dir/env"
-
-	local ec=0
-	"$@" || ec=$?
-
-	rm -r "${PHD:?}/${SteamAppId:?}"
-	exit $ec
+	return 1
 }
 
 get_game_name() {
 	local appid=$1
 	local manifest
-
-	for lib in \
-		/games/steam/steamapps \
-		~/.steam/steam/steamapps \
-		~/.local/share/Steam/steamapps \
-		~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps; do
-		manifest="$lib/appmanifest_$appid.acf"
-		if [[ -f $manifest ]]; then
-			grep -oP '^\s*"name"\s*"\K[^"]+' "$manifest" && return
-		fi
-	done
+	if manifest=$(find_in_libs "appmanifest_$appid.acf"); then
+		grep -oP '^\s*"name"\s*"\K[^"]+' "$manifest" && return
+	fi
 	echo "(unknown)"
 }
 
-cmd_ls() {
-	[[ -d $PHD ]] || return 0
+find_compatdata() {
+	local appid=$1
+	find_in_libs "compatdata/$appid" || die "No compatdata found for appid $appid"
+}
 
-	for appid in "$PHD"/*/; do
-		[[ -d $appid ]] || continue
-		appid="${appid%/}"
-		appid="${appid##*/}"
+get_configured_proton() {
+	local appid=$1
+	local config=~/.steam/steam/config/config.vdf
+
+	[[ -f $config ]] || return 1
+
+	local tool_name
+	tool_name=$(awk -v id="$appid" '
+		/CompatToolMapping/,/^[[:space:]]*}[[:space:]]*$/ {
+			if ($1 == "\"" id "\"") { found=1 }
+			if (found && $1 == "\"name\"") {
+				gsub(/"/, "", $2)
+				print $2
+				exit
+			}
+			if (found && /^[[:space:]]*}/) { exit }
+		}
+	' "$config")
+
+	[[ -n $tool_name ]] || return 1
+
+	local search_name
+	case $tool_name in
+	proton_experimental) search_name="Proton Experimental" ;;
+	proton_hotfix) search_name="Proton Hotfix" ;;
+	proton_9) search_name="Proton 9" ;;
+	proton_8) search_name="Proton 8" ;;
+	*) search_name="${tool_name//_/ }" ;;
+	esac
+
+	local manifest installdir
+	for lib in "${STEAM_LIBS[@]}"; do
+		lib="${lib/#\~/$HOME}"
+		for manifest in "$lib"/appmanifest_*.acf; do
+			[[ -f $manifest ]] || continue
+			if grep -q "\"name\".*\"$search_name\"" "$manifest" 2>/dev/null; then
+				installdir=$(grep -oP '^\s*"installdir"\s*"\K[^"]+' "$manifest")
+				if [[ -n $installdir && -x "$lib/common/$installdir/proton" ]]; then
+					printf '%s' "$lib/common/$installdir/proton"
+					return 0
+				fi
+			fi
+		done
+	done
+
+	return 1
+}
+
+find_default_proton() {
+	local proton
+	for name in "Proton - Experimental" "Proton Hotfix" "Proton 9"*; do
+		if proton=$(find_in_libs "common/$name/proton") && [[ -x $proton ]]; then
+			printf '%s' "$proton"
+			return 0
+		fi
+	done
+
+	for lib in "${STEAM_LIBS[@]}"; do
+		lib="${lib/#\~/$HOME}"
+		for proton in "$lib"/common/Proton*/proton; do
+			if [[ -x $proton ]]; then
+				printf '%s' "$proton"
+				return 0
+			fi
+		done
+	done
+
+	return 1
+}
+
+get_proton() {
+	local appid=$1
+	get_configured_proton "$appid" || find_default_proton || die "No Proton installation found"
+}
+
+# List running games by checking wineserver processes
+cmd_ls() {
+	local pid appid
+	for pid in /proc/[0-9]*; do
+		[[ -r "$pid/comm" ]] || continue
+		[[ $(<"$pid/comm") == "wineserver" ]] || continue
+		# Extract SteamAppId from wineserver's environment
+		appid=$(tr '\0' '\n' <"$pid/environ" 2>/dev/null | sed -n 's/^SteamAppId=//p')
+		[[ -n $appid ]] || continue
 		printf '%s\t%s\n' "$appid" "$(get_game_name "$appid")"
 	done
 }
 
 cmd_run() {
-	local bypass_gamescope=0
+	local use_desktop=0
 	local desktop_res="1280x720"
+	local proton_override=""
 
 	while [[ $# -gt 0 ]]; do
 		case $1 in
-		--bypass-gamescope)
-			bypass_gamescope=1
+		--desktop)
+			use_desktop=1
 			shift
 			;;
-		--bypass-gamescope=*)
-			bypass_gamescope=1
+		--desktop=*)
+			use_desktop=1
 			desktop_res="${1#*=}"
 			shift
 			;;
+		--proton)
+			proton_override="$2"
+			shift 2
+			;;
+		--proton=*)
+			proton_override="${1#*=}"
+			shift
+			;;
+		-*) die "Unknown option: $1" ;;
 		*) break ;;
 		esac
 	done
@@ -154,40 +181,23 @@ cmd_run() {
 
 	local appid=$1
 	shift
-	load_app_env "$appid"
+	local compatdata proton wine64
 
-	if [[ $bypass_gamescope -eq 1 ]]; then
-		restore_host_env
-		local wine64
-		wine64="$(get_wine64 "$(get_proton_exe "$appid")")"
+	compatdata=$(find_compatdata "$appid")
+	proton="${proton_override:-$(get_proton "$appid")}"
+	wine64="$(dirname "$proton")/files/bin/wine64"
+
+	[[ -x $wine64 ]] || die "wine64 not found at $wine64"
+
+	export WINEPREFIX="$compatdata/pfx"
+	export WINEFSYNC=1
+	export STEAM_COMPAT_DATA_PATH="$compatdata"
+
+	if [[ $use_desktop -eq 1 ]]; then
 		exec "$wine64" explorer "/desktop=parton,$desktop_res" "$@"
 	else
-		exec "$(get_proton_exe "$appid")" run "$@"
+		exec "$wine64" "$@"
 	fi
-}
-
-cmd_exec() {
-	local bypass_gamescope=0
-
-	while [[ $# -gt 0 ]]; do
-		case $1 in
-		--bypass-gamescope)
-			bypass_gamescope=1
-			shift
-			;;
-		*) break ;;
-		esac
-	done
-
-	[[ $# -ge 2 ]] || die "exec requires <appid> <command>"
-
-	local appid=$1
-	shift
-	load_app_env "$appid"
-
-	[[ $bypass_gamescope -eq 1 ]] && restore_host_env
-
-	exec "$@"
 }
 
 main() {
@@ -200,10 +210,8 @@ main() {
 	shift
 
 	case $cmd in
-	catch) cmd_init "$@" ;;
 	ls) cmd_ls ;;
 	run) cmd_run "$@" ;;
-	exec) cmd_exec "$@" ;;
 	-h | --help | help) usage ;;
 	*) die "Unknown command: $cmd" ;;
 	esac
