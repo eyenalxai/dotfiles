@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#
+# parton - run Windows executables alongside running Proton games
+#
 
 set -euo pipefail
 
@@ -18,14 +21,13 @@ usage() {
 	cat <<-EOF
 		Usage:
 		  parton run [options] <appid> <exe> [args...]
-		      Run a Windows executable using game's Proton/wineprefix.
+		      Run a Windows executable in a running game's Proton context.
 
 		  parton ls
-		      List games with existing wineprefixes.
+		      List currently running games.
 
 		Options:
 		  --desktop[=WxH]   Run in Wine virtual desktop (default: 1280x720)
-		  --proton <path>   Override Proton path (default: auto-detect from Steam)
 
 		Examples:
 		  parton run 1888160 "C:/Program Files/Cheat Engine/cheatengine.exe"
@@ -34,6 +36,7 @@ usage() {
 	EOF
 }
 
+# Find a file across Steam libraries
 find_in_libs() {
 	local relpath=$1
 	for lib in "${STEAM_LIBS[@]}"; do
@@ -46,6 +49,7 @@ find_in_libs() {
 	return 1
 }
 
+# Get game name from appmanifest
 get_game_name() {
 	local appid=$1
 	local manifest
@@ -55,93 +59,42 @@ get_game_name() {
 	echo "(unknown)"
 }
 
-find_compatdata() {
-	local appid=$1
-	find_in_libs "compatdata/$appid" || die "No compatdata found for appid $appid"
-}
-
-get_configured_proton() {
-	local appid=$1
-	local config=~/.steam/steam/config/config.vdf
-
-	[[ -f $config ]] || return 1
-
-	local tool_name
-	tool_name=$(awk -v id="$appid" '
-		/CompatToolMapping/,/^[[:space:]]*}[[:space:]]*$/ {
-			if ($1 == "\"" id "\"") { found=1 }
-			if (found && $1 == "\"name\"") {
-				gsub(/"/, "", $2)
-				print $2
-				exit
-			}
-			if (found && /^[[:space:]]*}/) { exit }
-		}
-	' "$config")
-
-	[[ -n $tool_name ]] || return 1
-
-	local search_name
-	case $tool_name in
-	proton_experimental) search_name="Proton Experimental" ;;
-	proton_hotfix) search_name="Proton Hotfix" ;;
-	proton_9) search_name="Proton 9" ;;
-	proton_8) search_name="Proton 8" ;;
-	*) search_name="${tool_name//_/ }" ;;
-	esac
-
-	local manifest installdir
-	for lib in "${STEAM_LIBS[@]}"; do
-		lib="${lib/#\~/$HOME}"
-		for manifest in "$lib"/appmanifest_*.acf; do
-			[[ -f $manifest ]] || continue
-			if grep -q "\"name\".*\"$search_name\"" "$manifest" 2>/dev/null; then
-				installdir=$(grep -oP '^\s*"installdir"\s*"\K[^"]+' "$manifest")
-				if [[ -n $installdir && -x "$lib/common/$installdir/proton" ]]; then
-					printf '%s' "$lib/common/$installdir/proton"
-					return 0
-				fi
-			fi
-		done
-	done
-
-	return 1
-}
-
-find_default_proton() {
-	local proton
-	for name in "Proton - Experimental" "Proton Hotfix" "Proton 9"*; do
-		if proton=$(find_in_libs "common/$name/proton") && [[ -x $proton ]]; then
-			printf '%s' "$proton"
+# Find wineserver pid for a given appid
+find_wineserver() {
+	local target_appid=$1
+	local pid appid
+	for pid in /proc/[0-9]*; do
+		[[ -r "$pid/comm" ]] || continue
+		[[ $(<"$pid/comm") == "wineserver" ]] || continue
+		appid=$(tr '\0' '\n' <"$pid/environ" 2>/dev/null | sed -n 's/^SteamAppId=//p')
+		if [[ $appid == "$target_appid" ]]; then
+			printf '%s' "${pid##*/}"
 			return 0
 		fi
 	done
-
-	for lib in "${STEAM_LIBS[@]}"; do
-		lib="${lib/#\~/$HOME}"
-		for proton in "$lib"/common/Proton*/proton; do
-			if [[ -x $proton ]]; then
-				printf '%s' "$proton"
-				return 0
-			fi
-		done
-	done
-
 	return 1
 }
 
-get_proton() {
-	local appid=$1
-	get_configured_proton "$appid" || find_default_proton || die "No Proton installation found"
+# Get wine64 path from wineserver pid (wineserver is in files/bin/, wine64 is next to it)
+get_wine64() {
+	local pid=$1
+	local wineserver_path
+	wineserver_path=$(readlink "/proc/$pid/exe")
+	printf '%s' "${wineserver_path%/*}/wine64"
 }
 
-# List running games by checking wineserver processes
+# Get WINEPREFIX from wineserver environment
+get_wineprefix() {
+	local pid=$1
+	tr '\0' '\n' <"/proc/$pid/environ" | sed -n 's/^WINEPREFIX=//p'
+}
+
+# List running games
 cmd_ls() {
 	local pid appid
 	for pid in /proc/[0-9]*; do
 		[[ -r "$pid/comm" ]] || continue
 		[[ $(<"$pid/comm") == "wineserver" ]] || continue
-		# Extract SteamAppId from wineserver's environment
 		appid=$(tr '\0' '\n' <"$pid/environ" 2>/dev/null | sed -n 's/^SteamAppId=//p')
 		[[ -n $appid ]] || continue
 		printf '%s\t%s\n' "$appid" "$(get_game_name "$appid")"
@@ -151,7 +104,6 @@ cmd_ls() {
 cmd_run() {
 	local use_desktop=0
 	local desktop_res="1280x720"
-	local proton_override=""
 
 	while [[ $# -gt 0 ]]; do
 		case $1 in
@@ -164,14 +116,6 @@ cmd_run() {
 			desktop_res="${1#*=}"
 			shift
 			;;
-		--proton)
-			proton_override="$2"
-			shift 2
-			;;
-		--proton=*)
-			proton_override="${1#*=}"
-			shift
-			;;
 		-*) die "Unknown option: $1" ;;
 		*) break ;;
 		esac
@@ -181,17 +125,17 @@ cmd_run() {
 
 	local appid=$1
 	shift
-	local compatdata proton wine64
+	local pid wine64 wineprefix
 
-	compatdata=$(find_compatdata "$appid")
-	proton="${proton_override:-$(get_proton "$appid")}"
-	wine64="$(dirname "$proton")/files/bin/wine64"
+	pid=$(find_wineserver "$appid") || die "No running game with appid $appid"
+	wine64=$(get_wine64 "$pid")
+	wineprefix=$(get_wineprefix "$pid")
 
 	[[ -x $wine64 ]] || die "wine64 not found at $wine64"
+	[[ -n $wineprefix ]] || die "Could not determine WINEPREFIX"
 
-	export WINEPREFIX="$compatdata/pfx"
+	export WINEPREFIX="$wineprefix"
 	export WINEFSYNC=1
-	export STEAM_COMPAT_DATA_PATH="$compatdata"
 
 	if [[ $use_desktop -eq 1 ]]; then
 		exec "$wine64" explorer "/desktop=parton,$desktop_res" "$@"
