@@ -28,21 +28,21 @@ die() {
 
 usage() {
 	cat <<-EOF
-	Usage:
-	  parton catch <command>
-	      Wrap a Steam launch command to capture the Proton environment.
-	      Use in Steam launch options: parton catch %command%
+		Usage:
+		  parton catch <command>
+		      Wrap a Steam launch command to capture the Proton environment.
+		      Use in Steam launch options: parton catch %command%
 
-	  parton ls
-	      List running games (by AppID).
+		  parton ls
+		      List running games (by AppID).
 
-	  parton run [--bypass-gamescope[=WxH]] <appid> <exe> [args...]
-	      Run a Windows executable via Proton.
-	      --bypass-gamescope  Run on host display in a Wine virtual desktop.
-	                          Optional resolution (default: 1280x720).
+		  parton run [--bypass-gamescope[=WxH]] <appid> <exe> [args...]
+		      Run a Windows executable via Proton.
+		      --bypass-gamescope  Run on host display in a Wine virtual desktop.
+		                          Optional resolution (default: 1280x720).
 
-	  parton exec [--bypass-gamescope] <appid> <command> [args...]
-	      Run a raw command with the game's environment (no Proton wrapper).
+		  parton exec [--bypass-gamescope] <appid> <command> [args...]
+		      Run a raw command with the game's environment (no Proton wrapper).
 	EOF
 }
 
@@ -139,15 +139,23 @@ cmd_run() {
 
 	while [[ $# -gt 0 ]]; do
 		case $1 in
-			--bypass-gamescope) bypass_gamescope=1; shift ;;
-			--bypass-gamescope=*) bypass_gamescope=1; desktop_res="${1#*=}"; shift ;;
-			*) break ;;
+		--bypass-gamescope)
+			bypass_gamescope=1
+			shift
+			;;
+		--bypass-gamescope=*)
+			bypass_gamescope=1
+			desktop_res="${1#*=}"
+			shift
+			;;
+		*) break ;;
 		esac
 	done
 
 	[[ $# -ge 2 ]] || die "run requires <appid> <exe>"
 
-	local appid=$1; shift
+	local appid=$1
+	shift
 	load_app_env "$appid"
 
 	if [[ $bypass_gamescope -eq 1 ]]; then
@@ -165,14 +173,18 @@ cmd_exec() {
 
 	while [[ $# -gt 0 ]]; do
 		case $1 in
-			--bypass-gamescope) bypass_gamescope=1; shift ;;
-			*) break ;;
+		--bypass-gamescope)
+			bypass_gamescope=1
+			shift
+			;;
+		*) break ;;
 		esac
 	done
 
 	[[ $# -ge 2 ]] || die "exec requires <appid> <command>"
 
-	local appid=$1; shift
+	local appid=$1
+	shift
 	load_app_env "$appid"
 
 	[[ $bypass_gamescope -eq 1 ]] && restore_host_env
@@ -181,17 +193,21 @@ cmd_exec() {
 }
 
 main() {
-	[[ $# -ge 1 ]] || { usage; exit 1; }
+	[[ $# -ge 1 ]] || {
+		usage
+		exit 1
+	}
 
-	local cmd=$1; shift
+	local cmd=$1
+	shift
 
 	case $cmd in
-		catch) cmd_init "$@" ;;
-		ls)   cmd_ls ;;
-		run)  cmd_run "$@" ;;
-		exec) cmd_exec "$@" ;;
-		-h|--help|help) usage ;;
-		*) die "Unknown command: $cmd" ;;
+	catch) cmd_init "$@" ;;
+	ls) cmd_ls ;;
+	run) cmd_run "$@" ;;
+	exec) cmd_exec "$@" ;;
+	-h | --help | help) usage ;;
+	*) die "Unknown command: $cmd" ;;
 	esac
 }
 
