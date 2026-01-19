@@ -107,8 +107,30 @@ cmd_init() {
 	exit $ec
 }
 
+# Get game name from Steam manifest
+get_game_name() {
+	local appid=$1
+	local manifest
+
+	# Check common Steam library paths
+	for lib in /games/steam/steamapps ~/.steam/steam/steamapps ~/.local/share/Steam/steamapps; do
+		manifest="$lib/appmanifest_$appid.acf"
+		if [[ -f $manifest ]]; then
+			grep -oP '^\s*"name"\s*"\K[^"]+' "$manifest" && return
+		fi
+	done
+	echo "(unknown)"
+}
+
 cmd_ls() {
-	[[ -d $PHD ]] && ls -1 "$PHD"
+	[[ -d $PHD ]] || return 0
+
+	for appid in "$PHD"/*/; do
+		[[ -d $appid ]] || continue
+		appid="${appid%/}"
+		appid="${appid##*/}"
+		printf '%s\t%s\n' "$appid" "$(get_game_name "$appid")"
+	done
 }
 
 cmd_run() {
