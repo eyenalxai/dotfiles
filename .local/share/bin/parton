@@ -24,12 +24,12 @@ usage() {
 		      List currently running games.
 
 		Options:
-		  --desktop[=WxH]   Run in Wine virtual desktop (default: 1280x720)
+		  --bypass-gamescope[=WxH]   Run on host display in Wine virtual desktop (default: 1280x720)
 
 		Examples:
 		  parton run 1888160 "C:/Program Files/Cheat Engine/cheatengine.exe"
-		  parton run --desktop 1888160 "/path/to/app.exe"
-		  parton run --desktop=1920x1080 1888160 "C:/tools/x64dbg/x64dbg.exe"
+		  parton run --bypass-gamescope 1888160 "/path/to/app.exe"
+		  parton run --bypass-gamescope=1920x1080 1888160 "C:/tools/x64dbg/x64dbg.exe"
 	EOF
 }
 
@@ -93,18 +93,18 @@ cmd_ls() {
 }
 
 cmd_run() {
-	local use_desktop=0
-	local desktop_res="1280x720"
+	local bypass_gamescope=0
+	local bypass_res="1280x720"
 
 	while [[ $# -gt 0 ]]; do
 		case $1 in
-		--desktop)
-			use_desktop=1
+		--bypass-gamescope)
+			bypass_gamescope=1
 			shift
 			;;
-		--desktop=*)
-			use_desktop=1
-			desktop_res="${1#*=}"
+		--bypass-gamescope=*)
+			bypass_gamescope=1
+			bypass_res="${1#*=}"
 			shift
 			;;
 		-*) die "Unknown option: $1" ;;
@@ -128,8 +128,8 @@ cmd_run() {
 	export WINEPREFIX="$wineprefix"
 	export WINEFSYNC=1
 
-	if [[ $use_desktop -eq 1 ]]; then
-		exec "$wine64" explorer "/desktop=parton,$desktop_res" "$@"
+	if [[ $bypass_gamescope -eq 1 ]]; then
+		exec "$wine64" explorer "/desktop=parton,$bypass_res" "$@"
 	else
 		exec "$wine64" "$@"
 	fi
