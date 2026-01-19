@@ -92,38 +92,6 @@ elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
   export WINEFSYNC=1
 
   if [[ $no_gamescope -eq 1 ]]; then
-    unset GAMESCOPE_WAYLAND_DISPLAY
-    unset STEAM_GAME_DISPLAY_0 STEAM_GAME_DISPLAY_1 STEAM_GAME_DISPLAY_2
-    unset STEAM_GAMESCOPE
-    unset STEAM_GAMESCOPE_REFRESHED
-    unset STEAM_GAMESCOPE_DEPTH
-    unset STEAM_GAMESCOPE_HDR
-    unset STEAM_GAMESCOPE_HDR_FIRST
-    unset STEAM_GAMESCOPE_HDR_LUMINANCE
-    unset STEAM_GAMESCOPE_HDR_FRAMES
-    unset STEAM_GAMESCOPE_DYNAMIC
-    unset STEAM_GAMESCOPE_DYNAMIC_REFRESH_RATE
-    unset STEAM_GAMESCOPE_SCALING
-    unset STEAM_GAMESCOPE_FPS_LIMIT
-    unset STEAM_GAMESCOPE_VRR
-    unset STEAM_GAMESCOPE_VRR_SUPPORTED
-    unset STEAM_GAMESCOPE_PREFERRED_MODE
-    unset STEAM_GAMESCOPE_SCREEN_WIDTH
-    unset STEAM_GAMESCOPE_SCREEN_HEIGHT
-    unset STEAM_GAMESCOPE_CURSOR_VISIBLE
-    unset GAMESCOPE_LIMITER_FILE
-    unset LIBEI_SOCKET
-
-    # Strip Steam overlay from LD_PRELOAD - it holds X resources from gamescope's display
-    if [[ -n ${LD_PRELOAD-} ]]; then
-      LD_PRELOAD=$(echo "$LD_PRELOAD" | tr ':' '\n' | grep -v gameoverlayrenderer | tr '\n' ':' | sed 's/:$//')
-      if [[ -z "$LD_PRELOAD" ]]; then
-        unset LD_PRELOAD
-      else
-        export LD_PRELOAD
-      fi
-    fi
-
     if [[ -n ${host_xdg_runtime_dir-} ]]; then
       export XDG_RUNTIME_DIR="$host_xdg_runtime_dir"
     fi
