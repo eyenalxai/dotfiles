@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-#
-# parton - run Windows executables alongside running Proton games
-#
 
 set -euo pipefail
 
@@ -36,7 +33,6 @@ usage() {
 	EOF
 }
 
-# Find a file across Steam libraries
 find_in_libs() {
 	local relpath=$1
 	for lib in "${STEAM_LIBS[@]}"; do
@@ -49,7 +45,6 @@ find_in_libs() {
 	return 1
 }
 
-# Get game name from appmanifest
 get_game_name() {
 	local appid=$1
 	local manifest
@@ -59,7 +54,6 @@ get_game_name() {
 	echo "(unknown)"
 }
 
-# Find wineserver pid for a given appid
 find_wineserver() {
 	local target_appid=$1
 	local pid appid
@@ -75,7 +69,6 @@ find_wineserver() {
 	return 1
 }
 
-# Get wine64 path from wineserver pid (wineserver is in files/bin/, wine64 is next to it)
 get_wine64() {
 	local pid=$1
 	local wineserver_path
@@ -83,13 +76,11 @@ get_wine64() {
 	printf '%s' "${wineserver_path%/*}/wine64"
 }
 
-# Get WINEPREFIX from wineserver environment
 get_wineprefix() {
 	local pid=$1
 	tr '\0' '\n' <"/proc/$pid/environ" | sed -n 's/^WINEPREFIX=//p'
 }
 
-# List running games
 cmd_ls() {
 	local pid appid
 	for pid in /proc/[0-9]*; do
