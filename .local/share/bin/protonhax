@@ -1,186 +1,176 @@
 #!/usr/bin/env bash
+#
+# protonhax - run commands in the context of a running Proton game
+#
 
 set -euo pipefail
 
-host_wayland_display=${WAYLAND_DISPLAY-}
-host_display=${DISPLAY-}
-host_xdg_runtime_dir=${XDG_RUNTIME_DIR-}
-host_xdg_current_desktop=${XDG_CURRENT_DESKTOP-}
-host_xdg_session_desktop=${XDG_SESSION_DESKTOP-}
-host_xdg_session_type=${XDG_SESSION_TYPE-}
-host_xdg_session_class=${XDG_SESSION_CLASS-}
-host_xdg_session_id=${XDG_SESSION_ID-}
-host_xdg_session_path=${XDG_SESSION_PATH-}
-host_xdg_backend=${XDG_BACKEND-}
+readonly PHD="${XDG_RUNTIME_DIR:-/run/user/$UID}/protonhax"
 
-phd=${XDG_RUNTIME_DIR:-/run/user/$UID}/protonhax
+# Capture host display environment before gamescope overwrites them
+declare -A HOST_ENV=(
+	[DISPLAY]="${DISPLAY-}"
+	[WAYLAND_DISPLAY]="${WAYLAND_DISPLAY-}"
+	[XDG_RUNTIME_DIR]="${XDG_RUNTIME_DIR-}"
+	[XDG_CURRENT_DESKTOP]="${XDG_CURRENT_DESKTOP-}"
+	[XDG_SESSION_DESKTOP]="${XDG_SESSION_DESKTOP-}"
+	[XDG_SESSION_TYPE]="${XDG_SESSION_TYPE-}"
+	[XDG_SESSION_CLASS]="${XDG_SESSION_CLASS-}"
+	[XDG_SESSION_ID]="${XDG_SESSION_ID-}"
+	[XDG_SESSION_PATH]="${XDG_SESSION_PATH-}"
+	[XDG_BACKEND]="${XDG_BACKEND-}"
+)
 
-usage() {
-	echo "Usage:"
-	echo "protonhax init <cmd>"
-	printf "\tShould only be called by Steam with \"protonhax init %%COMMAND%%\"\n"
-	echo "protonhax ls"
-	printf "\tLists all currently running games\n"
-	echo "protonhax run [--no-gamescope[=WxH]] <appid> <cmd>"
-	printf "\tRuns <cmd> in the context of <appid> with proton\n"
-	printf "\t--no-gamescope runs in a Wine virtual desktop on the host display\n"
-	printf "\tOptional resolution (default: 1280x720), e.g. --no-gamescope=1920x1080\n"
-	echo "protonhax cmd [--no-gamescope[=WxH]] <appid>"
-	printf "\tRuns cmd.exe in the context of <appid>\n"
-	echo "protonhax exec [--no-gamescope] <appid> <cmd>"
-	printf "\tRuns <cmd> in the context of <appid> (no virtual desktop wrapper)\n"
+die() {
+	printf '%s\n' "$*" >&2
+	exit 1
 }
 
-if [[ $# -lt 1 ]]; then
-	usage
-	exit 1
-fi
+usage() {
+	cat <<-EOF
+	Usage:
+	  protonhax init <command>
+	      Wrap a Steam launch command to capture the Proton environment.
+	      Use in Steam launch options: protonhax init %command%
 
-c=$1
-shift
+	  protonhax ls
+	      List running games (by AppID).
 
-if [[ "$c" == "init" ]]; then
-	mkdir -p "$phd/$SteamAppId"
-	printf "%s\n" "${@}" | grep -m 1 "/proton" >"$phd/$SteamAppId/exe"
-	printf "%s" "$STEAM_COMPAT_DATA_PATH/pfx" >"$phd/$SteamAppId/pfx"
-	declare -px >"$phd/$SteamAppId/env"
-	"$@"
-	ec=$?
-	rm -r "${phd:?}/${SteamAppId:?}"
-	exit $ec
-elif [[ "$c" == "ls" ]]; then
-	if [[ -d "$phd" ]]; then
-		ls -1 "$phd"
-	fi
-elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
-	if [[ $# -lt 1 ]]; then
-		usage
-		exit 1
-	fi
+	  protonhax run [--bypass-gamescope[=WxH]] <appid> <exe> [args...]
+	      Run a Windows executable via Proton.
+	      --bypass-gamescope  Run on host display in a Wine virtual desktop.
+	                          Optional resolution (default: 1280x720).
 
-	no_gamescope=0
-	desktop_res="1280x720"
-	while [[ $# -gt 0 ]]; do
-		if [[ "$1" == "--no-gamescope" ]]; then
-			no_gamescope=1
-			shift
-			continue
-		elif [[ "$1" == --no-gamescope=* ]]; then
-			no_gamescope=1
-			desktop_res="${1#--no-gamescope=}"
-			shift
-			continue
+	  protonhax exec [--bypass-gamescope] <appid> <command> [args...]
+	      Run a raw command with the game's environment (no Proton wrapper).
+	EOF
+}
+
+# Restore host display environment variables
+restore_host_env() {
+	for var in "${!HOST_ENV[@]}"; do
+		if [[ -n ${HOST_ENV[$var]} ]]; then
+			export "$var=${HOST_ENV[$var]}"
+		else
+			unset "$var"
 		fi
-		break
 	done
+}
 
-	if [[ $# -lt 1 ]]; then
-		usage
-		exit 1
-	fi
-	if [[ ! -d $phd ]]; then
-		printf "No app running with appid \"%s\"\n" "$1"
-		exit 2
-	fi
-	if [[ ! -d $phd/$1 ]]; then
-		printf "No app running with appid \"%s\"\n" "$1"
-		exit 2
-	fi
-	SteamAppId=$1
-	shift
+# Load saved environment for an appid
+load_app_env() {
+	local appid=$1
+	local app_dir="$PHD/$appid"
+
+	[[ -d $app_dir ]] || die "No app running with appid \"$appid\""
 
 	# shellcheck source=/dev/null
-	source "$phd/$SteamAppId/env"
+	source "$app_dir/env"
 
-	# Set WINEPREFIX from STEAM_COMPAT_DATA_PATH if not already set
-	if [[ -z ${WINEPREFIX-} ]] && [[ -n ${STEAM_COMPAT_DATA_PATH-} ]]; then
+	# Ensure WINEPREFIX is set for direct wine calls
+	if [[ -z ${WINEPREFIX-} && -n ${STEAM_COMPAT_DATA_PATH-} ]]; then
 		export WINEPREFIX="$STEAM_COMPAT_DATA_PATH/pfx"
 	fi
 
-	# Enable fsync to match the running wineserver
+	# Match the running wineserver's sync mode
 	export WINEFSYNC=1
+}
 
-	if [[ $no_gamescope -eq 1 ]]; then
-		if [[ -n ${host_xdg_runtime_dir-} ]]; then
-			export XDG_RUNTIME_DIR="$host_xdg_runtime_dir"
-		fi
-		if [[ -n ${host_wayland_display-} ]]; then
-			export WAYLAND_DISPLAY="$host_wayland_display"
-		else
-			unset WAYLAND_DISPLAY
-		fi
-		if [[ -n ${host_display-} ]]; then
-			export DISPLAY="$host_display"
-		else
-			unset DISPLAY
-		fi
-		if [[ -n ${host_xdg_current_desktop-} ]]; then
-			export XDG_CURRENT_DESKTOP="$host_xdg_current_desktop"
-		else
-			unset XDG_CURRENT_DESKTOP
-		fi
-		if [[ -n ${host_xdg_session_desktop-} ]]; then
-			export XDG_SESSION_DESKTOP="$host_xdg_session_desktop"
-		else
-			unset XDG_SESSION_DESKTOP
-		fi
-		if [[ -n ${host_xdg_session_type-} ]]; then
-			export XDG_SESSION_TYPE="$host_xdg_session_type"
-		else
-			unset XDG_SESSION_TYPE
-		fi
-		if [[ -n ${host_xdg_session_class-} ]]; then
-			export XDG_SESSION_CLASS="$host_xdg_session_class"
-		else
-			unset XDG_SESSION_CLASS
-		fi
-		if [[ -n ${host_xdg_session_id-} ]]; then
-			export XDG_SESSION_ID="$host_xdg_session_id"
-		else
-			unset XDG_SESSION_ID
-		fi
-		if [[ -n ${host_xdg_session_path-} ]]; then
-			export XDG_SESSION_PATH="$host_xdg_session_path"
-		else
-			unset XDG_SESSION_PATH
-		fi
-		if [[ -n ${host_xdg_backend-} ]]; then
-			export XDG_BACKEND="$host_xdg_backend"
-		else
-			unset XDG_BACKEND
-		fi
-	fi
+get_proton_exe() {
+	local appid=$1
+	cat "$PHD/$appid/exe"
+}
 
-	proton_exe="$(cat "$phd/$SteamAppId/exe")"
+get_wine64() {
+	local proton_exe=$1
+	local proton_dir
 	proton_dir="$(dirname "$proton_exe")"
-	wine64="$proton_dir/files/bin/wine64"
+	echo "$proton_dir/files/bin/wine64"
+}
 
-	if [[ "$c" == "run" ]]; then
-		if [[ $# -lt 1 ]]; then
-			usage
-			exit 1
-		fi
-		if [[ $no_gamescope -eq 1 ]]; then
-			exec "$wine64" explorer "/desktop=protonhax,$desktop_res" "$@"
-		else
-			exec "$proton_exe" run "$@"
-		fi
-	elif [[ "$c" == "cmd" ]]; then
-		cmd_path="$(cat "$phd/$SteamAppId/pfx")/drive_c/windows/system32/cmd.exe"
-		if [[ $no_gamescope -eq 1 ]]; then
-			exec "$wine64" explorer "/desktop=protonhax,$desktop_res" "$cmd_path"
-		else
-			exec "$proton_exe" run "$cmd_path"
-		fi
-	elif [[ "$c" == "exec" ]]; then
-		if [[ $# -lt 1 ]]; then
-			usage
-			exit 1
-		fi
-		exec "$@"
+cmd_init() {
+	[[ $# -ge 1 ]] || die "init requires a command"
+	[[ -n ${SteamAppId-} ]] || die "SteamAppId not set (not launched from Steam?)"
+
+	local app_dir="$PHD/$SteamAppId"
+	mkdir -p "$app_dir"
+
+	# Find proton executable in args
+	printf '%s\n' "$@" | grep -m1 "/proton" >"$app_dir/exe"
+	printf '%s' "$STEAM_COMPAT_DATA_PATH/pfx" >"$app_dir/pfx"
+	declare -px >"$app_dir/env"
+
+	local ec=0
+	"$@" || ec=$?
+
+	rm -r "${PHD:?}/${SteamAppId:?}"
+	exit $ec
+}
+
+cmd_ls() {
+	[[ -d $PHD ]] && ls -1 "$PHD"
+}
+
+cmd_run() {
+	local bypass_gamescope=0
+	local desktop_res="1280x720"
+
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+			--bypass-gamescope) bypass_gamescope=1; shift ;;
+			--bypass-gamescope=*) bypass_gamescope=1; desktop_res="${1#*=}"; shift ;;
+			*) break ;;
+		esac
+	done
+
+	[[ $# -ge 2 ]] || die "run requires <appid> <exe>"
+
+	local appid=$1; shift
+	load_app_env "$appid"
+
+	if [[ $bypass_gamescope -eq 1 ]]; then
+		restore_host_env
+		local wine64
+		wine64="$(get_wine64 "$(get_proton_exe "$appid")")"
+		exec "$wine64" explorer "/desktop=protonhax,$desktop_res" "$@"
+	else
+		exec "$(get_proton_exe "$appid")" run "$@"
 	fi
-else
-	printf "Unknown command %s\n" "$c"
-	usage
-	exit 1
-fi
+}
+
+cmd_exec() {
+	local bypass_gamescope=0
+
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+			--bypass-gamescope) bypass_gamescope=1; shift ;;
+			*) break ;;
+		esac
+	done
+
+	[[ $# -ge 2 ]] || die "exec requires <appid> <command>"
+
+	local appid=$1; shift
+	load_app_env "$appid"
+
+	[[ $bypass_gamescope -eq 1 ]] && restore_host_env
+
+	exec "$@"
+}
+
+main() {
+	[[ $# -ge 1 ]] || { usage; exit 1; }
+
+	local cmd=$1; shift
+
+	case $cmd in
+		init) cmd_init "$@" ;;
+		ls)   cmd_ls ;;
+		run)  cmd_run "$@" ;;
+		exec) cmd_exec "$@" ;;
+		-h|--help|help) usage ;;
+		*) die "Unknown command: $cmd" ;;
+	esac
+}
+
+main "$@"
