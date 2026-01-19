@@ -21,12 +21,14 @@ usage() {
 	printf "\tShould only be called by Steam with \"protonhax init %%COMMAND%%\"\n"
 	echo "protonhax ls"
 	printf "\tLists all currently running games\n"
-	echo "protonhax run [--no-gamescope] <appid> <cmd>"
+	echo "protonhax run [--no-gamescope[=WxH]] <appid> <cmd>"
 	printf "\tRuns <cmd> in the context of <appid> with proton\n"
-	echo "protonhax cmd [--no-gamescope] <appid>"
+	printf "\t--no-gamescope runs in a Wine virtual desktop on the host display\n"
+	printf "\tOptional resolution (default: 1280x720), e.g. --no-gamescope=1920x1080\n"
+	echo "protonhax cmd [--no-gamescope[=WxH]] <appid>"
 	printf "\tRuns cmd.exe in the context of <appid>\n"
 	echo "protonhax exec [--no-gamescope] <appid> <cmd>"
-	printf "\tRuns <cmd> in the context of <appid>\n"
+	printf "\tRuns <cmd> in the context of <appid> (no virtual desktop wrapper)\n"
 }
 
 if [[ $# -lt 1 ]]; then
@@ -57,9 +59,15 @@ elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
 	fi
 
 	no_gamescope=0
+	desktop_res="1280x720"
 	while [[ $# -gt 0 ]]; do
 		if [[ "$1" == "--no-gamescope" ]]; then
 			no_gamescope=1
+			shift
+			continue
+		elif [[ "$1" == --no-gamescope=* ]]; then
+			no_gamescope=1
+			desktop_res="${1#--no-gamescope=}"
 			shift
 			continue
 		fi
@@ -143,14 +151,27 @@ elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
 		fi
 	fi
 
+	proton_exe="$(cat "$phd/$SteamAppId/exe")"
+	proton_dir="$(dirname "$proton_exe")"
+	wine64="$proton_dir/files/bin/wine64"
+
 	if [[ "$c" == "run" ]]; then
 		if [[ $# -lt 1 ]]; then
 			usage
 			exit 1
 		fi
-		exec "$(cat "$phd/$SteamAppId/exe")" run "$@"
+		if [[ $no_gamescope -eq 1 ]]; then
+			exec "$wine64" explorer "/desktop=protonhax,$desktop_res" "$@"
+		else
+			exec "$proton_exe" run "$@"
+		fi
 	elif [[ "$c" == "cmd" ]]; then
-		exec "$(cat "$phd/$SteamAppId/exe")" run "$(cat "$phd/$SteamAppId/pfx")/drive_c/windows/system32/cmd.exe"
+		cmd_path="$(cat "$phd/$SteamAppId/pfx")/drive_c/windows/system32/cmd.exe"
+		if [[ $no_gamescope -eq 1 ]]; then
+			exec "$wine64" explorer "/desktop=protonhax,$desktop_res" "$cmd_path"
+		else
+			exec "$proton_exe" run "$cmd_path"
+		fi
 	elif [[ "$c" == "exec" ]]; then
 		if [[ $# -lt 1 ]]; then
 			usage
