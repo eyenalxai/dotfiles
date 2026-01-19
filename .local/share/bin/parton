@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
-#
-# parton - run parallel commands in the context of a running Proton game
-#
 
 set -euo pipefail
 
 readonly PHD="${XDG_RUNTIME_DIR:-/run/user/$UID}/parton"
 
-# Capture host display environment before gamescope overwrites them
 declare -A HOST_ENV=(
 	[DISPLAY]="${DISPLAY-}"
 	[WAYLAND_DISPLAY]="${WAYLAND_DISPLAY-}"
@@ -107,12 +103,10 @@ cmd_init() {
 	exit $ec
 }
 
-# Get game name from Steam manifest
 get_game_name() {
 	local appid=$1
 	local manifest
 
-	# Check common Steam library paths
 	for lib in \
 		/games/steam/steamapps \
 		~/.steam/steam/steamapps \
