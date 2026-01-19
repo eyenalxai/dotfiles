@@ -38,17 +38,17 @@ c=$1
 shift
 
 if [[ "$c" == "init" ]]; then
-  mkdir -p $phd/$SteamAppId
-  printf "%s\n" "${@}" | grep -m 1 "/proton" >$phd/$SteamAppId/exe
-  printf "%s" "$STEAM_COMPAT_DATA_PATH/pfx" >$phd/$SteamAppId/pfx
-  declare -px >$phd/$SteamAppId/env
+  mkdir -p "$phd/$SteamAppId"
+  printf "%s\n" "${@}" | grep -m 1 "/proton" >"$phd/$SteamAppId/exe"
+  printf "%s" "$STEAM_COMPAT_DATA_PATH/pfx" >"$phd/$SteamAppId/pfx"
+  declare -px >"$phd/$SteamAppId/env"
   "$@"
   ec=$?
-  rm -r $phd/$SteamAppId
+  rm -r "${phd:?}/${SteamAppId:?}"
   exit $ec
 elif [[ "$c" == "ls" ]]; then
-  if [[ -d $phd ]]; then
-    ls -1 $phd
+  if [[ -d "$phd" ]]; then
+    ls -1 "$phd"
   fi
 elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
   if [[ $# -lt 1 ]]; then
@@ -81,7 +81,8 @@ elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
   SteamAppId=$1
   shift
 
-  source $phd/$SteamAppId/env
+  # shellcheck source=/dev/null
+  source "$phd/$SteamAppId/env"
 
   # Set WINEPREFIX from STEAM_COMPAT_DATA_PATH if not already set
   if [[ -z ${WINEPREFIX-} ]] && [[ -n ${STEAM_COMPAT_DATA_PATH-} ]]; then
@@ -147,9 +148,9 @@ elif [[ "$c" == "run" ]] || [[ "$c" == "cmd" ]] || [[ "$c" == "exec" ]]; then
       usage
       exit 1
     fi
-    exec "$(cat $phd/$SteamAppId/exe)" run "$@"
+    exec "$(cat "$phd/$SteamAppId/exe")" run "$@"
   elif [[ "$c" == "cmd" ]]; then
-    exec "$(cat $phd/$SteamAppId/exe)" run "$(cat $phd/$SteamAppId/pfx)/drive_c/windows/system32/cmd.exe"
+    exec "$(cat "$phd/$SteamAppId/exe")" run "$(cat "$phd/$SteamAppId/pfx")/drive_c/windows/system32/cmd.exe"
   elif [[ "$c" == "exec" ]]; then
     if [[ $# -lt 1 ]]; then
       usage
