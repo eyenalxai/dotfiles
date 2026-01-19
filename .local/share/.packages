@@ -93,6 +93,7 @@ opencode-bin
 openssh
 pacman-contrib
 pamixer
+parton
 pipewire-pulse
 pkgstats
 pnpm

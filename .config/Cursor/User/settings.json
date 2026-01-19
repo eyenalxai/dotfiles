@@ -34,5 +34,6 @@
     "editor.fontFamily": "'JetBrainsMono Nerd Font', 'monospace', monospace",
     "[css]": {
         "editor.defaultFormatter": "biomejs.biome"
-    }
+    },
+    "rust-analyzer.check.command": "clippy"
 }

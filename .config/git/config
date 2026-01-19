@@ -3,7 +3,7 @@
   br = branch
   ci = commit
   st = status
-  push-all = "!git remote | xargs -n1 git push"
+  push-all = "!git remote | xargs -n1 git push --all --tags"
 [pull]
   rebase = true
 [push]
