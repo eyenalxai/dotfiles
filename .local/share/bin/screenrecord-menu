@@ -4,8 +4,7 @@ set -euo pipefail
 
 # Walker-based screen recording helper.
 # - If a recording is running (gpu-screen-recorder), stop it.
-# - Otherwise, show a Walker dmenu with four options:
-#   Region, Screen, Region with audio, Screen with audio.
+# - Otherwise, show a Walker dmenu with common presets.
 
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 USER_DIRS_FILE="$CONFIG_DIR/user-dirs.dirs"
@@ -40,13 +39,53 @@ require() {
 require "walker"
 require "gpu-screen-recorder"
 
+pick_monitor() {
+  local prompt="Pick screen"
+  local -a items=()
+
+  local line
+  while IFS= read -r line; do
+    # Monitor entries look like: HDMI-A-1|2560x1440
+    if [[ "$line" != *"|"* ]]; then
+      continue
+    fi
+    local name=${line%%|*}
+    local res=${line#*|}
+    items+=("$name | $res")
+  done < <(gpu-screen-recorder --list-capture-options)
+
+  if [[ ${#items[@]} -eq 0 ]]; then
+    if command -v notify-send >/dev/null 2>&1; then
+      notify-send "Screen recording error" "No monitors reported by gpu-screen-recorder." -u critical -t 5000
+    fi
+    return 1
+  fi
+
+  local selection
+  selection=$(printf '%s\n' "${items[@]}" | walker --dmenu --width 360 --minheight 1 --maxheight 630 --placeholder "$prompt…") || return 1
+  printf '%s\n' "${selection%% *}"
+}
+
+all_screens_region() {
+  require "hyprctl"
+  require "jq"
+
+  hyprctl monitors -j | jq -r '
+    (map(.x) | min) as $minx |
+    (map(.y) | min) as $miny |
+    (map(.x + .width) | max) as $maxx |
+    (map(.y + .height) | max) as $maxy |
+    "\($maxx-$minx)x\($maxy-$miny)+\($minx)+\($miny)"
+  '
+}
+
 # Notify waybar’s screen recording indicator to refresh
 toggle_screenrecording_indicator() {
   pkill -RTMIN+8 waybar 2>/dev/null || true
 }
 
 start_recording() {
-  local capture_mode="$1"  # screen, region
+  local capture_mode="$1"  # screen, screen_pick, all_screens, region, window
   local audio_mode="$2"    # none, desktop
 
   local filename
@@ -76,7 +115,24 @@ start_recording() {
 
   case "$capture_mode" in
   screen)
-    w_value="screen"
+    w_value="focused"
+    ;;
+  screen_pick)
+    local monitor
+    monitor=$(pick_monitor) || return 1
+    w_value="$monitor"
+    ;;
+  all_screens)
+    local region
+    region=$(all_screens_region) || return 1
+    if [[ -z "$region" ]]; then
+      if command -v notify-send >/dev/null 2>&1; then
+        notify-send "Screen recording error" "Failed to compute all-screens region." -u critical -t 5000
+      fi
+      return 1
+    fi
+    w_value="region"
+    region_args=(-region "$region")
     ;;
   region)
     require "slurp"
@@ -160,30 +216,46 @@ stop_recording() {
 show_menu() {
   local prompt="Screenrecord"
   local options="Region
-Screen
+Screen (focused)
+Screen (pick)
 Window
+All screens
 Region with audio
-Screen with audio
+Screen (focused) with audio
+Screen (pick) with audio
+All screens with audio
 Window with audio"
 
   local selection
-  selection=$(printf '%s\n' "$options" | walker --dmenu --width 295 --minheight 1 --maxheight 630 --placeholder "$prompt…") || return 1
+  selection=$(printf '%s\n' "$options" | walker --dmenu --width 360 --minheight 1 --maxheight 630 --placeholder "$prompt…") || return 1
 
   case "$selection" in
   "Region")
     printf '%s %s\n' "region" "none"
     ;;
-  "Screen")
+  "Screen (focused)")
     printf '%s %s\n' "screen" "none"
+    ;;
+  "Screen (pick)")
+    printf '%s %s\n' "screen_pick" "none"
     ;;
   "Window")
     printf '%s %s\n' "window" "none"
     ;;
+  "All screens")
+    printf '%s %s\n' "all_screens" "none"
+    ;;
   "Region with audio")
     printf '%s %s\n' "region" "desktop"
     ;;
-  "Screen with audio")
+  "Screen (focused) with audio")
     printf '%s %s\n' "screen" "desktop"
+    ;;
+  "Screen (pick) with audio")
+    printf '%s %s\n' "screen_pick" "desktop"
+    ;;
+  "All screens with audio")
+    printf '%s %s\n' "all_screens" "desktop"
     ;;
   "Window with audio")
     printf '%s %s\n' "window" "desktop"

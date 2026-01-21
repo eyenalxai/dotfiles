@@ -1,4 +1,6 @@
 1password
+adobe-source-han-sans-jp-fonts
+adobe-source-han-serif-jp-fonts
 amd-ucode
 amneziavpn-bin
 base
@@ -13,7 +15,6 @@ clipse
 cursor-bin
 datagrip
 datagrip-jre
-debuginfod
 docker
 docker-buildx
 docker-compose
@@ -37,7 +38,6 @@ fastfetch
 game-devices-udev
 gamemode
 gamescope
-gdb
 ghostty
 git
 git-filter-repo
@@ -78,13 +78,13 @@ localsend
 mako
 man-db
 mangohud
-minio-client
 mpv
 nautilus
 neovim
 ngrok
 nodejs
 nodejs-n
+noto-fonts
 noto-fonts-cjk
 npm
 ntfs-3g
@@ -104,7 +104,6 @@ qbittorrent
 qt5-wayland
 qt6-wayland
 railwayapp-cli
-reflector
 ripdrag
 satty
 sddm
@@ -138,12 +137,8 @@ xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland
 xdg-user-dirs
 xdg-utils
-xdotool
 xf86-video-amdgpu
 xorg-server
-xorg-xdpyinfo
-xorg-xeyes
-xorg-xhost
 xorg-xinit
 xorg-xkill
 yadm
