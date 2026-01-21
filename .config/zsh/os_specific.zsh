@@ -32,5 +32,6 @@ if [[ "$(uname -s)" == "Linux" ]]; then
   export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
   alias shutdown="systemctl poweroff"
   alias reboot="systemctl reboot"
+  source <(COMPLETE=zsh prex)
 fi
 
