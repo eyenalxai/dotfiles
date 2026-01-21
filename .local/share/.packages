@@ -46,7 +46,6 @@ gnome-keyring
 gpu-screen-recorder
 grim
 gst-plugins-good
-hadron
 happ-desktop-bin
 helium-browser-bin
 htop
@@ -94,13 +93,13 @@ opencode-bin
 openssh
 pacman-contrib
 pamixer
-parton
 pipewire-pulse
 pkgstats
 pnpm
 polkit-gnome
 polkit-kde-agent
 postgresql-libs
+prex
 qbittorrent
 qt5-wayland
 qt6-wayland
