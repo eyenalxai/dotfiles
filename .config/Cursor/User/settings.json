@@ -1,21 +1,12 @@
 {
     "workbench.colorTheme": "Gruvbox Dark Medium",
     "window.commandCenter": true,
-    "[typescript]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    },
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.organizeImports.biome": "explicit",
         "source.fixAll.biome": "explicit"
     },
     "files.autoSave": "afterDelay",
-    "[typescriptreact]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    },
-    "[json]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    },
     "explorer.confirmDelete": false,
     "editor.tabSize": 2,
     "explorer.confirmDragAndDrop": false,
@@ -26,14 +17,27 @@
     "window.openFoldersInNewWindow": "on",
     "window.restoreWindows": "none",
     "git.autofetch": true,
-    "oxc.fmt.experimental": true,
     "cursor.composer.queueMessageDefaultBehavior": "stop-and-send",
     "[jsonc]": {
-        "editor.defaultFormatter": "biomejs.biome"
+        "editor.defaultFormatter": "oxc.oxc-vscode"
     },
     "editor.fontFamily": "'JetBrainsMono Nerd Font', 'monospace', monospace",
     "[css]": {
         "editor.defaultFormatter": "biomejs.biome"
     },
-    "rust-analyzer.check.command": "clippy"
+    "rust-analyzer.check.command": "clippy",
+    "oxc.typeAware": true,
+    "oxc.fmt.configPath": ".oxfmtrc.json",
+    "[javascript]": {
+        "editor.defaultFormatter": "oxc.oxc-vscode",
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "oxc.oxc-vscode",
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "oxc.oxc-vscode",
+    },
+    "[json]": {
+        "editor.defaultFormatter": "oxc.oxc-vscode",
+    },
 }

@@ -39,6 +39,38 @@ require() {
 require "walker"
 require "gpu-screen-recorder"
 
+focused_monitor_info() {
+  # Prints: "NAME WxH"
+  require "hyprctl"
+  require "jq"
+
+  local name
+  name=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .name' | head -n1)
+  if [[ -z "$name" || "$name" == "null" ]]; then
+    return 1
+  fi
+
+  # Prefer gpu-screen-recorder's reported resolution for this monitor,
+  # because it matches what gsr expects for -s.
+  local size=""
+  local line
+  while IFS= read -r line; do
+    if [[ "$line" == "$name|"* ]]; then
+      size=${line#*|}
+      break
+    fi
+  done < <(gpu-screen-recorder --list-capture-options)
+
+  if [[ -z "$size" ]]; then
+    size=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true) | "\(.width)x\(.height)"' | head -n1)
+  fi
+  if [[ -z "$size" || "$size" == "null" ]]; then
+    return 1
+  fi
+
+  printf '%s %s\n' "$name" "$size"
+}
+
 pick_monitor() {
   local prompt="Pick screen"
   local -a items=()
@@ -63,7 +95,13 @@ pick_monitor() {
 
   local selection
   selection=$(printf '%s\n' "${items[@]}" | walker --dmenu --width 360 --minheight 1 --maxheight 630 --placeholder "$prompt…") || return 1
-  printf '%s\n' "${selection%% *}"
+
+  local name=${selection%% *}
+  local res=${selection##*| }
+  if [[ -z "$name" || -z "$res" ]]; then
+    return 1
+  fi
+  printf '%s %s\n' "$name" "$res"
 }
 
 all_screens_region() {
@@ -111,16 +149,21 @@ start_recording() {
   fi
 
   local w_value
+  local -a size_args=()
   local region_args=()
 
   case "$capture_mode" in
   screen)
-    w_value="focused"
+    local info
+    info=$(focused_monitor_info) || return 1
+    w_value=${info%% *}
+    size_args=(-s "${info##* }")
     ;;
   screen_pick)
-    local monitor
-    monitor=$(pick_monitor) || return 1
-    w_value="$monitor"
+    local picked
+    picked=$(pick_monitor) || return 1
+    w_value=${picked%% *}
+    size_args=(-s "${picked##* }")
     ;;
   all_screens)
     local region
@@ -169,7 +212,7 @@ start_recording() {
     ;;
   esac
 
-  gpu-screen-recorder -w "$w_value" -f 60 -fallback-cpu-encoding yes "${region_args[@]}" -o "$filename" "${args[@]}" -ac aac &
+  gpu-screen-recorder -w "$w_value" "${size_args[@]}" -f 60 -fallback-cpu-encoding yes "${region_args[@]}" -o "$filename" "${args[@]}" -ac aac &
   local pid=$!
 
   # Give gpu-screen-recorder a moment to either start or fail
