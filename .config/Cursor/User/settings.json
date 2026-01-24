@@ -40,4 +40,7 @@
     "[json]": {
         "editor.defaultFormatter": "oxc.oxc-vscode",
     },
+    "[toml]": {
+        "editor.defaultFormatter": "tamasfe.even-better-toml"
+    },
 }
