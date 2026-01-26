@@ -37,7 +37,6 @@ elephant-websearch
 evolution
 fastfetch
 game-devices-udev
-gamemode
 gamescope
 ghostty
 git
@@ -64,7 +63,6 @@ kvantum
 kvantum-qt5
 lazydocker
 lazygit
-lib32-gamemode
 lib32-glibc
 lib32-mangohud
 libnewt
