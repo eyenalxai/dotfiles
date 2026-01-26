@@ -1,5 +1,6 @@
 alias n=nvim
 alias node-n='command n'
+alias ls='exa'
 
 if command -v yay >/dev/null 2>&1; then
   alias yaas="yay -S --noconfirm"
