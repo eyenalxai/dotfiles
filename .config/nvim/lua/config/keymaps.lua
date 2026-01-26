@@ -15,3 +15,8 @@ vim.keymap.set({ "n", "v" }, "S", '"_S', { desc = "Substitute line without yanki
 
 -- Show diagnostics under cursor
 vim.keymap.set("n", "<leader>cd", vim.diagnostic.open_float, { desc = "Line diagnostics" })
+
+vim.keymap.set("n", "<leader>gd", function()
+  require("snacks").picker.git_status() end,
+  { desc = "Git diff (modified + new files)" }
+)

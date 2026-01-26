@@ -34,6 +34,7 @@ elephant-symbols
 elephant-todo
 elephant-unicode
 elephant-websearch
+evolution
 fastfetch
 game-devices-udev
 gamemode
@@ -124,6 +125,7 @@ tree
 ttf-apple-emoji
 ttf-iosevka-nerd
 ttf-jetbrains-mono-nerd
+unzip
 uwsm
 vulkan-radeon
 walker
