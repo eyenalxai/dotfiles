@@ -15,3 +15,8 @@
 [core]
   autocrlf = input
   editor = nvim
+  pager = critique --stdin
+[diff]
+  tool = critique
+[difftool "critique"]
+  cmd = critique difftool "$LOCAL" "$REMOTE"

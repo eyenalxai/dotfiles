@@ -35,6 +35,7 @@ elephant-todo
 elephant-unicode
 elephant-websearch
 evolution
+eza
 fastfetch
 game-devices-udev
 gamescope
@@ -78,6 +79,7 @@ localsend
 mako
 man-db
 mangohud
+me3
 mpv
 nautilus
 neovim
@@ -124,7 +126,9 @@ ttf-apple-emoji
 ttf-iosevka-nerd
 ttf-jetbrains-mono-nerd
 unzip
+uv
 uwsm
+visual-studio-code-bin
 vulkan-radeon
 walker
 waybar
