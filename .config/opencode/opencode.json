@@ -1,4 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "theme": "system"
+  "theme": "system",
+  "agent": {
+    "small_model": {
+      "model": "opencode/kimi-k2.5"
+    },
+    "compaction": {
+      "model": "opencode/kimi-k2.5"
+    },
+    "explore": {
+      "model": "opencode/kimi-k2.5"
+    }
+  }
 }
