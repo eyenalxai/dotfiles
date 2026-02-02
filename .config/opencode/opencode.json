@@ -3,13 +3,10 @@
   "theme": "system",
   "agent": {
     "compaction": {
-      "model": "opencode/kimi-k2.5"
+      "model": "opencode/kimi-k2.5-free"
     },
     "explore": {
-      "model": "opencode/kimi-k2.5"
+      "model": "opencode/kimi-k2.5-free"
     }
-  },
-  "plugin": [
-    "oh-my-opencode@3.2.0"
-  ]
+  }
 }
