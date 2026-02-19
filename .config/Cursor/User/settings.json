@@ -31,15 +31,20 @@
         "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[typescript]": {
-        "editor.defaultFormatter": "biomejs.biome",
+        "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[typescriptreact]": {
-        "editor.defaultFormatter": "biomejs.biome",
+        "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[json]": {
-        "editor.defaultFormatter": "biomejs.biome",
+        "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "[toml]": {
         "editor.defaultFormatter": "tamasfe.even-better-toml"
     },
+    "[dockercompose]": {
+        "editor.defaultFormatter": "oxc.oxc-vscode"
+    },
+    "git.openRepositoryInParentFolders": "never",
+    "workbench.editor.enablePreview": false,
 }

@@ -3,10 +3,10 @@
   "theme": "system",
   "agent": {
     "compaction": {
-      "model": "opencode/kimi-k2.5-free"
+      "model": "openrouter/moonshotai/kimi-k2.5"
     },
     "explore": {
-      "model": "opencode/kimi-k2.5-free"
+      "model": "openrouter/moonshotai/kimi-k2.5"
     }
   }
 }

@@ -1,28 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Waybar custom module: show battery of connected Bluetooth devices.
-# - Uses UPower when available (preferred)
-# - Falls back to bluetoothctl Battery Percentage when present
-#
-# Usage:
-#   bluetooth-battery --check   # exit 0 if something to show
-#   bluetooth-battery --waybar  # print waybar JSON
-
-json_escape() {
-  # Minimal JSON string escaping.
-  local s=${1//\\/\\\\}
-  s=${s//"/\\"}
-  s=${s//$'\n'/\\n}
-  printf '%s' "$s"
-}
+source "$(dirname "${BASH_SOURCE[0]}")/utils/bluetooth-ctl.sh"
 
 mode="--waybar"
 if [[ ${1-} == "--check" || ${1-} == "--waybar" ]]; then
   mode="$1"
 fi
 
-connected_lines="$(bluetoothctl devices Connected 2>/dev/null || true)"
+connected_lines="$(bluetooth_devices Connected)"
 if [[ -z "$connected_lines" ]]; then
   if [[ "$mode" == "--check" ]]; then
     exit 1
@@ -31,7 +17,6 @@ if [[ -z "$connected_lines" ]]; then
   exit 0
 fi
 
-# Build MAC->battery map from UPower (system bus).
 declare -A upower_pct=()
 declare -A upower_model=()
 declare -A upower_state=()
@@ -63,7 +48,6 @@ entries=()
 while IFS= read -r line; do
   [[ -z "$line" ]] && continue
 
-  # Format: "Device AA:BB:CC:DD:EE:FF Name With Spaces"
   mac="$(awk '{print $2}' <<<"$line")"
   name="${line#Device "$mac" }"
   key="${mac//:/_}"
@@ -72,9 +56,8 @@ while IFS= read -r line; do
   model="${upower_model[$key]-}"
   state="${upower_state[$key]-}"
 
-  # Fallback to bluetoothctl if UPower doesn't expose it.
   if [[ -z "$pct" ]]; then
-    info="$(bluetoothctl info "$mac" 2>/dev/null || true)"
+    info="$(bluetooth_info "$mac")"
     if [[ "$info" =~ Battery\ Percentage:[^\(]*\(([0-9]+)\) ]]; then
       pct="${BASH_REMATCH[1]}%"
     elif [[ "$info" =~ Battery\ Percentage:[^0-9]*([0-9]+)% ]]; then
@@ -84,7 +67,6 @@ while IFS= read -r line; do
 
   [[ -n "$pct" ]] || continue
 
-  # Prefer UPower's model if present.
   if [[ -n "$model" ]]; then
     display_name="$model"
   else
@@ -106,7 +88,6 @@ if [[ "$mode" == "--check" ]]; then
   exit 0
 fi
 
-# Choose the lowest battery to display (most useful at a glance).
 chosen_pct=""
 chosen_num=101
 
@@ -121,7 +102,6 @@ for e in "${entries[@]}"; do
       chosen_pct="$epct"
     fi
   else
-    # If we can't parse a number, still allow a pick.
     if [[ -z "$chosen_pct" ]]; then
       chosen_pct="$epct"
     fi
@@ -145,7 +125,6 @@ if [[ "$chosen_num" =~ ^[0-9]+$ ]]; then
   fi
 fi
 
-# Keep the bar compact: show battery percentage.
 text="$chosen_pct"
 
 printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' \
