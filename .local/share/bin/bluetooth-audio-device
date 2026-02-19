@@ -2,13 +2,7 @@
 
 set -euo pipefail
 
-json_escape() {
-  local s="${1-}"
-  s=${s//\\/\\\\}
-  s=${s//"/\\"}
-  s=${s//$'\n'/ }
-  printf '%s' "$s"
-}
+source "$(dirname "${BASH_SOURCE[0]}")/utils/bluetooth-ctl.sh"
 
 inspect="$(wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null || true)"
 
@@ -19,7 +13,7 @@ if [[ -n "$inspect" ]] && grep -q 'device.api = "bluez5"' <<<"$inspect"; then
   fi
 fi
 
-connected_devices="$(bluetoothctl devices Connected 2>/dev/null || true)"
+connected_devices="$(bluetooth_devices Connected)"
 names_all=()
 audio_names=()
 
@@ -31,7 +25,7 @@ if [[ -n "$connected_devices" ]]; then
     device_name="${line#Device "$mac" }"
     names_all+=("$device_name")
 
-    info="$(bluetoothctl info "$mac" 2>/dev/null || true)"
+    info="$(bluetooth_info "$mac")"
     if grep -qE 'Audio Sink|Audio Source|Headset|Handsfree|LE Audio' <<<"$info"; then
       audio_names+=("$device_name")
     fi
