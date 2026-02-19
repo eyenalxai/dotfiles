@@ -16,5 +16,5 @@ bluetooth_devices() {
 bluetooth_info() {
 	local mac="$1"
 	[[ -z "$mac" ]] && return 1
-	timeout 3 bluetoothctl <<<$"info $mac\nquit" 2>&1 | grep -v '^\[' || true
+	timeout 3 bluetoothctl <<<"info $mac"$'\nquit' 2>&1 | grep -v '^\[' || true
 }
