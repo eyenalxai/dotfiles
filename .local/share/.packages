@@ -12,14 +12,14 @@ bluez
 bluez-utils
 btop
 btrfs-progs
-bun-bin
-clipse
+bun
 critique
 cursor-bin
 datagrip
 datagrip-jre
 devtools
 discord
+dmidecode
 docker
 docker-buildx
 docker-compose
@@ -73,6 +73,7 @@ lazydocker
 lazygit
 lib32-glibc
 lib32-mangohud
+lib32-vulkan-radeon
 libnewt
 libnotify
 libqalculate
@@ -86,7 +87,6 @@ localsend
 mako
 man-db
 mangohud
-me3
 mpv
 nautilus
 neovim
@@ -99,7 +99,7 @@ npm
 ntfs-3g
 nvchecker
 obsidian
-opencode-bin
+opencode
 openssh
 pacman-contrib
 pamixer
@@ -110,6 +110,7 @@ polkit-gnome
 polkit-kde-agent
 postgresql-libs
 prex
+proton-ge-custom-bin
 qbittorrent
 qt5-wayland
 qt6-wayland
@@ -141,6 +142,7 @@ uv
 uwsm
 visual-studio-code-bin
 vulkan-radeon
+vulkan-tools
 walker
 waybar
 wget
