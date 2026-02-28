@@ -22,7 +22,7 @@
     },
     "editor.fontFamily": "'JetBrainsMono Nerd Font', 'monospace', monospace",
     "[css]": {
-        "editor.defaultFormatter": "biomejs.biome"
+        "editor.defaultFormatter": "oxc.oxc-vscode"
     },
     "rust-analyzer.check.command": "clippy",
     "oxc.typeAware": true,
