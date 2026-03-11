@@ -1,6 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "theme": "system",
   "agent": {
     "compaction": {
       "model": "openrouter/moonshotai/kimi-k2.5"

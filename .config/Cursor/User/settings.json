@@ -47,4 +47,5 @@
     },
     "git.openRepositoryInParentFolders": "never",
     "workbench.editor.enablePreview": false,
+    "javascript.updateImportsOnFileMove.enabled": "always",
 }
