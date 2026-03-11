@@ -23,5 +23,10 @@
         "key": "ctrl+alt+b",
         "command": "-workbench.action.toggleAuxiliaryBar",
         "when": "!isAuxiliaryWindowFocusedContext"
+    },
+    {
+        "key": "ctrl+alt+s",
+        "command": "workbench.action.toggleUnifiedSidebarFromKeyboard",
+        "when": "cursor.agentIdeUnification.enabled == true && !isAuxiliaryWindowFocusedContext"
     }
 ]
