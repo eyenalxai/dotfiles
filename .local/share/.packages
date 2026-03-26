@@ -5,6 +5,7 @@ adobe-source-han-serif-jp-fonts
 alacritty
 amd-ucode
 amneziavpn-bin
+atuin
 base
 base-devel
 bluetui
@@ -13,6 +14,7 @@ bluez-utils
 btop
 btrfs-progs
 bun
+clang
 critique
 cursor-bin
 datagrip
@@ -83,10 +85,17 @@ limine-mkinitcpio-hook
 limine-snapper-sync
 linux
 linux-firmware
+lld
+llvm
 localsend
 mako
 man-db
 mangohud
+mingw-w64-binutils
+mingw-w64-crt
+mingw-w64-gcc
+mingw-w64-headers
+mingw-w64-winpthreads
 mpv
 nautilus
 neovim
@@ -99,6 +108,7 @@ npm
 ntfs-3g
 nvchecker
 obsidian
+onefetch
 opencode
 openssh
 pacman-contrib
@@ -106,6 +116,7 @@ pamixer
 pipewire-pulse
 pkgstats
 pnpm
+podman
 polkit-gnome
 polkit-kde-agent
 postgresql-libs
