@@ -16,7 +16,6 @@
     "window.openFoldersInNewWindow": "on",
     "window.restoreWindows": "none",
     "git.autofetch": true,
-    "cursor.composer.queueMessageDefaultBehavior": "stop-and-send",
     "[jsonc]": {
         "editor.defaultFormatter": "oxc.oxc-vscode"
     },
