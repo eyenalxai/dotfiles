@@ -5,9 +5,10 @@ adobe-source-han-serif-jp-fonts
 alacritty
 amd-ucode
 amneziavpn-bin
-atuin
+armips-debug
 base
 base-devel
+bat
 bluetui
 bluez
 bluez-utils
@@ -147,6 +148,7 @@ tree
 ttf-apple-emoji
 ttf-iosevka-nerd
 ttf-jetbrains-mono-nerd
+typst
 unrar
 unzip
 uv
@@ -176,6 +178,7 @@ yay
 yazi
 yq
 zig
+zip
 zoxide
 zram-generator
 zsh
