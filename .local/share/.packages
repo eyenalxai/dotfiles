@@ -45,6 +45,7 @@ elephant-websearch
 evolution
 eza
 fastfetch
+firefox
 game-devices-udev
 gamescope
 ghostty
@@ -70,6 +71,7 @@ jq
 kdenlive
 kew
 kopa
+krita
 kvantum
 kvantum-qt5
 lazydocker
@@ -153,7 +155,6 @@ unrar
 unzip
 uv
 uwsm
-visual-studio-code-bin
 vulkan-radeon
 vulkan-tools
 walker
@@ -177,6 +178,7 @@ yaru-icon-theme
 yay
 yazi
 yq
+yt-dlp
 zig
 zip
 zoxide
