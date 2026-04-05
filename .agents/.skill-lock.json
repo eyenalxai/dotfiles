@@ -1,0 +1,100 @@
+{
+  "version": 3,
+  "skills": {
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vercel-labs/skills.git",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "skillFolderHash": "c2f31172b6f256272305a5e6e7228b258446899f",
+      "installedAt": "2026-01-29T17:57:18.553Z",
+      "updatedAt": "2026-01-29T17:57:18.553Z"
+    },
+    "better-auth-best-practices": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/better-auth/skills.git",
+      "skillPath": "better-auth/best-practices/SKILL.md",
+      "skillFolderHash": "83bdaa60f65da278dc513a64127f4e4db759cd20",
+      "pluginName": "auth-skills",
+      "installedAt": "2026-02-03T17:14:20.512Z",
+      "updatedAt": "2026-02-28T11:10:30.495Z"
+    },
+    "create-auth-skill": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/better-auth/skills.git",
+      "skillPath": "better-auth/create-auth/SKILL.md",
+      "skillFolderHash": "b296a4603f09b8afed34e4bcd421ec5514d70015",
+      "installedAt": "2026-02-03T17:14:20.609Z",
+      "updatedAt": "2026-02-03T17:14:20.609Z"
+    },
+    "nextjs-app-router-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/wshobson/agents.git",
+      "skillPath": "plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/SKILL.md",
+      "skillFolderHash": "09b5161a206bf7aaea11df7f4f960f6359680950",
+      "installedAt": "2026-02-04T08:24:57.527Z",
+      "updatedAt": "2026-02-04T08:24:57.527Z"
+    },
+    "opentui": {
+      "source": "msmps/opentui-skill",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/msmps/opentui-skill.git",
+      "skillPath": "skill/opentui/SKILL.md",
+      "skillFolderHash": "00be9b06139cfcfc3a4f63469e148b574a31781b",
+      "installedAt": "2026-02-06T12:33:27.749Z",
+      "updatedAt": "2026-02-26T19:26:33.846Z"
+    },
+    "ai-sdk": {
+      "source": "vercel/ai",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vercel/ai.git",
+      "skillPath": "skills/use-ai-sdk/SKILL.md",
+      "skillFolderHash": "d8e09e2796e2a04a9c7f7cc8c5bbab8da76a77d9",
+      "installedAt": "2026-02-26T19:23:21.202Z",
+      "updatedAt": "2026-02-26T19:31:41.485Z"
+    },
+    "effect-best-practices": {
+      "source": "makisuo/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/makisuo/skills.git",
+      "skillPath": "effect-best-practices/SKILL.md",
+      "skillFolderHash": "f52251f48e71cda3d9bbaf53a37250b600336884",
+      "installedAt": "2026-02-26T19:27:01.930Z",
+      "updatedAt": "2026-02-26T19:27:01.930Z"
+    },
+    "tanstack-query-best-practices": {
+      "source": "deckardger/tanstack-agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/deckardger/tanstack-agent-skills.git",
+      "skillPath": "skills/tanstack-query/SKILL.md",
+      "skillFolderHash": "b73085898a2015a0f33c98aef0f3f2ff4ee9454f",
+      "installedAt": "2026-02-28T10:02:38.014Z",
+      "updatedAt": "2026-02-28T10:02:38.014Z"
+    },
+    "tanstack-start-best-practices": {
+      "source": "deckardger/tanstack-agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/deckardger/tanstack-agent-skills.git",
+      "skillPath": "skills/tanstack-start/SKILL.md",
+      "skillFolderHash": "d4e415c2c618da237bbab97be0406e0c92efb18f",
+      "installedAt": "2026-02-28T10:02:56.371Z",
+      "updatedAt": "2026-02-28T10:02:56.371Z"
+    }
+  },
+  "dismissed": {
+    "findSkillsPrompt": true
+  },
+  "lastSelectedAgents": [
+    "amp",
+    "cline",
+    "codex",
+    "cursor",
+    "gemini-cli",
+    "github-copilot",
+    "kimi-cli",
+    "opencode"
+  ]
+}
