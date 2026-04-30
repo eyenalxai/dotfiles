@@ -77,6 +77,10 @@ For form-bound selects, prefer wrapping with `Field` + `FieldLabel` + `FieldErro
 - **Rich row/trigger rendering**: render custom content (icons, avatars, secondary text) in both `SelectValue` and `SelectItem`; adjust row density via `className` where needed.
 - **Alignment tuning**: use `alignItemWithTrigger={false}` only when the default selected-item alignment causes layout issues.
 
+## Portal forwarding
+
+- **Portal forwarding**: optional `portalProps` on `SelectPopup` → Base UI `Select.Portal` (`keepMounted`, `container`, …). See [portal-props.md](../portal-props.md).
+
 ## Common pitfalls
 
 - Keeping children-only Radix select patterns without adding `items`.

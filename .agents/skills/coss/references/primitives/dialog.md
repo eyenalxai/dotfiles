@@ -59,8 +59,9 @@ import {
 
 ## Patterns from coss particles
 
+- **Portal forwarding**: optional `portalProps` on `DialogPopup` → Base UI `Dialog.Portal` (`keepMounted`, `container`, …). See [portal-props.md](../portal-props.md).
 - **Section structure invariant**: keep `DialogHeader`, `DialogPanel`, and `DialogFooter` as direct sections in `DialogPopup` to preserve built-in layout/styling behavior.
-- **Form in dialog**: wrap with `<Form className="contents">` so header/panel/footer remain direct dialog sections while still supporting submit behavior.
+- **Form in dialog**: keep **`DialogHeader`** outside the form; wrap **`DialogPanel`** + **`DialogFooter`** in **`<Form className="contents">`** (or native `<form className="contents">`) so the popup’s flex column treats header, panel, and footer as direct layout sections.
 - **Action buttons**: use `DialogClose` with `render={<Button ... />}` for cancel/close actions and set explicit `type` on submit/action buttons.
 - **Scrollable content**: keep long content inside `DialogPanel` to preserve dialog scroll behavior.
 - **Footer variants**: use `DialogFooter variant="bare"` when border/background framing should be removed.
@@ -68,13 +69,13 @@ import {
 - **Detached trigger option (advanced)**: when the opener cannot live in the same subtree, use a detached/external trigger pattern via controlled state (`open` + `onOpenChange`) instead of forcing local `DialogTrigger` composition.
 - **Close confirmation flow**: when unsaved changes exist, combine controlled `Dialog` with `AlertDialog` confirmation before closing.
 - **Nested dialogs**: supported; use clear trigger hierarchy and consider disabling default close buttons with `showCloseButton={false}` when custom actions are preferred.
-- **Responsive dialog/drawer variant**: for form-heavy overlays, use `Dialog` on desktop and switch to `Drawer` on mobile (`useMediaQuery("max-md")`), keeping the same `Form className="contents"` section structure in both.
+- **Responsive dialog/drawer variant**: for form-heavy overlays, use `Dialog` on desktop and switch to `Drawer` on mobile (`useMediaQuery("max-md")`), keeping the same `Form` structure in both.
 
 ## Common pitfalls
 
 - Omitting `render={<Button ... />}` composition on trigger/close actions.
 - Forgetting title/description structure in real dialogs.
-- Wrapping dialog sections with extra containers that break `DialogHeader`/`DialogPanel`/`DialogFooter` layout; use `className="contents"` when a wrapper is required.
+- Wrapping dialog sections with extra containers that break `DialogHeader`/`DialogPanel`/`DialogFooter` layout; prefer **header outside**, **`Form className="contents"`** around **panel + footer** only.
 - Putting large body content outside `DialogPanel` when scrolling is needed.
 - Missing explicit button `type` inside dialog forms/actions.
 - Using uncontrolled dialog patterns when the flow requires cross-component state coordination.
