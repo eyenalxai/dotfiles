@@ -12,7 +12,7 @@ bluez
 bluez-utils
 btop
 btrfs-progs
-bun
+bun-bin
 critique
 cursor-bin
 datagrip
@@ -137,6 +137,7 @@ ttf-jetbrains-mono-nerd
 unzip
 uv
 uwsm
+vrrtest-git
 vulkan-radeon
 vulkan-tools
 walker

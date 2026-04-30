@@ -70,6 +70,8 @@ import {
 
 ## Patterns from coss particles
 
+- **Portal forwarding**: optional `portalProps` on `DrawerPopup` → Base UI `Drawer.Portal` (`keepMounted`, `container`, …). See [portal-props.md](../portal-props.md).
+
 ### Key patterns
 
 Drawer with handle:
@@ -104,7 +106,7 @@ See `p-drawer-1` through `p-drawer-13` for inset, straight, scrollable, nested, 
 
 - Using drawer for desktop modal flows where dialog/sheet is clearer.
 - Forgetting responsive switch logic when drawer is mobile-only variant.
-- Breaking section layout by wrapping header/panel/footer without `contents` where required.
+- Breaking section layout by putting the whole dialog in a block-level `<form>`; prefer **header outside**, **`Form className="contents"`** around **panel + footer** (see dialog/form skills).
 
 ## Useful particle references
 
