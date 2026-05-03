@@ -17,6 +17,7 @@ critique
 cursor-bin
 datagrip
 datagrip-jre
+devtools
 dmidecode
 docker
 docker-buildx
@@ -51,7 +52,6 @@ gnome-keyring
 gpu-screen-recorder
 grim
 gst-plugins-good
-happ-desktop-bin
 helium-browser-bin
 htop
 hyprland
