@@ -49,4 +49,9 @@
     "javascript.updateImportsOnFileMove.enabled": "always",
     "editor.unicodeHighlight.ambiguousCharacters": false,
     "cursor.composer.usageSummaryDisplay": "always",
+    "window.autoDetectColorScheme": false,
+    "evenBetterToml.schema.enabled": false,
+    "evenBetterToml.syntax.semanticTokens": false,
+    "evenBetterToml.taplo.bundled": false,
+    "evenBetterToml.taplo.configFile.enabled": false,
 }

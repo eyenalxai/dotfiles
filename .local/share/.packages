@@ -117,6 +117,7 @@ reflector
 ripdrag
 rustup
 satty
+scanmem
 sddm
 shellcheck
 shfmt
