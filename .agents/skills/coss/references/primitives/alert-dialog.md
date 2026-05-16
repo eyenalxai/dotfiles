@@ -30,7 +30,6 @@ import {
   AlertDialog,
   AlertDialogClose,
   AlertDialogDescription,
-  AlertDialogPanel,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogPopup,
@@ -66,7 +65,7 @@ import {
 ## Patterns from coss particles
 
 - **Portal forwarding**: optional `portalProps` on `AlertDialogPopup` → Base UI `AlertDialog.Portal` (`keepMounted`, `container`, …). See [portal-props.md](../portal-props.md).
-- **Section structure invariant**: keep `AlertDialogHeader`, optional `AlertDialogPanel`, and `AlertDialogFooter` as direct sections of `AlertDialogPopup`.
+- **Section structure**: keep `AlertDialogHeader` and `AlertDialogFooter` as direct sections of `AlertDialogPopup` (there is no `AlertDialogPanel`; add a `div` or fragment between them only if you need extra body content).
 - **Action composition**: use `AlertDialogClose render={<Button ... />}` for cancel/confirm actions to preserve button semantics and styling.
 - **Destructive affordance**: pair destructive trigger/confirm variants (`destructive-outline`, `destructive`) for clear risk signaling.
 - **Footer variants**: use `AlertDialogFooter variant="bare"` when border/background framing should be removed.
