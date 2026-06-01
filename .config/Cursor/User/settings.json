@@ -1,57 +1,58 @@
 {
-    "workbench.colorTheme": "Gruvbox Dark Medium",
-    "window.commandCenter": true,
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.organizeImports.biome": "explicit",
-        "source.fixAll.biome": "explicit"
-    },
-    "files.autoSave": "afterDelay",
-    "explorer.confirmDelete": false,
-    "editor.tabSize": 2,
-    "explorer.confirmDragAndDrop": false,
-    "typescript.updateImportsOnFileMove.enabled": "always",
-    "oxc.requireConfig": true,
-    "git.confirmSync": false,
-    "window.openFoldersInNewWindow": "on",
-    "window.restoreWindows": "none",
-    "git.autofetch": true,
-    "[jsonc]": {
-        "editor.defaultFormatter": "oxc.oxc-vscode"
-    },
-    "editor.fontFamily": "'JetBrainsMono Nerd Font', 'monospace', monospace",
-    "[css]": {
-        "editor.defaultFormatter": "oxc.oxc-vscode"
-    },
-    "rust-analyzer.check.command": "clippy",
-    "oxc.typeAware": true,
-    "oxc.fmt.configPath": ".oxfmtrc.json",
-    "[javascript]": {
-        "editor.defaultFormatter": "oxc.oxc-vscode",
-    },
-    "[typescript]": {
-        "editor.defaultFormatter": "oxc.oxc-vscode",
-    },
-    "[typescriptreact]": {
-        "editor.defaultFormatter": "oxc.oxc-vscode",
-    },
-    "[json]": {
-        "editor.defaultFormatter": "oxc.oxc-vscode",
-    },
-    "[toml]": {
-        "editor.defaultFormatter": "tamasfe.even-better-toml"
-    },
-    "[dockercompose]": {
-        "editor.defaultFormatter": "oxc.oxc-vscode"
-    },
-    "git.openRepositoryInParentFolders": "never",
-    "workbench.editor.enablePreview": false,
-    "javascript.updateImportsOnFileMove.enabled": "always",
-    "editor.unicodeHighlight.ambiguousCharacters": false,
-    "cursor.composer.usageSummaryDisplay": "always",
-    "window.autoDetectColorScheme": false,
-    "evenBetterToml.schema.enabled": false,
-    "evenBetterToml.syntax.semanticTokens": false,
-    "evenBetterToml.taplo.bundled": false,
-    "evenBetterToml.taplo.configFile.enabled": false,
+  "workbench.colorTheme": "Gruvbox Dark Medium",
+  "window.commandCenter": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit",
+  },
+  "files.autoSave": "afterDelay",
+  "explorer.confirmDelete": false,
+  "editor.tabSize": 2,
+  "explorer.confirmDragAndDrop": false,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "oxc.requireConfig": true,
+  "git.confirmSync": false,
+  "window.openFoldersInNewWindow": "on",
+  "window.restoreWindows": "none",
+  "git.autofetch": true,
+  "[jsonc]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "editor.fontFamily": "'JetBrainsMono Nerd Font', 'monospace', monospace",
+  "[css]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "rust-analyzer.check.command": "clippy",
+  "oxc.typeAware": true,
+  "oxc.fmt.configPath": ".oxfmtrc.json",
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "[json]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml",
+  },
+  "[dockercompose]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "git.openRepositoryInParentFolders": "never",
+  "workbench.editor.enablePreview": false,
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "editor.unicodeHighlight.ambiguousCharacters": false,
+  "cursor.composer.usageSummaryDisplay": "always",
+  "window.autoDetectColorScheme": false,
+  "evenBetterToml.schema.enabled": false,
+  "evenBetterToml.syntax.semanticTokens": false,
+  "evenBetterToml.taplo.bundled": false,
+  "evenBetterToml.taplo.configFile.enabled": false,
+  "workbench.agentsWindowButton.enabled": false,
 }

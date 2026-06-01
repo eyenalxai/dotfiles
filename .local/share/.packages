@@ -13,8 +13,10 @@ bluez-utils
 btop
 btrfs-progs
 bun-bin
+clang
 critique
 cursor-bin
+darktable
 datagrip
 datagrip-jre
 devtools
@@ -38,6 +40,7 @@ elephant-symbols
 elephant-todo
 elephant-unicode
 elephant-websearch
+eog
 evolution
 eza
 fastfetch
@@ -59,6 +62,7 @@ hyprlock
 hyprpicker
 impala
 inotify-tools
+intltool
 iwd
 jq
 kew
@@ -98,6 +102,7 @@ nvchecker
 obsidian
 onefetch
 opencode
+opencode-desktop-bin
 openssh
 pacman-contrib
 pamixer
@@ -107,12 +112,14 @@ pnpm
 polkit-gnome
 polkit-kde-agent
 postgresql-libs
+potrace
 prex
 proton-ge-custom-bin
 qbittorrent
 qt5-wayland
 qt6-wayland
 railwayapp-cli
+rapidraw-bin
 reflector
 ripdrag
 rustup
