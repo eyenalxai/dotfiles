@@ -58,3 +58,5 @@ export GOPATH=$HOME/go
 # My Stuff
 export PATH="${HOME}/.local/share/bin:${PATH}"
 
+# ngrok auth
+source "${HOME}/.config/op/plugins.sh"

@@ -115,12 +115,10 @@ polkit-kde-agent
 postgresql-libs
 potrace
 prex
-proton-ge-custom-bin
 qbittorrent
 qt5-wayland
 qt6-wayland
 railwayapp-cli
-rapidraw-bin
 reflector
 ripdrag
 rustup
@@ -146,7 +144,6 @@ ttf-jetbrains-mono-nerd
 unzip
 uv
 uwsm
-vrrtest-git
 vulkan-radeon
 vulkan-tools
 walker
