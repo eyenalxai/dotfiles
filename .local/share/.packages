@@ -1,4 +1,5 @@
 1password
+1password-cli
 7zip
 adobe-source-han-sans-jp-fonts
 adobe-source-han-serif-jp-fonts
@@ -125,6 +126,7 @@ rustup
 satty
 scanmem
 sddm
+seahorse
 shellcheck
 shfmt
 slurp

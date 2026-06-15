@@ -101,13 +101,13 @@ fi
 
 case "$action" in
   focus)
-    hyprctl dispatch workspace "$workspace_id"
+    hyprctl dispatch "hl.dsp.focus({ workspace = \"$workspace_id\" })"
     ;;
   move)
-    hyprctl dispatch movetoworkspace "$workspace_id"
+    hyprctl dispatch "hl.dsp.window.move({ workspace = \"$workspace_id\" })"
     ;;
   move-silent)
-    hyprctl dispatch movetoworkspacesilent "$workspace_id"
+    hyprctl dispatch "hl.dsp.window.move({ workspace = \"$workspace_id\", follow = false })"
     ;;
   *)
     usage
