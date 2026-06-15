@@ -45,7 +45,7 @@ window_address=$(hyprctl clients -j |
   ' | head -n1)
 
 if [[ -n "$window_address" && "$window_address" != "null" ]]; then
-  hyprctl dispatch focuswindow "address:$window_address"
+  hyprctl dispatch "hl.dsp.focus({ window = \"address:$window_address\" })"
   exit 0
 fi
 
