@@ -13,11 +13,10 @@ bluez
 bluez-utils
 btop
 btrfs-progs
-bun-bin
+bun
+chntpw
 clang
-critique
 cursor-bin
-darktable
 datagrip
 datagrip-jre
 devtools
@@ -46,6 +45,7 @@ evolution
 eza
 fastfetch
 fio
+flatpak
 game-devices-udev
 gamescope
 ghostty
@@ -67,6 +67,7 @@ inotify-tools
 intltool
 iwd
 jq
+kamoso
 kew
 kopa
 kvantum
@@ -100,7 +101,9 @@ nodejs-n
 noto-fonts
 noto-fonts-cjk
 npm
+ntfs-3g
 nvchecker
+obs-studio
 obsidian
 onefetch
 opencode
@@ -116,6 +119,7 @@ polkit-kde-agent
 postgresql-libs
 potrace
 prex
+pwvucontrol
 qbittorrent
 qt5-wayland
 qt6-wayland
@@ -132,6 +136,7 @@ shfmt
 slurp
 smartmontools
 snapper
+snapshot
 starship
 steam
 swaybg
