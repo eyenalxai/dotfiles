@@ -67,7 +67,6 @@ inotify-tools
 intltool
 iwd
 jq
-kamoso
 kew
 kopa
 kvantum
@@ -136,7 +135,6 @@ shfmt
 slurp
 smartmontools
 snapper
-snapshot
 starship
 steam
 swaybg
