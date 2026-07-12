@@ -38,6 +38,8 @@ x-scheme-handler/jetbrains=jetbrainsd.desktop
 x-scheme-handler/mailto=userapp-Evolution-42TEN3.desktop
 image/jpeg=org.gnome.eog.desktop
 x-scheme-handler/throne=throne-url-handler.desktop
+x-scheme-handler/http=helium.desktop
+x-scheme-handler/https=helium.desktop
 
 [Added Associations]
 x-scheme-handler/mailto=userapp-Evolution-42TEN3.desktop;
