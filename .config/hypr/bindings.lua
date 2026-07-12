@@ -52,6 +52,11 @@ hl.bind(
   { description = "Close active window" }
 )
 hl.bind(
+  "SUPER + F",
+  hl.dsp.window.fullscreen({}),
+  { description = "Toggle fullscreen" }
+)
+hl.bind(
   "SUPER + SHIFT + W",
   hl.dsp.exec_cmd("pkill waybar || uwsm app -- waybar"),
   { description = "Toggle waybar" }
