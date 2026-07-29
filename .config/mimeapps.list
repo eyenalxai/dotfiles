@@ -40,6 +40,7 @@ image/jpeg=org.gnome.eog.desktop
 x-scheme-handler/throne=throne-url-handler.desktop
 x-scheme-handler/http=helium.desktop
 x-scheme-handler/https=helium.desktop
+x-scheme-handler/opencode=ai.opencode.desktop.desktop
 
 [Added Associations]
 x-scheme-handler/mailto=userapp-Evolution-42TEN3.desktop;
