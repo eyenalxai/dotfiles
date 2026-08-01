@@ -2,7 +2,7 @@ alias n=nvim
 alias node-n='command n'
 alias ls='exa'
 alias npx='bunx'
-alias cat='bat'
+alias cat='bat --plain --paging=never'
 
 if command -v yay >/dev/null 2>&1; then
   alias yaas="yay -S --noconfirm"
@@ -11,4 +11,3 @@ if command -v yay >/dev/null 2>&1; then
 fi
 
 alias json-schema="jq --argjson nullable true 'include \"schema\"; schema'"
-
