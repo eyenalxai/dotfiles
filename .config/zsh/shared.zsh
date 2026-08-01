@@ -59,4 +59,6 @@ export GOPATH=$HOME/go
 export PATH="${HOME}/.local/share/bin:${PATH}"
 
 # ngrok auth
-source "${HOME}/.config/op/plugins.sh"
+if [[ -f "${HOME}/.config/op/plugins.sh" ]]; then
+  source "${HOME}/.config/op/plugins.sh"
+fi
