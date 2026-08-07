@@ -13,7 +13,7 @@ bluez
 bluez-utils
 btop
 btrfs-progs
-bun
+bun-canary-bin
 chntpw
 clang
 cursor-bin
@@ -21,6 +21,7 @@ datagrip
 datagrip-jre
 devtools
 dmidecode
+dnsproxy
 docker
 docker-buildx
 docker-compose
@@ -48,11 +49,13 @@ fio
 flatpak
 game-devices-udev
 gamescope
+gdsdecomp-bin
 ghostty
 git
 git-filter-repo
 github-cli
 gnome-keyring
+godot
 google-chrome
 gpu-screen-recorder
 grim
@@ -74,6 +77,7 @@ kvantum
 kvantum-qt5
 lazydocker
 lazygit
+ldns
 lib32-glibc
 lib32-mangohud
 lib32-vulkan-radeon
@@ -140,6 +144,7 @@ starship
 steam
 swaybg
 swayosd
+tcpdump
 telegram-desktop
 traceroute
 tree
@@ -149,6 +154,7 @@ ttf-jetbrains-mono-nerd
 unzip
 uv
 uwsm
+valkey
 vulkan-radeon
 vulkan-tools
 walker
