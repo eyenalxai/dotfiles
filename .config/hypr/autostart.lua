@@ -9,7 +9,6 @@ local HOME = os.getenv("HOME") or ""
 hl.on("hyprland.start", function()
   -- Extra autostart processes
   hl.exec_cmd("uwsm app -- 1password")
-  hl.exec_cmd("uwsm app -- happ")
 
   -- For keyring to work
   -- NOTE: original config had a typo here ("uwm" instead of "uwsm"); preserved exactly.
