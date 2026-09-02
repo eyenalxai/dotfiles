@@ -13,7 +13,7 @@ bluez
 bluez-utils
 btop
 btrfs-progs
-bun-canary-bin
+bun
 chntpw
 clang
 cursor-bin
@@ -72,6 +72,7 @@ intltool
 iwd
 jq
 kew
+konsole
 kopa
 kvantum
 kvantum-qt5
@@ -123,6 +124,7 @@ polkit-kde-agent
 postgresql-libs
 potrace
 prex
+proton-ge-custom-bin
 pwvucontrol
 qbittorrent
 qt5-wayland
@@ -163,9 +165,11 @@ webkitgtk-6.0
 wget
 wine
 wine-mono
+winetricks
 wireless_tools
 wireplumber
 wpa_supplicant
+xboxdrv
 xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland
 xdg-user-dirs
