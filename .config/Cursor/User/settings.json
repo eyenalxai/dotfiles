@@ -55,4 +55,5 @@
   "evenBetterToml.taplo.bundled": false,
   "evenBetterToml.taplo.configFile.enabled": false,
   "workbench.agentsWindowButton.enabled": false,
+  "cursor.composer.queueMessageDefaultBehavior": "steer",
 }
