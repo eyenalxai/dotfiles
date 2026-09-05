@@ -16,6 +16,7 @@ case "$(uname -s)" in
     source_if_exists /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
     source_if_exists /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
     source_if_exists /usr/share/fzf/key-bindings.zsh
+    source_if_exists /usr/share/fzf/completion.zsh
     ;;
 esac
 
@@ -32,6 +33,7 @@ if [[ "$(uname -s)" == "Linux" ]]; then
   export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock
   alias shutdown="systemctl poweroff"
   alias reboot="systemctl reboot"
-  source <(COMPLETE=zsh prex)
+  if command -v prex >/dev/null 2>&1; then
+    source <(COMPLETE=zsh prex)
+  fi
 fi
-
