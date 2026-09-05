@@ -42,7 +42,7 @@ ShellRoot {
     }
 
     VT.AudioBridge {
-        id: audio
+        id: audioBridge
     }
 
     VT.StyleLoader {
@@ -58,7 +58,7 @@ ShellRoot {
                 screen: modelData
                 daemonState: stateReader.state
                 osdSuppressed: stateReader.osdSuppressed
-                audio: audio
+                audio: audioBridge
                 style: osdStyle
             }
         }
