@@ -20,7 +20,7 @@ BarWidget {
 
   Process {
     id: checkProc
-    command: ["sh", "-c", "ip -o link show dev amn0 2>/dev/null | grep -Eq '<([^>]*,)?UP(,|>)'"]
+    command: ["sh", "-c", "ip -o link show dev amn0 2>/dev/null | grep -Eq '<([^>]*,)?UP(,|>)' || ip -o link show dev tun2 2>/dev/null | grep -Eq '<([^>]*,)?UP(,|>)'"]
     onExited: function(exitCode) {
       root.vpnActive = exitCode === 0
     }
@@ -44,7 +44,7 @@ BarWidget {
     text: root.vpnActive ? "󰕥" : ""
     useActiveColor: false
     dimmed: !root.vpnActive
-    tooltipText: root.vpnActive ? "Amnezia VPN: Connected (amn0)" : "Amnezia VPN: Disconnected"
+    tooltipText: root.vpnActive ? "Amnezia VPN: Connected" : "Amnezia VPN: Disconnected"
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton) {
         root.refresh()
