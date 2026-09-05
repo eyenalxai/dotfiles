@@ -1,5 +1,5 @@
 # Dynamic theme colors
-config-file = ?"~/.config/theme/current/theme/ghostty.conf"
+config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"
 
 # Font
 font-family = "Iosevka Nerd Font Mono"
@@ -12,10 +12,10 @@ window-padding-y = 14
 confirm-close-surface=false
 resize-overlay = never
 
-# Cursor stlying
+# Cursor styling
 cursor-style = "block"
 cursor-style-blink = false
-shell-integration-features = no-cursor
+shell-integration-features = no-cursor,ssh-env
 
 # Keyboard bindings
 keybind = f11=toggle_fullscreen
@@ -35,3 +35,6 @@ mouse-scroll-multiplier = 0.95
 
 # Scrollback
 scrollback-limit = 100000000
+
+# Fix general slowness on hyprland (https://github.com/ghostty-org/ghostty/discussions/3224)
+async-backend = epoll
