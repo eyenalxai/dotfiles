@@ -8,9 +8,10 @@
       "format": "\u001b[90m┌──────────────────────HARD──────────────────────────┐"
     },
     {
-      "type": "os",
+      "type": "custom",
       "key": "HOST",
-      "keyColor": "green"
+      "keyColor": "green",
+      "format": "Aogami"
     },
     {
       "type": "cpu",
