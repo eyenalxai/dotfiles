@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-clock_text=$(
-  LC_ALL=C date '+%A %B %d %Y %I:%M %p' | tr '[:lower:]' '[:upper:]'
-)
-
-printf '{"text":"%s"}\n' "$clock_text"
