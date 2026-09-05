@@ -12,6 +12,26 @@
 -- To disable all preinstalled app/webapp bindings, set:
 --   omarchy_preinstalled_bindings = false
 
+-- Per-monitor workspaces (hyprsplit): SUPER+1..9 act on the focused display,
+-- so each monitor keeps its own independent set of 9 workspaces.
+local hyprsplit = require("hyprsplit")
+
+-- Unbind Omarchy's default global workspace keys (SUPER+1..9/0 plus moves).
+for workspace = 1, 10 do
+  local key = "code:" .. tostring(workspace + 9)
+  hl.unbind("SUPER + " .. key)
+  hl.unbind("SUPER + SHIFT + " .. key)
+  hl.unbind("SUPER + SHIFT + ALT + " .. key)
+end
+
+-- Rebind 1-9 to the focused monitor's local workspaces.
+for workspace = 1, 9 do
+  local key = "code:" .. tostring(workspace + 9)
+  o.bind("SUPER + " .. key, "Switch to workspace " .. workspace, hyprsplit.dsp.focus({ workspace = workspace }))
+  o.bind("SUPER + SHIFT + " .. key, "Move window to workspace " .. workspace, hyprsplit.dsp.window.move({ workspace = workspace, follow = true }))
+  o.bind("SUPER + SHIFT + ALT + " .. key, "Move window silently to workspace " .. workspace, hyprsplit.dsp.window.move({ workspace = workspace, follow = false }))
+end
+
 -- Add a new binding.
 -- o.bind("SUPER + SHIFT + R", "SSH", "alacritty -e ssh your-server")
 
