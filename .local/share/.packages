@@ -28,6 +28,7 @@ docker-buildx
 docker-compose
 docker-rootless-extras
 dust
+eden-git
 efibootmgr
 elephant
 elephant-bluetooth
