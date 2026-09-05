@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "amnezia-vpn",
+  "name": "Amnezia VPN",
+  "version": "1.0.0",
+  "author": "ulezot",
+  "description": "Amnezia VPN connection status indicator and launcher",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Amnezia VPN",
+    "description": "Amnezia VPN connection status indicator and launcher",
+    "category": "Network",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
