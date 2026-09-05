@@ -1,4 +1,4 @@
-.zsh_history
+.config/nushell/history.sqlite3
 .config/ngrok/ngrok.yml
 .config/git/config-personal
 .local/share/obsidian/Personal/Secret
