@@ -32,6 +32,12 @@ for workspace = 1, 9 do
   o.bind("SUPER + SHIFT + ALT + " .. key, "Move window silently to workspace " .. workspace, hyprsplit.dsp.window.move({ workspace = workspace, follow = false }))
 end
 
+-- Screenshot on SUPER + SHIFT + S instead of PRINT
+-- (SUPER + SHIFT + S was previously bound to Google Maps)
+hl.unbind("PRINT")
+hl.unbind("SUPER + SHIFT + S")
+o.bind("SUPER + SHIFT + S", "Screenshot", "omarchy-capture-screenshot")
+
 -- Add a new binding.
 -- o.bind("SUPER + SHIFT + R", "SSH", "alacritty -e ssh your-server")
 
