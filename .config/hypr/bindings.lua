@@ -40,3 +40,8 @@ o.bind("SUPER + B", "Helium", { launch = "helium-browser" })
 -- Close window with Super + Q instead of Super + W
 hl.unbind("SUPER + W")
 o.bind("SUPER + Q", "Close window", hl.dsp.window.close())
+
+-- Clipboard manager on Super + Shift + X instead of Super + Ctrl + V
+hl.unbind("SUPER + CTRL + V")
+hl.unbind("SUPER + SHIFT + X")
+o.bind("SUPER + SHIFT + X", "Clipboard manager", "omarchy-shell shell toggle omarchy.clipboard")
