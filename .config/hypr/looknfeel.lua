@@ -1,5 +1,10 @@
 -- Change the default Omarchy look'n'feel.
 
+-- Remove Omarchy's default semi-transparent window opacity. Omarchy tags every
+-- window with `default-opacity` and gives it 0.985 active / 0.96 inactive; this
+-- overrides that tag to fully opaque while leaving app-specific rules alone.
+o.window({ tag = "default-opacity" }, { opacity = "1 1" })
+
 -- https://wiki.hypr.land/Configuring/Basics/Variables/#general
 -- hl.config({
 --   general = {
