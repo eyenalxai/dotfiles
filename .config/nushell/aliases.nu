@@ -18,6 +18,18 @@ alias shutdown = hyprshutdown -t 'Shutting down...' --post-cmd 'shutdown -P 0'
 alias reboot = hyprshutdown -t 'Restarting...' --post-cmd 'reboot'
 alias logout = hyprshutdown
 
+# Reboot into Windows (one-shot EFI boot override)
+def reboot-win [] {
+    let entries = (^efibootmgr | lines | parse -r '^Boot(?P<num>[0-9A-Fa-f]{4})\* (?P<desc>.*)$')
+    let win = ($entries | where desc =~ '^Windows Boot Manager' | first)
+    if ($win | is-empty) {
+        print "Windows Boot Manager entry not found in efibootmgr"
+        return
+    }
+    ^sudo efibootmgr --bootnext $win.num
+    hyprshutdown -t 'Restarting into Windows...' --post-cmd 'reboot'
+}
+
 # Arch / Pacman / AUR helpers
 def yaas [...args: string] {
     ^yay -S --noconfirm ...$args
