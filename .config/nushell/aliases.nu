@@ -14,8 +14,9 @@ alias cat = bat --plain --paging=never
 alias json-schema = jq --argjson nullable true 'include "schema"; schema'
 
 # System control
-alias shutdown = systemctl poweroff
-alias reboot = systemctl reboot
+alias shutdown = hyprshutdown -t 'Shutting down...' --post-cmd 'shutdown -P 0'
+alias reboot = hyprshutdown -t 'Restarting...' --post-cmd 'reboot'
+alias logout = hyprshutdown
 
 # Arch / Pacman / AUR helpers
 def yaas [...args: string] {
