@@ -19,7 +19,7 @@ alias reboot = hyprshutdown -t 'Restarting...' --post-cmd 'reboot'
 alias logout = hyprshutdown
 
 # Reboot into Windows (one-shot EFI boot override)
-def reboot-win [] {
+def windows-reboot [] {
     let entries = (^efibootmgr | lines | parse -r '^Boot(?P<num>[0-9A-Fa-f]{4})\* (?P<desc>.*)$')
     let win = ($entries | where desc =~ '^Windows Boot Manager' | first)
     if ($win | is-empty) {
