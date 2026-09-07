@@ -48,6 +48,9 @@ if ($macos_1p_sock | path exists) {
     $env.SSH_AUTH_SOCK = $linux_1p_sock
 }
 
+# 1Password shell plugins marker
+$env.OP_PLUGIN_ALIASES_SOURCED = "1"
+
 # Docker socket (Linux)
 let runtime_dir = ($env.XDG_RUNTIME_DIR? | default $"/run/user/(^id -u)")
 $env.DOCKER_HOST = $"unix://($runtime_dir)/docker.sock"

@@ -6,6 +6,9 @@ alias n = nvim
 # Node / Package managers
 alias npx = bunx
 
+# 1Password shell plugins
+alias ngrok = op plugin run -- ngrok
+
 # Viewers & Navigation
 alias ls = ls -a
 alias cat = bat --plain --paging=never
