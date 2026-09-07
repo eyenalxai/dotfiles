@@ -75,5 +75,6 @@ o.bind("SUPER + SHIFT + X", "Clipboard manager", "omarchy-shell shell toggle oma
 -- Dictation (push-to-talk, hold to talk) on F1
 hl.unbind("SUPER + SHIFT + D")
 hl.unbind("F9")
+hl.unbind("SUPER + CTRL + X")
 o.bind("F1", "Start dictation (push-to-talk)", "voxtype record start")
 o.bind("F1", "Stop dictation (push-to-talk)", "voxtype record stop", { release = true })
