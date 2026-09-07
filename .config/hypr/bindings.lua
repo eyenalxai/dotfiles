@@ -72,7 +72,8 @@ hl.unbind("SUPER + CTRL + V")
 hl.unbind("SUPER + SHIFT + X")
 o.bind("SUPER + SHIFT + X", "Clipboard manager", "omarchy-shell shell toggle omarchy.clipboard")
 
--- Dictation (push-to-talk, hold to talk like F9) on Super + Shift + D
+-- Dictation (push-to-talk, hold to talk) on F1
 hl.unbind("SUPER + SHIFT + D")
-o.bind("SUPER + SHIFT + D", "Start dictation (push-to-talk)", "voxtype record start")
-o.bind("SUPER + SHIFT + D", "Stop dictation (push-to-talk)", "voxtype record stop", { release = true })
+hl.unbind("F9")
+o.bind("F1", "Start dictation (push-to-talk)", "voxtype record start")
+o.bind("F1", "Stop dictation (push-to-talk)", "voxtype record stop", { release = true })
