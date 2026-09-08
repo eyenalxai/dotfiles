@@ -1,36 +1,19 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# pre_decrypt: Back up any recent commands from the current session and unlink
-# the existing SQLite files so running Nushell instances do not shadow or
-# overwrite the newly decrypted database with stale WAL state.
 HIST_DB="$HOME/.config/nushell/history.sqlite3"
-TEMP_BACKUP="/tmp/opencode/yadm_pre_decrypt_history.json"
-mkdir -p /tmp/opencode
+LOCAL_PRE="$HOME/.config/nushell/history.sqlite3.local_pre_decrypt"
 
-if [ -f "$HIST_DB" ] && command -v python3 >/dev/null 2>&1; then
-    python3 - << 'EOF' >/dev/null 2>&1 || true
-import sqlite3, json, os
-
-db = os.path.expanduser("~/.config/nushell/history.sqlite3")
-if not os.path.exists(db):
-    exit(0)
-
-try:
-    conn = sqlite3.connect(db)
-    rows = conn.execute("""
-        SELECT command_line, start_timestamp, hostname, cwd, duration_ms, exit_status, more_info
-        FROM history
-    """).fetchall()
-    conn.close()
-
-    with open("/tmp/opencode/yadm_pre_decrypt_history.json", "w") as f:
-        json.dump(rows, f)
-except Exception:
-    pass
-EOF
+# 1. Flush any pending WAL writes in the active local database
+if [ -f "$HIST_DB" ] && command -v sqlite3 >/dev/null 2>&1; then
+    sqlite3 "$HIST_DB" "PRAGMA wal_checkpoint(TRUNCATE);" >/dev/null 2>&1 || true
 fi
 
-# Unlinking frees the file path while leaving open file descriptors attached to
-# the unlinked inode, preventing running shells from polluting the decrypted DB.
+# 2. Preserve existing local database for two-way merging
+if [ -f "$HIST_DB" ]; then
+    cp -p "$HIST_DB" "$LOCAL_PRE"
+fi
+
+# 3. Unlink active files so running Nushell instances detach cleanly
+# onto orphaned file descriptors and cannot overwrite or shadow the new file
 rm -f "$HIST_DB" "$HIST_DB-wal" "$HIST_DB-shm"
