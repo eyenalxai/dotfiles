@@ -34,3 +34,7 @@ use starship.nu
 source zoxide.nu
 source mise.nu
 source aliases.nu
+
+# Custom completions
+source completions/git-completions.nu
+source completions/yadm-completions.nu
