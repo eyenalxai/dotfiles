@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "amnezia-vpn",
-  "name": "Amnezia VPN",
-  "version": "1.0.0",
+  "name": "Amnezia & Happ VPN",
+  "version": "1.1.0",
   "author": "ulezot",
-  "description": "Amnezia VPN connection status indicator and launcher",
+  "description": "Amnezia & Happ VPN connection status indicator and launcher",
   "kinds": [
     "bar-widget"
   ],
@@ -12,8 +12,8 @@
     "barWidget": "Widget.qml"
   },
   "barWidget": {
-    "displayName": "Amnezia VPN",
-    "description": "Amnezia VPN connection status indicator and launcher",
+    "displayName": "Amnezia & Happ VPN",
+    "description": "Amnezia & Happ VPN connection status indicator and launcher",
     "category": "Network",
     "allowMultiple": false,
     "defaultSection": "right"
