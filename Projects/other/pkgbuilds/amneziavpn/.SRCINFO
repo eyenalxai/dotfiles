@@ -1,6 +1,6 @@
 pkgbase = amneziavpn-git
 	pkgdesc = Amnezia VPN Client (built from source for aarch64 / x86_64)
-	pkgver = 5.0.2.1.r0.g327e5985
+	pkgver = 5.0.2.1.r0.g327e5985d
 	pkgrel = 1
 	url = https://github.com/amnezia-vpn/amnezia-client
 	install = amneziavpn.install
@@ -13,6 +13,7 @@ pkgbase = amneziavpn-git
 	makedepends = git
 	makedepends = libtool
 	makedepends = ninja
+	makedepends = patchelf
 	makedepends = pkgconf
 	makedepends = python
 	makedepends = qt6-tools
@@ -35,7 +36,7 @@ pkgbase = amneziavpn-git
 	conflicts = amneziavpn
 	conflicts = amneziavpn-bin
 	options = !debug
-	source = amnezia-client::git+file:///home/ulezot/Projects/other/amnezia-client
+	source = amnezia-client::git+https://github.com/amnezia-vpn/amnezia-client.git#branch=dev
 	sha256sums = SKIP
 
 pkgname = amneziavpn-git

@@ -31,6 +31,7 @@ makedepends=(
   'git'
   'libtool'
   'ninja'
+  'patchelf'
   'pkgconf'
   'python'
   'qt6-tools'
@@ -95,7 +96,8 @@ build() {
     -DCMAKE_INSTALL_BINDIR=bin \
     -DCMAKE_INSTALL_RPATH='$ORIGIN:$ORIGIN/../lib' \
     -DCMAKE_BUILD_WITH_INSTALL_RPATH=FALSE \
-    -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE
+    -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE \
+    -DQT_DEPLOY_USE_PATCHELF=ON
 
   cmake --build build
 }
