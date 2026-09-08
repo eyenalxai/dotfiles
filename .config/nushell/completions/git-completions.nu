@@ -110,6 +110,43 @@ def "nu-complete git remotes" [] {
   | uniq-by value # Deduplicate where fetch and push remotes are the same
 }
 
+def "nu-complete git remote-subcommands" [context: string] {
+  let words = ($context | split row -r '\s+' | drop 1)
+  let after_remote = ($words | skip until { |w| $w == "remote" } | skip 1)
+  let has_v = ($after_remote | any { |w| $w in ["-v", "--verbose"] })
+  let non_flag_args = ($after_remote | where { |w| not ($w starts-with "-") })
+
+  if ($non_flag_args | is-not-empty) {
+    let sub = ($non_flag_args | first)
+    if ($sub in ["show", "prune", "remove", "rm", "rename", "get-url", "set-url", "set-head", "set-branches"]) {
+      if ($non_flag_args | length) == 1 {
+        return (nu-complete git remotes)
+      }
+    }
+    return []
+  }
+
+  if $has_v {
+    [
+      { value: "show", description: "Gives some information about the remote" }
+      { value: "update", description: "Fetch updates for remotes or remote groups" }
+      { value: "prune", description: "Deletes stale references associated with remote" }
+      { value: "add", description: "Add a new tracked repository" }
+      { value: "get-url", description: "Get the URL for a tracked repository" }
+      { value: "set-url", description: "Set the URL for a tracked repository" }
+      { value: "remove", description: "Remove a tracked repository" }
+      { value: "rename", description: "Rename a tracked repository" }
+      { value: "set-head", description: "Set or delete the default branch" }
+      { value: "set-branches", description: "Change list of branches tracked" }
+    ]
+  } else {
+    [
+      { value: "-v", description: "Show URL for remotes" }
+      { value: "--verbose", description: "Show URL for remotes" }
+    ]
+  }
+}
+
 def "nu-complete git log" [] {
   ^git log --pretty=%h | lines | each { |line| $line | str trim }
 }
@@ -661,32 +698,88 @@ export extern "git config edit" [
 # List or change tracked repositories
 export extern "git remote" [
   --verbose(-v)                            # Show URL for remotes
+  subcommand?: string@"nu-complete git remote-subcommands"
+  arg?: string@"nu-complete git remote-subcommands"
 ]
 
 # Add a new tracked repository
 export extern "git remote add" [
+  --track(-t): string                      # Branch to track
+  --master(-m): string                     # Master branch
+  -f                                       # Fetch immediately after adding
+  --tags                                   # Import all tags
+  --no-tags                                # Do not import tags
+  --mirror: string                         # Mirror fetch or push
+  name: string                             # Remote name
+  url: string                              # Remote URL
 ]
 
 # Rename a tracked repository
 export extern "git remote rename" [
-  remote: string@"nu-complete git remotes"             # remote to rename
-  new_name: string                                     # new name for remote
+  --progress                               # Force progress reporting
+  --no-progress                            # Suppress progress reporting
+  remote: string@"nu-complete git remotes" # Remote to rename
+  new_name: string                         # New name for remote
 ]
 
 # Remove a tracked repository
 export extern "git remote remove" [
-  remote: string@"nu-complete git remotes"             # remote to remove
+  remote: string@"nu-complete git remotes" # Remote to remove
+]
+
+# Remove a tracked repository
+export extern "git remote rm" [
+  remote: string@"nu-complete git remotes" # Remote to remove
+]
+
+# Set or delete the default branch for a tracked repository
+export extern "git remote set-head" [
+  --auto(-a)                               # Query remote for default branch
+  --delete(-d)                             # Delete symbolic ref for HEAD
+  remote: string@"nu-complete git remotes" # Remote name
+  branch?: string                          # Branch to set as default
+]
+
+# Change list of branches tracked by a tracked repository
+export extern "git remote set-branches" [
+  --add                                    # Add to tracked branches list
+  remote: string@"nu-complete git remotes" # Remote name
+  ...branch: string                        # Branch names to track
 ]
 
 # Get the URL for a tracked repository
 export extern "git remote get-url" [
-  remote: string@"nu-complete git remotes"             # remote to get URL for
+  --push                                   # Query push URLs instead of fetch URLs
+  --all                                    # Query all URLs for the remote
+  remote: string@"nu-complete git remotes" # Remote to get URL for
 ]
 
 # Set the URL for a tracked repository
 export extern "git remote set-url" [
-  remote: string@"nu-complete git remotes"             # remote to set URL for
-  url: string                                          # new URL for remote
+  --push                                   # Manipulate push URLs
+  --add                                    # Add a URL without replacing
+  --delete                                 # Delete matched URLs
+  remote: string@"nu-complete git remotes" # Remote to set URL for
+  new_url: string                          # New URL for remote
+  old_url?: string                         # Old URL to replace
+]
+
+# Gives some information about the remote
+export extern "git remote show" [
+  -n                                       # Do not query remote heads
+  remote?: string@"nu-complete git remotes" # Remote to show info for
+]
+
+# Deletes stale references associated with remote
+export extern "git remote prune" [
+  --dry-run(-n)                            # Do not prune, report what would be done
+  remote: string@"nu-complete git remotes" # Remote to prune
+]
+
+# Fetch updates for remotes or remote groups in the repository
+export extern "git remote update" [
+  --prune(-p)                              # Prune tracking branches no longer on remote
+  ...group_or_remote: string@"nu-complete git remotes"
 ]
 
 # Show changes between commits, working tree etc
