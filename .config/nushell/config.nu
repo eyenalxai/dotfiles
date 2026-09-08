@@ -38,3 +38,4 @@ source aliases.nu
 # Custom completions
 source completions/git-completions.nu
 source completions/yadm-completions.nu
+use completions/systemctl-completions.nu *
