@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# pre_encrypt: Flush pending SQLite WAL changes into history.sqlite3 before encryption
 HIST_DB="$HOME/.config/nushell/history.sqlite3"
+ZO_DB="$HOME/.local/share/zoxide/db.zo"
 
+# 1. Flush pending SQLite WAL changes into history.sqlite3 before encryption
 if [ -f "$HIST_DB" ] && command -v sqlite3 >/dev/null 2>&1; then
     sqlite3 "$HIST_DB" "PRAGMA wal_checkpoint(TRUNCATE);" >/dev/null 2>&1 || true
+fi
+
+# 2. Ensure private permissions for databases before archiving
+if [ -f "$HIST_DB" ]; then
+    chmod 600 "$HIST_DB"
+fi
+if [ -f "$ZO_DB" ]; then
+    chmod 600 "$ZO_DB"
 fi

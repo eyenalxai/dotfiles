@@ -1,22 +1,33 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-HIST_DB="$HOME/.config/nushell/history.sqlite3"
-LOCAL_PRE="$HOME/.config/nushell/history.sqlite3.local_pre_decrypt"
+# Do not touch files if yadm decrypt is only called to list contents (-l)
+if [[ " $YADM_HOOK_FULL_COMMAND " =~ [[:space:]]-l([[:space:]]|$) ]]; then
+    exit 0
+fi
 
-# Remove any lingering WAL/SHM files
+HIST_DB="$HOME/.config/nushell/history.sqlite3"
+HIST_LOCAL_PRE="$HOME/.config/nushell/history.sqlite3.local_pre_decrypt"
+
+ZO_DB="$HOME/.local/share/zoxide/db.zo"
+ZO_LOCAL_PRE="$HOME/.local/share/zoxide/db.zo.local_pre_decrypt"
+
+# Remove any lingering Nushell WAL/SHM files
 rm -f "$HIST_DB-wal" "$HIST_DB-shm"
 
 # Handle failure or cancellation of yadm decrypt (e.g. wrong passphrase)
 if [ -n "$YADM_HOOK_EXIT" ] && [ "$YADM_HOOK_EXIT" -ne 0 ]; then
-    if [ -f "$LOCAL_PRE" ] && [ ! -f "$HIST_DB" ]; then
-        mv "$LOCAL_PRE" "$HIST_DB"
+    if [ -f "$HIST_LOCAL_PRE" ] && [ ! -f "$HIST_DB" ]; then
+        mv "$HIST_LOCAL_PRE" "$HIST_DB"
+    fi
+    if [ -f "$ZO_LOCAL_PRE" ] && [ ! -f "$ZO_DB" ]; then
+        mv "$ZO_LOCAL_PRE" "$ZO_DB"
     fi
     exit 0
 fi
 
-# Two-way merge of local history with incoming decrypted history
-if [ -f "$HIST_DB" ] && [ -f "$LOCAL_PRE" ] && command -v python3 >/dev/null 2>&1; then
+# Two-way merge for Nushell history
+if [ -f "$HIST_DB" ] && [ -f "$HIST_LOCAL_PRE" ] && command -v python3 >/dev/null 2>&1; then
     python3 - << 'EOF'
 import sqlite3, os, tempfile
 
@@ -106,18 +117,119 @@ try:
     new_from_local = len(merged) - len(incoming_rows)
     print(f"✓ Nushell history merged: {len(incoming_rows)} from archive + {new_from_local} local unique = {len(merged)} total.")
 except Exception as e:
-    print(f"Error during merge: {e}")
+    print(f"Error during history merge: {e}")
     if os.path.exists(temp_path):
         os.remove(temp_path)
 EOF
 fi
 
-# Clean up local backup if it still exists
-rm -f "$LOCAL_PRE" "$HIST_DB-wal" "$HIST_DB-shm"
+# Two-way merge for Zoxide cache
+if ([ -f "$ZO_DB" ] || [ -f "$ZO_LOCAL_PRE" ]) && command -v python3 >/dev/null 2>&1; then
+    python3 - << 'EOF'
+import os, struct, re, tempfile
 
-# Ensure proper permissions
+zo_db = os.path.expanduser("~/.local/share/zoxide/db.zo")
+zo_local_pre = os.path.expanduser("~/.local/share/zoxide/db.zo.local_pre_decrypt")
+
+def read_zo(path):
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        if len(data) < 12:
+            return {}
+        version, = struct.unpack_from("<I", data, 0)
+        count, = struct.unpack_from("<Q", data, 4)
+        offset = 12
+        entries = {}
+        for _ in range(count):
+            if offset + 8 > len(data): break
+            path_len, = struct.unpack_from("<Q", data, offset)
+            offset += 8
+            if offset + path_len > len(data): break
+            path_bytes = data[offset:offset+path_len]
+            offset += path_len
+            if offset + 16 > len(data): break
+            score, = struct.unpack_from("<d", data, offset)
+            offset += 8
+            ts, = struct.unpack_from("<Q", data, offset)
+            offset += 8
+            entries[path_bytes.decode("utf-8", errors="replace")] = (score, ts)
+        return entries
+    except Exception:
+        return {}
+
+def write_zo(path, entries):
+    out = bytearray()
+    out.extend(struct.pack("<I", 3))
+    out.extend(struct.pack("<Q", len(entries)))
+    for p_str, (score, ts) in entries.items():
+        p_bytes = p_str.encode("utf-8")
+        out.extend(struct.pack("<Q", len(p_bytes)))
+        out.extend(p_bytes)
+        out.extend(struct.pack("<d", score))
+        out.extend(struct.pack("<Q", ts))
+    dir_name = os.path.dirname(path)
+    os.makedirs(dir_name, exist_ok=True)
+    temp_fd, temp_path = tempfile.mkstemp(suffix=".zo", dir=dir_name)
+    os.close(temp_fd)
+    with open(temp_path, "wb") as f:
+        f.write(out)
+    os.replace(temp_path, path)
+
+def normalize_path(path_str):
+    local_home = os.path.expanduser("~")
+    match = re.match(r"^/(home|Users)/([^/]+)(/.*)?$", path_str)
+    if match:
+        rest = match.group(3) or ""
+        return local_home + rest
+    return path_str
+
+incoming = read_zo(zo_db)
+local = read_zo(zo_local_pre)
+
+# Normalize foreign home directory prefixes in incoming database
+norm_incoming = {}
+for p, (score, ts) in incoming.items():
+    np = normalize_path(p)
+    if np in norm_incoming:
+        s_old, t_old = norm_incoming[np]
+        norm_incoming[np] = (max(s_old, score), max(t_old, ts))
+    else:
+        norm_incoming[np] = (score, ts)
+
+all_paths = set(norm_incoming.keys()) | set(local.keys())
+merged = {}
+for p in all_paths:
+    if p in norm_incoming and p in local:
+        s_in, t_in = norm_incoming[p]
+        s_loc, t_loc = local[p]
+        merged[p] = (max(s_in, s_loc), max(t_in, t_loc))
+    elif p in norm_incoming:
+        merged[p] = norm_incoming[p]
+    else:
+        merged[p] = local[p]
+
+if merged:
+    write_zo(zo_db, merged)
+    new_from_local = len(merged) - len(incoming)
+    print(f"✓ Zoxide cache merged: {len(incoming)} from archive + {new_from_local} local unique = {len(merged)} total.")
+
+if os.path.exists(zo_local_pre):
+    os.remove(zo_local_pre)
+EOF
+fi
+
+# Clean up local backups if still present
+rm -f "$HIST_LOCAL_PRE" "$ZO_LOCAL_PRE" "$HIST_DB-wal" "$HIST_DB-shm"
+
+# Ensure proper private file permissions
 if [ -f "$HIST_DB" ]; then
     chmod 600 "$HIST_DB"
+fi
+if [ -f "$ZO_DB" ]; then
+    chmod 600 "$ZO_DB"
 fi
 
 if pgrep -x nu >/dev/null 2>&1; then
