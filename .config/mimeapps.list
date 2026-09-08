@@ -44,7 +44,9 @@ x-scheme-handler/opencode=ai.opencode.desktop.desktop
 text/html=helium.desktop
 x-scheme-handler/about=helium.desktop
 x-scheme-handler/unknown=helium.desktop
+x-scheme-handler/t3code=t3code-url-handler.desktop
 
 [Added Associations]
 x-scheme-handler/mailto=userapp-Evolution-42TEN3.desktop;
 image/jpeg=org.gnome.eog.desktop;
+x-scheme-handler/t3code=t3code.desktop;
