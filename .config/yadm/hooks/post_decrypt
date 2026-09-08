@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# post_decrypt: Merge recent session commands into the decrypted history,
+# clean up any stale WAL/SHM files, and ensure correct file permissions.
+HIST_DB="$HOME/.config/nushell/history.sqlite3"
+TEMP_BACKUP="/tmp/opencode/yadm_pre_decrypt_history.json"
+
+# Remove any lingering WAL/SHM files so SQLite starts clean
+rm -f "$HIST_DB-wal" "$HIST_DB-shm"
+
+if [ -f "$HIST_DB" ] && [ -f "$TEMP_BACKUP" ] && command -v python3 >/dev/null 2>&1; then
+    python3 - << 'EOF' >/dev/null 2>&1 || true
+import sqlite3, json, os
+
+db = os.path.expanduser("~/.config/nushell/history.sqlite3")
+temp_file = "/tmp/opencode/yadm_pre_decrypt_history.json"
+
+if not os.path.exists(db) or not os.path.exists(temp_file):
+    exit(0)
+
+try:
+    with open(temp_file, "r") as f:
+        new_rows = json.load(f)
+
+    if new_rows:
+        conn = sqlite3.connect(db)
+        existing_ts = set(r[0] for r in conn.execute(
+            "SELECT start_timestamp FROM history WHERE start_timestamp IS NOT NULL"
+        ).fetchall())
+        to_insert = [r for r in new_rows if r[1] not in existing_ts]
+
+        if to_insert:
+            conn.executemany("""
+                INSERT INTO history (command_line, start_timestamp, hostname, cwd, duration_ms, exit_status, more_info)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, to_insert)
+            conn.commit()
+
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+        conn.close()
+except Exception:
+    pass
+finally:
+    if os.path.exists(temp_file):
+        os.remove(temp_file)
+EOF
+fi
+
+if [ -f "$HIST_DB" ]; then
+    chmod 600 "$HIST_DB"
+    rm -f "$HIST_DB-wal" "$HIST_DB-shm"
+fi
+
+if pgrep -x nu >/dev/null 2>&1; then
+    echo "Note: Running Nushell sessions must run 'exec nu' or restart to reload the restored history."
+fi
