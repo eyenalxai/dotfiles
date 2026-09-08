@@ -3,7 +3,7 @@
   br = branch
   ci = commit
   st = status
-  push-all = "!branch=$(git rev-parse --abbrev-ref HEAD) && git remote | xargs -I {} git push {} \"$branch\" --tags"
+  push-all = "!f() { branch=$(git rev-parse --abbrev-ref HEAD) && git remote | xargs -I {} git push \"$@\" {} \"$branch\" --tags; }; f"
 [pull]
   rebase = true
 [push]
