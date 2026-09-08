@@ -88,6 +88,19 @@ build() {
   export CONAN_HOME="$srcdir/.conan"
   [ -d "$srcdir/conan-venv/bin" ] && export PATH="$srcdir/conan-venv/bin:$PATH"
 
+  # Load Amnezia Gateway (AGW) API public keys and endpoints from external secrets file if available.
+  # This avoids leaking keys in version control while ensuring Amnezia Free / Premium / Gateway configs work.
+  for _env_file in \
+    "$startdir/.secrets.env" \
+    "${XDG_CONFIG_HOME:-$HOME/.config}/amneziavpn/secrets.env" \
+    "${XDG_CONFIG_HOME:-$HOME/.config}/amnezia/secrets.env"; do
+    if [ -f "$_env_file" ]; then
+      # shellcheck disable=SC1090
+      source "$_env_file"
+      break
+    fi
+  done
+
   # Ensure Conan finds the correct compilers and architecture
   cmake -B build -S amnezia-client \
     -G Ninja \

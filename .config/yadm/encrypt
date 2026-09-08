@@ -3,4 +3,5 @@
 .config/git/config-personal
 .local/share/obsidian/Personal/Secret
 .ssh/config
+.config/amneziavpn/secrets.env
 
