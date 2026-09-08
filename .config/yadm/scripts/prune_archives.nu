@@ -10,8 +10,7 @@ def main [--execute] {
     let all_commits = (^git --git-dir $git_dir rev-list --reverse HEAD | lines)
     let total_commits = ($all_commits | length)
     let size_before = (^du -sh $git_dir | split row "\t" | get 0 | str trim)
-    print $"Total commits in repository: ($total_commits)"
-    print $"Repository size before:      ($size_before)"
+    let archives_before = (^git --git-dir $git_dir log --oneline -- .local/share/yadm/archive | lines | length)
 
     # Milestone snapshots defined by commit hashes in historical order
     let latest_archive_commit = (^git --git-dir $git_dir log -1 --format="%H" -- .local/share/yadm/archive | str trim)
@@ -24,6 +23,7 @@ def main [--execute] {
         { name: '2_days_old',   commit: '3f37fef7ca7aff1f292153b16d10cffbcc8f2613', label: 'Sep 07, 2026' },
         { name: 'current',      commit: $latest_archive_commit,                       label: 'Sep 09, 2026' },
     ]
+    let archives_after = ($milestones | length)
 
     let ms_table = ($milestones | each { |m|
         let target_idx = ($all_commits | enumerate | where item == $m.commit | get 0.index)
@@ -49,11 +49,16 @@ def main [--execute] {
 
     mkdir "/tmp/opencode"
     $tsv_lines | str join (char nl) | save --force $map_file
-    print $"Generated mapping for ($tsv_lines | length) commits."
+    print $"Mapped ($tsv_lines | length) total repository commits."
 
     if not $execute {
-        print $"\nRepository size: ($size_before)"
-        print "Dry-run complete. Run with --execute to perform the rewrite."
+        print "\n=== Before & After (Dry-Run Preview) ==="
+        let preview_summary = [
+            { metric: "Archive snapshots in history", before: ($archives_before | into string), after: ($archives_after | into string) },
+            { metric: "Repository size on disk",      before: $size_before,                     after: "~14M (estimated)" },
+        ]
+        print ($preview_summary | table)
+        print "\nDry-run complete. Run with --execute to perform the rewrite."
         return
     }
 
@@ -99,9 +104,15 @@ def main [--execute] {
     let head_blob = (^git --git-dir $git_dir ls-tree HEAD .local/share/yadm/archive | str trim)
     print $"\nHEAD archive entry:\n  ($head_blob)"
 
+    let actual_archives_after = (^git --git-dir $git_dir log --oneline -- .local/share/yadm/archive | lines | length)
     let size_after = (^du -sh $git_dir | split row "\t" | get 0 | str trim)
-    print "\n=== 6. Size Comparison ==="
-    print $"  Repository size before: ($size_before)"
-    print $"  Repository size after:  ($size_after)"
+
+    print "\n=== 6. Before & After Summary ==="
+    let final_summary = [
+        { metric: "Archive snapshots in history", before: ($archives_before | into string), after: ($actual_archives_after | into string) },
+        { metric: "Repository size on disk",      before: $size_before,                     after: $size_after },
+    ]
+    print ($final_summary | table)
+
     print "\n✓ Pruning complete! You can now force-push with: yadm push --force origin main"
 }
