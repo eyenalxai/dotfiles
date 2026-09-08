@@ -29,13 +29,17 @@ $env.config.completions = {
 
 $env.config.edit_mode = "emacs"
 
-# Load integrations and aliases
+# Load integrations
 use starship.nu
 source zoxide.nu
 source mise.nu
-source aliases.nu
 
 # Custom completions
 source completions/git-completions.nu
 source completions/yadm-completions.nu
 use completions/systemctl-completions.nu *
+source completions/pacman-completions.nu
+source completions/yay-completions.nu
+
+# Aliases and custom commands
+source aliases.nu

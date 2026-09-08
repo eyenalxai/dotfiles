@@ -34,7 +34,7 @@ def windows-reboot [] {
 }
 
 # Arch / Pacman / AUR helpers
-def yaas [...args: string] {
+def yaas [...args: string@complete-yay-targets] {
     ^yay -S --noconfirm ...$args
 }
 
