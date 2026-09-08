@@ -58,3 +58,7 @@ def yaac [] {
         print "No orphan packages found."
     }
 }
+
+# Yadm maintenance
+alias yadm-prune = nu ~/.config/yadm/scripts/prune_archives.nu
+alias yadm-prune-archives = nu ~/.config/yadm/scripts/prune_archives.nu
