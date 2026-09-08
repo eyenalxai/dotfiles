@@ -1,0 +1,7 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+
+[vercel-portless]
+source = "npm"
+npm = "portless"

@@ -1,0 +1,28 @@
+# Maintainer: ulezot
+
+_npmname=portless
+pkgname=vercel-portless
+pkgver=0.15.6
+pkgrel=1
+pkgdesc='Replace port numbers with stable, named .localhost URLs for local development'
+arch=('any')
+url='https://portless.sh'
+license=('Apache-2.0')
+depends=('nodejs>=24')
+optdepends=('sudo: auto-elevation to bind privileged port 443 for HTTPS')
+source=(
+  "https://registry.npmjs.org/$_npmname/-/$_npmname-$pkgver.tgz"
+  "LICENSE::https://raw.githubusercontent.com/vercel-labs/portless/v$pkgver/LICENSE"
+)
+sha256sums=('48f15e5d63c47784534dd95eb5201e7e658ce43eae1b7ab960d34b6d67b9548a'
+            '014bb31e83d5c2e76aea1cc6e82217346ab41362f32cb355ad0f5c10aa0aeaff')
+
+package() {
+  # The npm tarball ships a prebuilt, self-contained dist/ bundle (tsup, esm).
+  # Its only imports are Node builtins, so no npm install/build step is needed.
+  install -dm755 "$pkgdir/usr/lib/$pkgname" "$pkgdir/usr/bin"
+  cp -r package/dist "$pkgdir/usr/lib/$pkgname/dist"
+  chmod 755 "$pkgdir/usr/lib/$pkgname/dist/cli.js"
+  ln -s "../lib/$pkgname/dist/cli.js" "$pkgdir/usr/bin/portless"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
