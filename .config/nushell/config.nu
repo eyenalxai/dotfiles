@@ -40,6 +40,7 @@ source completions/yadm-completions.nu
 use completions/systemctl-completions.nu *
 source completions/pacman-completions.nu
 source completions/yay-completions.nu
+source completions/pkill-completions.nu
 
 # Aliases and custom commands
 source aliases.nu
