@@ -1,0 +1,93 @@
+pkgbase = ghostty-git
+	pkgdesc = Fast, native, feature-rich terminal emulator pushing modern features
+	pkgver = 1.3.1.r2530.g4480625
+	pkgrel = 1
+	url = https://github.com/ghostty-org/ghostty
+	arch = aarch64
+	arch = x86_64
+	license = MIT
+	makedepends = blueprint-compiler
+	makedepends = git
+	makedepends = pkgconf
+	makedepends = zig>=0.16.0
+	depends = bzip2
+	depends = fontconfig
+	depends = libfontconfig.so
+	depends = freetype2
+	depends = libfreetype.so
+	depends = glib2
+	depends = libglib-2.0.so
+	depends = libgio-2.0.so
+	depends = libgobject-2.0.so
+	depends = glibc
+	depends = gtk4
+	depends = libgtk-4.so
+	depends = gtk4-layer-shell
+	depends = harfbuzz
+	depends = libharfbuzz.so
+	depends = hicolor-icon-theme
+	depends = libadwaita
+	depends = libadwaita-1.so
+	depends = libpng
+	depends = libx11
+	depends = oniguruma
+	depends = pixman
+	depends = wayland
+	depends = libwayland-client.so
+	depends = zlib
+	source = ghostty::git+file:///home/ulezot/Projects/other/ghostty
+	sha256sums = SKIP
+
+pkgname = ghostty-git
+	pkgdesc = Fast, native, feature-rich terminal emulator pushing modern features
+	depends = bzip2
+	depends = fontconfig
+	depends = libfontconfig.so
+	depends = freetype2
+	depends = libfreetype.so
+	depends = glib2
+	depends = libglib-2.0.so
+	depends = libgio-2.0.so
+	depends = libgobject-2.0.so
+	depends = glibc
+	depends = gtk4
+	depends = libgtk-4.so
+	depends = gtk4-layer-shell
+	depends = harfbuzz
+	depends = libharfbuzz.so
+	depends = hicolor-icon-theme
+	depends = libadwaita
+	depends = libadwaita-1.so
+	depends = libpng
+	depends = libx11
+	depends = oniguruma
+	depends = pixman
+	depends = wayland
+	depends = libwayland-client.so
+	depends = zlib
+	depends = ghostty-shell-integration-git=1.3.1.r2530.g4480625
+	depends = ghostty-terminfo-git=1.3.1.r2530.g4480625
+	optdepends = ghostty-nautilus-git: Open in Ghostty context menu in GNOME Files
+	optdepends = pandoc: build auto-generated documentation and manual pages (before building)
+	provides = ghostty=1.3.1.r2530.g4480625
+	conflicts = ghostty
+
+pkgname = ghostty-shell-integration-git
+	pkgdesc = Shell integration scripts for ghostty
+	depends = 
+	provides = ghostty-shell-integration=1.3.1.r2530.g4480625
+	conflicts = ghostty-shell-integration
+
+pkgname = ghostty-terminfo-git
+	pkgdesc = Terminfo for ghostty
+	depends = 
+	provides = ghostty-terminfo=1.3.1.r2530.g4480625
+	conflicts = ghostty-terminfo
+
+pkgname = ghostty-nautilus-git
+	pkgdesc = Open in Ghostty for GNOME Files
+	license = GPL-2.0-or-later
+	depends = ghostty-git=1.3.1.r2530.g4480625
+	depends = nautilus-python
+	provides = ghostty-nautilus=1.3.1.r2530.g4480625
+	conflicts = ghostty-nautilus

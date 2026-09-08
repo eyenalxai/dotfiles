@@ -1,0 +1,8 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+
+[ghostty]
+source = "git"
+git = "https://github.com/ghostty-org/ghostty.git"
+prefix = "v"

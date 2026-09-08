@@ -1,0 +1,153 @@
+# Maintainer: ulezot
+
+_pkgbase=ghostty
+pkgbase=$_pkgbase-git
+pkgname=(
+  "$_pkgbase-git"
+  "$_pkgbase-shell-integration-git"
+  "$_pkgbase-terminfo-git"
+  "$_pkgbase-nautilus-git"
+)
+pkgver=1.3.1.r2530.g4480625
+pkgrel=1
+pkgdesc="Fast, native, feature-rich terminal emulator pushing modern features"
+arch=('aarch64' 'x86_64')
+url="https://github.com/ghostty-org/ghostty"
+license=('MIT')
+
+depends=(
+  'bzip2'
+  'fontconfig' 'libfontconfig.so'
+  'freetype2' 'libfreetype.so'
+  'glib2' 'libglib-2.0.so' 'libgio-2.0.so' 'libgobject-2.0.so'
+  'glibc'
+  'gtk4' 'libgtk-4.so'
+  'gtk4-layer-shell'
+  'harfbuzz' 'libharfbuzz.so'
+  'hicolor-icon-theme'
+  'libadwaita' 'libadwaita-1.so'
+  'libpng'
+  'libx11'
+  'oniguruma'
+  'pixman'
+  'wayland' 'libwayland-client.so'
+  'zlib'
+)
+
+makedepends=(
+  'blueprint-compiler'
+  'git'
+  'pkgconf'
+  'zig>=0.16.0'
+)
+
+# If building from a local repository checkout, use it; otherwise clone from GitHub
+_local_repo="/home/ulezot/Projects/other/ghostty"
+if [ -d "$_local_repo/.git" ]; then
+  source=("$_pkgbase::git+file://$_local_repo")
+else
+  source=("$_pkgbase::git+https://github.com/ghostty-org/$_pkgbase.git")
+fi
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/$_pkgbase"
+  git describe --long --tags --abbrev=7 --match="v*" HEAD 2>/dev/null |
+    sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ||
+    printf "1.3.1.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+prepare() {
+  cd "$srcdir/$_pkgbase"
+
+  # Ensure isolated Zig cache directory exists
+  mkdir -p "$srcdir/zig-global-cache"
+
+  # Fetch Zig package dependencies into the global cache
+  echo ":: Fetching Zig dependencies..."
+  ZIG_GLOBAL_CACHE_DIR="$srcdir/zig-global-cache" ./nix/build-support/fetch-zig-cache.sh
+}
+
+build() {
+  cd "$srcdir/$_pkgbase"
+
+  # Emit documentation only if pandoc is available (e.g. pandoc-cli or pandoc-bin)
+  local _emit_docs="false"
+  if command -v pandoc >/dev/null 2>&1; then
+    _emit_docs="true"
+  fi
+
+  DESTDIR=build zig build \
+    --summary all \
+    --prefix "/usr" \
+    --system "$srcdir/zig-global-cache/p" \
+    -Doptimize=ReleaseFast \
+    -Dgtk-x11=true \
+    -Dcpu=baseline \
+    -Dpie=true \
+    -Demit-docs="$_emit_docs" \
+    -Dversion-string="${pkgver%.r*}-r${pkgver#*.r}-$pkgrel-arch" \
+    --build-id=sha1
+}
+
+package_ghostty-git() {
+  pkgdesc="Fast, native, feature-rich terminal emulator pushing modern features"
+  depends+=(
+    "ghostty-shell-integration-git=$pkgver"
+    "ghostty-terminfo-git=$pkgver"
+  )
+  optdepends=(
+    "ghostty-nautilus-git: Open in Ghostty context menu in GNOME Files"
+    "pandoc: build auto-generated documentation and manual pages (before building)"
+  )
+  provides=("ghostty=$pkgver")
+  conflicts=('ghostty')
+
+  cd "$srcdir/$_pkgbase"
+
+  cp -a build/* "$pkgdir/"
+  install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE
+
+  # Remove subpackaged components so they are only owned by their respective packages
+  rm -rf "$pkgdir"/usr/share/terminfo
+  rm -rf "$pkgdir"/usr/share/ghostty/shell-integration
+  rm -rf "$pkgdir"/usr/share/nautilus-python
+}
+
+package_ghostty-shell-integration-git() {
+  pkgdesc="Shell integration scripts for ghostty"
+  depends=()
+  provides=("ghostty-shell-integration=$pkgver")
+  conflicts=('ghostty-shell-integration')
+
+  cd "$srcdir/$_pkgbase"
+  install -d "$pkgdir/usr/share/ghostty/shell-integration"
+  cp -a build/usr/share/ghostty/shell-integration/* "$pkgdir/usr/share/ghostty/shell-integration/"
+  install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE
+}
+
+package_ghostty-terminfo-git() {
+  pkgdesc="Terminfo for ghostty"
+  depends=()
+  provides=("ghostty-terminfo=$pkgver")
+  conflicts=('ghostty-terminfo')
+
+  cd "$srcdir/$_pkgbase"
+  install -d "$pkgdir/usr/share/terminfo"
+  cp -a build/usr/share/terminfo/* "$pkgdir/usr/share/terminfo/"
+  install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE
+}
+
+package_ghostty-nautilus-git() {
+  pkgdesc="Open in Ghostty for GNOME Files"
+  license=('GPL-2.0-or-later')
+  depends=("ghostty-git=$pkgver" 'nautilus-python')
+  provides=("ghostty-nautilus=$pkgver")
+  conflicts=('ghostty-nautilus')
+
+  cd "$srcdir/$_pkgbase"
+  if [ -d build/usr/share/nautilus-python ]; then
+    install -d "$pkgdir/usr/share/nautilus-python"
+    cp -a build/usr/share/nautilus-python/* "$pkgdir/usr/share/nautilus-python/"
+  fi
+}
