@@ -37,22 +37,93 @@ def color-choices [] {
 }
 
 # Positional targets completer for pacman
+def pacman-operations [] {
+    [
+        { value: "-S", description: "Synchronize packages" }
+        { value: "-Syu", description: "Synchronize databases and upgrade system" }
+        { value: "-Ss", description: "Search remote repositories for matching strings" }
+        { value: "-Si", description: "View remote package information" }
+        { value: "-Sy", description: "Download fresh package databases from server" }
+        { value: "-Su", description: "Upgrade installed packages" }
+        { value: "-R", description: "Remove packages from the system" }
+        { value: "-Rns", description: "Remove package, dependencies, and configuration files" }
+        { value: "-Q", description: "Query the package database" }
+        { value: "-Qe", description: "List explicitly installed packages" }
+        { value: "-Qm", description: "List foreign (AUR / manually installed) packages" }
+        { value: "-Qs", description: "Search installed packages for matching strings" }
+        { value: "-Qi", description: "View installed package information" }
+        { value: "-Ql", description: "List files owned by installed package" }
+        { value: "-Qo", description: "Search for package that owns specified file" }
+        { value: "-F", description: "Query the files database" }
+        { value: "-Fs", description: "Search for packages containing specified file" }
+        { value: "-Fl", description: "List files owned by given package from files db" }
+        { value: "-Fy", description: "Download fresh files databases from server" }
+        { value: "-U", description: "Upgrade or add a local package (.pkg.tar.zst)" }
+        { value: "-D", description: "Modify the package database (--asdeps, --asexplicit)" }
+        { value: "-T", description: "Check dependencies" }
+        { value: "-h", description: "Display help and syntax" }
+        { value: "-V", description: "Display version and exit" }
+        { value: "--sync", description: "Synchronize packages" }
+        { value: "--remove", description: "Remove packages from the system" }
+        { value: "--query", description: "Query the package database" }
+        { value: "--files", description: "Query the files database" }
+        { value: "--upgrade", description: "Upgrade or add a local package" }
+        { value: "--database", description: "Modify the package database" }
+        { value: "--deptest", description: "Check dependencies" }
+        { value: "--help", description: "Display help and syntax" }
+        { value: "--version", description: "Display version and exit" }
+    ]
+}
+
+# Positional targets completer for pacman
 def complete-pacman-targets [context: string] {
     let words = ($context | split row -r '\s+' | drop 1)
+    let current = ($context | split row -r '\s+' | last)
     let prev_pkgs = ($words | where { |it| not ($it starts-with "-") and ($it != "pacman") and ($it != "sudo") })
 
     # Check operations
-    let is_remove = ($words | any { |w| $w =~ '^-[a-zA-Z]*R[a-zA-Z]*$' or $w == '--remove' })
-    let is_query = ($words | any { |w| $w =~ '^-[a-zA-Z]*Q[a-zA-Z]*$' or $w == '--query' })
-    let is_database = ($words | any { |w| $w =~ '^-[a-zA-Z]*D[a-zA-Z]*$' or $w == '--database' })
-    let is_upgrade = ($words | any { |w| $w =~ '^-[a-zA-Z]*U[a-zA-Z]*$' or $w == '--upgrade' })
-    let is_owns = ($words | any { |w| $w =~ '^-[a-zA-Z]*o[a-zA-Z]*$' or $w == '--owns' })
-    let is_file_arg = ($words | any { |w| $w =~ '^-[a-zA-Z]*p[a-zA-Z]*$' or $w == '--file' })
-    let is_group = ($words | any { |w| $w =~ '^-[a-zA-Z]*g[a-zA-Z]*$' or $w == '--groups' or $w == '--ignoregroup' })
-    let is_repo_list = ($words | any { |w| $w =~ '^-[a-zA-Z]*l[a-zA-Z]*$' or $w == '--list' })
+    let is_sync = ($words | any { |w| ($w =~ '^-[a-z]*S[a-zA-Z]*$') or ($w == '--sync') })
+    let is_remove = ($words | any { |w| ($w =~ '^-[a-z]*R[a-zA-Z]*$') or ($w == '--remove') })
+    let is_query = ($words | any { |w| ($w =~ '^-[a-z]*Q[a-zA-Z]*$') or ($w == '--query') })
+    let is_database = ($words | any { |w| ($w =~ '^-[a-z]*D[a-zA-Z]*$') or ($w == '--database') })
+    let is_upgrade = ($words | any { |w| ($w =~ '^-[a-z]*U[a-zA-Z]*$') or ($w == '--upgrade') })
+    let is_files = ($words | any { |w| ($w =~ '^-[a-z]*F[a-zA-Z]*$') or ($w == '--files') })
+    let is_deptest = ($words | any { |w| ($w =~ '^-[a-z]*T[a-zA-Z]*$') or ($w == '--deptest') })
+    let is_help = ($words | any { |w| ($w =~ '^-[a-z]*h[a-zA-Z]*$') or ($w == '--help') })
+    let is_version = ($words | any { |w| ($w =~ '^-[a-z]*V[a-zA-Z]*$') or ($w == '--version') })
+
+    let is_owns = ($words | any { |w| ($w =~ '^-[a-zA-Z]*o[a-zA-Z]*$') or ($w == '--owns') })
+    let is_file_arg = ($words | any { |w| ($w =~ '^-[a-zA-Z]*p[a-zA-Z]*$') or ($w == '--file') })
+    let is_group = ($words | any { |w| ($w =~ '^-[a-zA-Z]*g[a-zA-Z]*$') or ($w == '--groups') or ($w == '--ignoregroup') })
+    let is_repo_list = ($words | any { |w| ($w =~ '^-[a-zA-Z]*l[a-zA-Z]*$') or ($w == '--list') })
+    let is_clean = ($words | any { |w| ($w =~ '^-[a-zA-Z]*c[a-zA-Z]*$') or ($w == '--clean') })
+
+    let has_operation = ($is_sync or $is_remove or $is_query or $is_database or $is_upgrade or $is_files or $is_deptest or $is_help or $is_version)
+
+    # Suggest operations when no operation is specified
+    if not $has_operation {
+        return (pacman-operations)
+    }
+
+    if $is_help or $is_version {
+        return []
+    }
+
+    if $is_sync and $is_clean {
+        return []
+    }
 
     # File completions fallback (return null so Nushell handles files)
     if $is_upgrade or $is_owns or $is_file_arg {
+        return null
+    }
+
+    # Files database operation
+    if $is_files {
+        if $is_repo_list {
+            let pkgs = (sync-pkgs)
+            return (if ($prev_pkgs | is-empty) { $pkgs } else { $pkgs | where { |p| $p.value not-in $prev_pkgs } })
+        }
         return null
     }
 
