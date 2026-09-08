@@ -62,14 +62,15 @@ def main [--execute] {
         return
     }
 
-    print $"\n=== 2. Creating Full Safety Backup at ($backup_dir) ==="
+    print "\n=== 2. Creating Safety Backup ==="
+    print -n $"(char cr)(ansi erase_line_from_cursor_to_end)Backing up to ($backup_dir)..."
     rm -rf $backup_dir
     cp -r $git_dir $backup_dir
-    print "Backup created successfully."
+    print $"(char cr)(ansi erase_line_from_cursor_to_end)Backup created at ($backup_dir)."
 
-    print "\n=== 3. Rewriting History with git filter-branch ==="
-    let filter_cmd = (
-        'target_blob=$(grep "^$GIT_COMMIT[[:space:]]" /tmp/opencode/commit_archive_map.tsv | cut -f2); ' +
+    print "\n=== 3. Rewriting History ==="
+    let filter_script = (
+        'target_blob=$(grep "^$GIT_COMMIT[[:space:]]" ' + $map_file + ' | cut -f2); ' +
         'if [ -n "$target_blob" ]; then ' +
         '    git update-index --add --cacheinfo 100644 "$target_blob" .local/share/yadm/archive; ' +
         'else ' +
@@ -77,14 +78,27 @@ def main [--execute] {
         'fi'
     )
 
-    with-env {
-        GIT_DIR: $git_dir,
-        FILTER_BRANCH_SQUELCH_WARNING: "1"
-    } {
-        ^git filter-branch --force --index-filter $filter_cmd --prune-empty --tag-name-filter cat -- --all
-    }
+    let runner = (
+        'export GIT_DIR="' + $git_dir + '"; ' +
+        'export FILTER_BRANCH_SQUELCH_WARNING=1; ' +
+        'git filter-branch --force --index-filter \'' + $filter_script + '\' --prune-empty --tag-name-filter cat -- --all 2>&1 | ' +
+        'while IFS= read -r -d $\'\r\' line || [ -n "$line" ]; do ' +
+        '    if [[ "$line" =~ \(([0-9]+)/([0-9]+)\) ]]; then ' +
+        '        cur="${BASH_REMATCH[1]}"; ' +
+        '        tot="${BASH_REMATCH[2]}"; ' +
+        '        if [ -n "$tot" ] && [ "$tot" -gt 0 ]; then ' +
+        '            pct=$(( cur * 100 / tot )); ' +
+        '            printf "\r\033[KRewriting history: [%d/%d] (%d%%)" "$cur" "$tot" "$pct"; ' +
+        '        fi; ' +
+        '    fi; ' +
+        'done; ' +
+        'printf "\r\033[KRewriting history: complete.\n"'
+    )
+
+    ^bash -c $runner
 
     print "\n=== 4. Cleaning Old References and Repacking ==="
+    print -n $"(char cr)(ansi erase_line_from_cursor_to_end)Repacking repository and pruning unneeded objects..."
     let original_refs = (^git --git-dir $git_dir for-each-ref --format="%(refname)" refs/original/ | lines)
     for ref in $original_refs {
         if ($ref | str length) > 0 {
@@ -92,17 +106,12 @@ def main [--execute] {
         }
     }
     ^git --git-dir $git_dir reflog expire --expire=now --all
-    ^git --git-dir $git_dir gc --prune=now --aggressive
+    ^git --git-dir $git_dir gc --prune=now --aggressive --quiet
+    print $"(char cr)(ansi erase_line_from_cursor_to_end)Repacking repository: complete."
 
     print "\n=== 5. Verification ==="
-    let archive_log = (^git --git-dir $git_dir log --format="%h %ci %s" -- .local/share/yadm/archive | lines)
-    print "Commits modifying .local/share/yadm/archive in new history:"
-    for line in $archive_log {
-        print $"  ($line)"
-    }
-
     let head_blob = (^git --git-dir $git_dir ls-tree HEAD .local/share/yadm/archive | str trim)
-    print $"\nHEAD archive entry:\n  ($head_blob)"
+    print $"HEAD archive entry: ($head_blob)"
 
     let actual_archives_after = (^git --git-dir $git_dir log --oneline -- .local/share/yadm/archive | lines | length)
     let size_after = (^du -sh $git_dir | split row "\t" | get 0 | str trim)
