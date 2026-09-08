@@ -390,6 +390,22 @@ def "nu-complete yadm subcommands" [] {
   $yadm_cmds | append (nu-complete yadm git-subcommands) | uniq-by value
 }
 
+def "nu-complete yadm extern-subcommands" [] {
+  [
+    "add", "alt", "bootstrap", "branch", "checkout", "cherry", "cherry-pick",
+    "clone", "commit", "config", "decrypt", "diff", "encrypt", "enter", "fetch",
+    "git-crypt", "gitconfig", "grep", "help", "init", "introspect", "list",
+    "log", "merge", "perms", "prune", "pull", "push", "rebase", "reflog",
+    "remote", "reset", "restore", "rm", "status", "switch", "tag", "transcrypt",
+    "upgrade", "version", "worktree"
+  ]
+}
+
+def "nu-complete yadm subcommands-fallback" [] {
+  let known = (nu-complete yadm extern-subcommands)
+  (nu-complete yadm subcommands) | where { |it| $it.value not-in $known }
+}
+
 def "nu-complete yadm tracked files" [] {
   let out = (do { ^yadm list } | complete)
   if $out.exit_code == 0 {
@@ -1222,7 +1238,7 @@ export extern "yadm grep" [
 ]
 
 export extern "yadm" [
-  command?: string@"nu-complete yadm subcommands" # Subcommands
+  command?: string@"nu-complete yadm subcommands-fallback" # Subcommands
   --yadm-dir: path                              # Override yadm directory (default: ~/.config/yadm)
   --yadm-data: path                             # Override yadm data directory (default: ~/.local/share/yadm)
   --yadm-repo: path                             # Override yadm repository path

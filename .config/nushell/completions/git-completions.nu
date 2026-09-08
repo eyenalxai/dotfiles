@@ -345,6 +345,20 @@ def "nu-complete git subcommands" [] {
   | uniq-by value
 }
 
+def "nu-complete git extern-subcommands" [] {
+  [
+    "add", "branch", "checkout", "cherry", "cherry-pick", "clone", "commit",
+    "diff", "fetch", "grep", "help", "init", "log", "merge", "prune", "pull",
+    "push", "rebase", "reflog", "remote", "reset", "restore", "rm", "status",
+    "switch", "tag", "worktree"
+  ]
+}
+
+def "nu-complete git subcommands-fallback" [] {
+  let known = (nu-complete git extern-subcommands)
+  (nu-complete git subcommands) | where { |it| $it.value not-in $known }
+}
+
 def "nu-complete git add" [] {
   nu-complete git files
 }
@@ -1145,7 +1159,7 @@ export extern "git grep" [
 ]
 
 export extern "git" [
-  command?: string@"nu-complete git subcommands"   # Subcommands
+  command?: string@"nu-complete git subcommands-fallback"   # Subcommands
   --version(-v)                                    # Prints the Git suite version that the git program came from
   --help(-h)                                       # Prints the synopsis and a list of the most commonly used commands
   --html-path                                      # Print the path, without trailing slash, where Git’s HTML documentation is installed and exit
