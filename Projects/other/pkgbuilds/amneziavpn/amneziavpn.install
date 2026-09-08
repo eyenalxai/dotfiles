@@ -1,0 +1,17 @@
+post_install() {
+  echo ":: AmneziaVPN requires its background service to be running."
+  echo ":: To start and enable the AmneziaVPN service, run:"
+  echo "     sudo systemctl enable --now AmneziaVPN.service"
+}
+
+post_upgrade() {
+  systemctl daemon-reload
+  if systemctl is-active --quiet AmneziaVPN.service; then
+    echo ":: Restarting AmneziaVPN service..."
+    systemctl restart AmneziaVPN.service
+  fi
+}
+
+pre_remove() {
+  systemctl disable --now AmneziaVPN.service 2>/dev/null || true
+}

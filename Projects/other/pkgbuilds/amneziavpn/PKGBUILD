@@ -1,0 +1,136 @@
+# Maintainer: ulezot
+
+_pkgname=amneziavpn
+pkgname=$_pkgname-git
+pkgver=5.0.2.1.r0.g327e5985
+pkgrel=1
+pkgdesc="Amnezia VPN Client (built from source for aarch64 / x86_64)"
+arch=('aarch64' 'x86_64')
+url="https://github.com/amnezia-vpn/amnezia-client"
+license=('GPL-3.0-only')
+
+depends=(
+  'glibc'
+  'hicolor-icon-theme'
+  'libcap-ng'
+  'libnl'
+  'libsecret'
+  'openssl'
+  'qt6-5compat'
+  'qt6-base'
+  'qt6-declarative'
+  'qt6-remoteobjects'
+  'qt6-svg'
+  'wireguard-tools'
+)
+
+makedepends=(
+  'autoconf'
+  'automake'
+  'cmake'
+  'git'
+  'libtool'
+  'ninja'
+  'pkgconf'
+  'python'
+  'qt6-tools'
+)
+
+optdepends=(
+  'amneziawg-dkms: in-kernel AmneziaWG module (higher throughput)'
+  'amneziawg-tools: CLI administration tools for AmneziaWG'
+  'conan: native C/C++ package manager (avoids automatic venv bootstrap)'
+)
+
+provides=("$_pkgname")
+conflicts=("$_pkgname" "$_pkgname-bin")
+options=('!debug')
+install="$_pkgname.install"
+
+# If building from a local repository checkout, use it; otherwise clone from GitHub
+_local_repo="/home/ulezot/Projects/other/amnezia-client"
+if [ -d "$_local_repo/.git" ]; then
+  source=("amnezia-client::git+file://$_local_repo")
+else
+  source=("amnezia-client::git+https://github.com/amnezia-vpn/amnezia-client.git#branch=dev")
+fi
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/amnezia-client"
+  git describe --long --tags --exclude='*[a-zA-Z]*' 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ||
+  printf "5.0.2.1.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+prepare() {
+  cd "$srcdir/amnezia-client"
+
+  # Initialize required submodules (SortFilterProxyModel, qtkeychain)
+  git submodule update --init --recursive
+
+  # Setup an isolated Conan cache inside $srcdir so host ~/.conan2 is untouched
+  export CONAN_HOME="$srcdir/.conan"
+
+  # Ensure Conan 2 is available; bootstrap a minimal venv if not installed on system
+  if ! command -v conan >/dev/null 2>&1; then
+    echo ":: Conan not found in PATH; creating an isolated build venv..."
+    python -m venv "$srcdir/conan-venv"
+    "$srcdir/conan-venv/bin/pip" install --no-warn-script-location "conan>=2.21.0"
+    export PATH="$srcdir/conan-venv/bin:$PATH"
+  fi
+
+  # Generate default profile for host architecture (e.g. armv8 on aarch64)
+  conan profile detect --force
+}
+
+build() {
+  export CONAN_HOME="$srcdir/.conan"
+  [ -d "$srcdir/conan-venv/bin" ] && export PATH="$srcdir/conan-venv/bin:$PATH"
+
+  # Ensure Conan finds the correct compilers and architecture
+  cmake -B build -S amnezia-client \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/AmneziaVPN \
+    -DCMAKE_INSTALL_BINDIR=bin \
+    -DCMAKE_INSTALL_RPATH='$ORIGIN:$ORIGIN/../lib' \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=FALSE \
+    -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE
+
+  cmake --build build
+}
+
+package() {
+  export CONAN_HOME="$srcdir/.conan"
+  [ -d "$srcdir/conan-venv/bin" ] && export PATH="$srcdir/conan-venv/bin:$PATH"
+
+  DESTDIR="$pkgdir" cmake --install build
+
+  # Clean up installer artifact scripts placed in /opt/AmneziaVPN
+  rm -f "$pkgdir"/opt/AmneziaVPN/{post_install.sh,post_uninstall.sh}
+  rm -f "$pkgdir"/opt/AmneziaVPN/{AmneziaVPN.service,AmneziaVPN.desktop}
+
+  # CLI symlink
+  install -dm755 "$pkgdir/usr/bin"
+  ln -sf /opt/AmneziaVPN/bin/AmneziaVPN "$pkgdir/usr/bin/AmneziaVPN"
+
+  # Systemd service
+  install -Dm644 "$srcdir/amnezia-client/deploy/data/linux/AmneziaVPN.service" \
+    "$pkgdir/usr/lib/systemd/system/AmneziaVPN.service"
+
+  # Desktop file (fix icon path to standard icon theme name)
+  install -Dm644 "$srcdir/amnezia-client/deploy/data/linux/AmneziaVPN.desktop" \
+    "$pkgdir/usr/share/applications/AmneziaVPN.desktop"
+  sed -i 's#/usr/share/pixmaps/AmneziaVPN.png#AmneziaVPN#g' \
+    "$pkgdir/usr/share/applications/AmneziaVPN.desktop"
+
+  # Icons
+  install -Dm644 "$srcdir/amnezia-client/deploy/data/linux/AmneziaVPN.png" \
+    "$pkgdir/usr/share/icons/hicolor/512x512/apps/AmneziaVPN.png"
+  install -Dm644 "$srcdir/amnezia-client/deploy/data/linux/AmneziaVPN.png" \
+    "$pkgdir/usr/share/pixmaps/AmneziaVPN.png"
+
+  # License
+  install -Dm644 "$srcdir/amnezia-client/LICENSE" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

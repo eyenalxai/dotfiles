@@ -1,0 +1,8 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+
+[amneziavpn]
+source = "git"
+git = "https://github.com/amnezia-vpn/amnezia-client.git"
+use_latest_tag = true
