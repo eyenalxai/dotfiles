@@ -69,7 +69,7 @@ def main [--execute] {
 
     print "\n=== 3. Rewriting History with git filter-branch ==="
     let filter_cmd = (
-        'target_blob=$(grep "^$GIT_COMMIT\t" /tmp/opencode/commit_archive_map.tsv | cut -f2); ' +
+        'target_blob=$(grep "^$GIT_COMMIT[[:space:]]" /tmp/opencode/commit_archive_map.tsv | cut -f2); ' +
         'if [ -n "$target_blob" ]; then ' +
         '    git update-index --add --cacheinfo 100644 "$target_blob" .local/share/yadm/archive; ' +
         'else ' +
