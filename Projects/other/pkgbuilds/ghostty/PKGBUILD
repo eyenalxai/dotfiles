@@ -66,6 +66,13 @@ prepare() {
   # Fetch Zig package dependencies into the global cache
   echo ":: Fetching Zig dependencies..."
   ZIG_GLOBAL_CACHE_DIR="$srcdir/zig-global-cache" ./nix/build-support/fetch-zig-cache.sh
+
+  # Zig 0.16 stores fetched dependencies as .tar.gz archives in the cache,
+  # but `zig build --system` expects extracted directories.
+  for f in "$srcdir/zig-global-cache/p"/*.tar.gz; do
+    [ -f "$f" ] || continue
+    tar -xzf "$f" -C "$srcdir/zig-global-cache/p"
+  done
 }
 
 build() {
@@ -134,7 +141,7 @@ package_ghostty-terminfo-git() {
 
   cd "$srcdir/$_pkgbase"
   install -d "$pkgdir/usr/share/terminfo"
-  cp -a build/usr/share/terminfo/* "$pkgdir/usr/share/terminfo/"
+  cp -a build/usr/share/terminfo/x "$pkgdir/usr/share/terminfo/"
   install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE
 }
 
