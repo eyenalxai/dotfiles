@@ -13,6 +13,9 @@ alias ngrok = op plugin run -- ngrok
 alias ls = ls -a
 alias cat = bat --plain --paging=never
 
+# Database
+alias psql = psql --pset=pager=off
+
 # JSON schema helper
 alias json-schema = jq --argjson nullable true 'include "schema"; schema'
 
