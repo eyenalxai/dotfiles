@@ -50,7 +50,7 @@ model = "large-v3-turbo"
 # Language for transcription
 # Use "en" for English, "auto" for auto-detection
 # See: https://github.com/openai/whisper#available-models-and-languages
-language = "ru,en"
+language = "en"
 
 # Translate non-English speech to English
 translate = false
