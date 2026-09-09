@@ -15,12 +15,12 @@ def main [--execute] {
     # Milestone snapshots defined by commit hashes in historical order
     let latest_archive_commit = (^git --git-dir $git_dir log -1 --format="%H" -- .local/share/yadm/archive | str trim)
     let milestones = [
-        { name: '6_months_old', commit: 'c6fedf2e07d37364ac031386a0682991d8f1750b', label: 'Mar 13, 2026' },
-        { name: '1_month_old',  commit: '32e09d61ea5a591de4d3bad306157f5870d28d52', label: 'Aug 01, 2026' },
-        { name: '2_weeks_old',  commit: '14ac47c5174ff28f549975cfda1b21de55eb37e5', label: 'Aug 07, 2026' },
-        { name: '1_week_old',   commit: '4a8ad3508227bc5ce00a93119bd38cb7d1f074e7', label: 'Sep 02, 2026' },
-        { name: '3_days_old',   commit: '85c6d8ccbb7fb5d7f77a3b673418a340bb9d22fc', label: 'Sep 06, 2026' },
-        { name: '2_days_old',   commit: '3f37fef7ca7aff1f292153b16d10cffbcc8f2613', label: 'Sep 07, 2026' },
+        { name: '6_months_old', commit: '309e37d1dd4c14547f84a23db7faf48df5a7ac34', label: 'Mar 13, 2026' },
+        { name: '1_month_old',  commit: '8af53657b798b27dbb4cb07d98552988cf84e248', label: 'Aug 01, 2026' },
+        { name: '2_weeks_old',  commit: 'cabaa1cf185802bfc6b41c386e1a5674e9fee3c3', label: 'Aug 07, 2026' },
+        { name: '1_week_old',   commit: '6becdaeb3fc99b81337d77d421410ba81aa8a69c', label: 'Sep 02, 2026' },
+        { name: '3_days_old',   commit: 'e61e1bb61c6595c4609b5c6a8039db6d67780d09', label: 'Sep 06, 2026' },
+        { name: '2_days_old',   commit: '92d859750cb2c780dd72a0721cb595c15ba674ad', label: 'Sep 07, 2026' },
         { name: 'current',      commit: $latest_archive_commit,                       label: 'Sep 09, 2026' },
     ]
     let archives_after = ($milestones | length)
@@ -79,9 +79,7 @@ def main [--execute] {
     )
 
     let runner = (
-        'export GIT_DIR="' + $git_dir + '"; ' +
-        'export FILTER_BRANCH_SQUELCH_WARNING=1; ' +
-        'git filter-branch --force --index-filter \'' + $filter_script + '\' --prune-empty --tag-name-filter cat -- --all 2>&1 | ' +
+        'fb_err=""; ' +
         'while IFS= read -r -d $\'\r\' line || [ -n "$line" ]; do ' +
         '    if [[ "$line" =~ \(([0-9]+)/([0-9]+)\) ]]; then ' +
         '        cur="${BASH_REMATCH[1]}"; ' +
@@ -90,8 +88,18 @@ def main [--execute] {
         '            pct=$(( cur * 100 / tot )); ' +
         '            printf "\r\033[KRewriting history: [%d/%d] (%d%%)" "$cur" "$tot" "$pct"; ' +
         '        fi; ' +
+        '    elif [[ "$line" =~ ^(Cannot|fatal:|error:) ]]; then ' +
+        '        fb_err="$line"; ' +
         '    fi; ' +
-        'done; ' +
+        'done < <(' +
+        '    export GIT_DIR="' + $git_dir + '"; ' +
+        '    export GIT_WORK_TREE="' + $env.HOME + '"; ' +
+        '    export FILTER_BRANCH_SQUELCH_WARNING=1; ' +
+        '    git filter-branch --force --index-filter \'' + $filter_script + '\' --prune-empty --tag-name-filter cat -- --all 2>&1' +
+        '); ' +
+        'if [ -n "$fb_err" ]; then ' +
+        '    printf "\r\033[KError: %s\n" "$fb_err" >&2; exit 1; ' +
+        'fi; ' +
         'printf "\r\033[KRewriting history: complete.\n"'
     )
 
