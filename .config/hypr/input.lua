@@ -12,6 +12,9 @@ hl.config({
   input = {
     kb_layout = "us,ru",
     kb_options = "grp:caps_toggle,shift:both_capslock_cancel",
+    touchpad = {
+      scroll_factor = 0.2,
+    },
   },
 })
 
@@ -21,7 +24,7 @@ hl.config({
 
 -- Enable touchpad gestures for changing workspaces.
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Gestures/
-hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+hl.gesture({ fingers = 3, direction = "horizontal", scale = 0.5, action = "workspace" })
 
 -- Enable touchpad gestures for moving focus (helpful on scrolling layout).
 -- hl.gesture({ fingers = 3, direction = "left", action = function() hl.dispatch(hl.dsp.focus({ direction = "l" })) end })
