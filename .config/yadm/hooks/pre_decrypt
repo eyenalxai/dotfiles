@@ -12,17 +12,23 @@ HIST_LOCAL_PRE="$HOME/.config/nushell/history.sqlite3.local_pre_decrypt"
 ZO_DB="$HOME/.local/share/zoxide/db.zo"
 ZO_LOCAL_PRE="$HOME/.local/share/zoxide/db.zo.local_pre_decrypt"
 
+CLIP_JSON="$HOME/.local/state/omarchy/clipboard-history.json"
+CLIP_LOCAL_PRE="$HOME/.local/state/omarchy/clipboard-history.json.local_pre_decrypt"
+
 # 1. Flush any pending WAL writes in the active Nushell database
 if [ -f "$HIST_DB" ] && command -v sqlite3 >/dev/null 2>&1; then
     sqlite3 "$HIST_DB" "PRAGMA wal_checkpoint(TRUNCATE);" >/dev/null 2>&1 || true
 fi
 
-# 2. Preserve existing local databases for two-way merging
+# 2. Preserve existing local databases and clipboard for two-way merging
 if [ -f "$HIST_DB" ]; then
     cp -p "$HIST_DB" "$HIST_LOCAL_PRE"
 fi
 if [ -f "$ZO_DB" ]; then
     cp -p "$ZO_DB" "$ZO_LOCAL_PRE"
+fi
+if [ -f "$CLIP_JSON" ]; then
+    cp -p "$CLIP_JSON" "$CLIP_LOCAL_PRE"
 fi
 
 # 3. Unlink active Nushell history files so running instances detach cleanly

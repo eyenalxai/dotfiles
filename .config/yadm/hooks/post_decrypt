@@ -12,6 +12,9 @@ HIST_LOCAL_PRE="$HOME/.config/nushell/history.sqlite3.local_pre_decrypt"
 ZO_DB="$HOME/.local/share/zoxide/db.zo"
 ZO_LOCAL_PRE="$HOME/.local/share/zoxide/db.zo.local_pre_decrypt"
 
+CLIP_JSON="$HOME/.local/state/omarchy/clipboard-history.json"
+CLIP_LOCAL_PRE="$HOME/.local/state/omarchy/clipboard-history.json.local_pre_decrypt"
+
 # Remove any lingering Nushell WAL/SHM files
 rm -f "$HIST_DB-wal" "$HIST_DB-shm"
 
@@ -22,6 +25,9 @@ if [ -n "$YADM_HOOK_EXIT" ] && [ "$YADM_HOOK_EXIT" -ne 0 ]; then
     fi
     if [ -f "$ZO_LOCAL_PRE" ] && [ ! -f "$ZO_DB" ]; then
         mv "$ZO_LOCAL_PRE" "$ZO_DB"
+    fi
+    if [ -f "$CLIP_LOCAL_PRE" ]; then
+        mv "$CLIP_LOCAL_PRE" "$CLIP_JSON"
     fi
     exit 0
 fi
@@ -221,8 +227,105 @@ if os.path.exists(zo_local_pre):
 EOF
 fi
 
+# Two-way merge for Clipboard history (text-only synchronization)
+if ([ -f "$CLIP_JSON" ] || [ -f "$CLIP_LOCAL_PRE" ]) && command -v python3 >/dev/null 2>&1; then
+    python3 - << 'EOF'
+import json, os, tempfile
+
+clip_file = os.path.expanduser("~/.local/state/omarchy/clipboard-history.json")
+clip_local_pre = os.path.expanduser("~/.local/state/omarchy/clipboard-history.json.local_pre_decrypt")
+image_dir = os.path.expanduser("~/.local/state/omarchy/clipboard-images")
+
+def load_history(path):
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return data
+    except Exception as e:
+        print(f"Warning: could not read {path}: {e}")
+    return []
+
+incoming = load_history(clip_file)
+local = load_history(clip_local_pre)
+
+def normalize_entry(entry, is_incoming=False):
+    if not isinstance(entry, dict):
+        return None
+    etype = entry.get("type")
+    if etype == "text":
+        text = entry.get("text", "")
+        if not text or not str(text).strip():
+            return None
+        return {"type": "text", "text": str(text)}
+    elif etype == "image":
+        if is_incoming:
+            return None
+        path = entry.get("path", "")
+        fname = os.path.basename(path)
+        if not fname:
+            return None
+        local_path = os.path.join(image_dir, fname)
+        if not os.path.isfile(local_path):
+            return None
+        res = {
+            "type": "image",
+            "mime": str(entry.get("mime", "image/png")),
+            "path": local_path,
+        }
+        if "capturedAt" in entry and entry["capturedAt"] is not None:
+            res["capturedAt"] = str(entry["capturedAt"])
+        return res
+    return None
+
+def entry_key(entry):
+    if not isinstance(entry, dict):
+        return None
+    etype = entry.get("type")
+    if etype == "text":
+        return ("text", entry.get("text", ""))
+    elif etype == "image":
+        return ("image", os.path.basename(entry.get("path", "")))
+    return None
+
+incoming_norm = [normalize_entry(e, True) for e in incoming if normalize_entry(e, True)]
+incoming_keys = {entry_key(e) for e in incoming_norm}
+
+local_norm = [normalize_entry(e, False) for e in local if normalize_entry(e, False)]
+local_unique = [e for e in local_norm if entry_key(e) not in incoming_keys]
+
+merged = []
+seen = set()
+for e in local_unique + incoming_norm + local_norm:
+    k = entry_key(e)
+    if k and k not in seen:
+        seen.add(k)
+        merged.append(e)
+
+merged = merged[:500]
+
+dir_name = os.path.dirname(clip_file)
+os.makedirs(dir_name, exist_ok=True)
+temp_fd, temp_path = tempfile.mkstemp(suffix=".json", dir=dir_name)
+with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+    json.dump(merged, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+
+os.chmod(temp_path, 0o600)
+os.replace(temp_path, clip_file)
+
+if os.path.exists(clip_local_pre):
+    os.remove(clip_local_pre)
+
+new_from_local = len(merged) - len(incoming_norm)
+print(f"✓ Clipboard history merged (text): {len(incoming_norm)} from archive + {max(0, new_from_local)} local unique = {len(merged)} total.")
+EOF
+fi
+
 # Clean up local backups if still present
-rm -f "$HIST_LOCAL_PRE" "$ZO_LOCAL_PRE" "$HIST_DB-wal" "$HIST_DB-shm"
+rm -f "$HIST_LOCAL_PRE" "$ZO_LOCAL_PRE" "$CLIP_LOCAL_PRE" "$HIST_DB-wal" "$HIST_DB-shm"
 
 # Ensure proper private file permissions
 if [ -f "$HIST_DB" ]; then
@@ -230,6 +333,9 @@ if [ -f "$HIST_DB" ]; then
 fi
 if [ -f "$ZO_DB" ]; then
     chmod 600 "$ZO_DB"
+fi
+if [ -f "$CLIP_JSON" ]; then
+    chmod 600 "$CLIP_JSON"
 fi
 
 if pgrep -x nu >/dev/null 2>&1; then

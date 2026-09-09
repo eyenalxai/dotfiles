@@ -3,3 +3,4 @@
 .config/theme/current/theme/backgrounds/**
 .config/theme/current/theme/preview.png
 .config/nushell/history.*
+.local/state/omarchy/clipboard-history.json*

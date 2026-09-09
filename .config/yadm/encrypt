@@ -5,4 +5,5 @@
 .ssh/config
 .config/amneziavpn/secrets.env
 .local/share/zoxide/db.zo
+.local/state/omarchy/clipboard-history.json
 
