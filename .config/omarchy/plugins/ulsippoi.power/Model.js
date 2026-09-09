@@ -69,6 +69,7 @@ function isDeviceDischarging(device, onBattery, states, batteryInfo) {
 function chargeThresholdActive(device, onBattery, states, batteryInfo) {
   var d = device || {}
   var s = states || {}
+  if (batteryInfo && batteryInfo.threshold_end && Number(batteryInfo.threshold_end) >= 100) return false
   if (batteryInfo && batteryInfo.state === "holding") return true
   if (isDeviceDischarging(device, onBattery, states, batteryInfo)) return false
   if (!(d && d.isPresent && !onBattery)) return false

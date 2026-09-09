@@ -76,13 +76,37 @@ power_rate=$(awk -v rate="${power_rate_raw:-0}" 'BEGIN {
 }')
 
 state=$(awk '/state/ { print $2; exit }' <<<"$battery_info")
-threshold_start=$(awk '/charge-start-threshold:/ { gsub(/%/, "", $2); print int($2); exit }' <<<"$battery_info")
-threshold_end=$(awk '/charge-end-threshold:/ { gsub(/%/, "", $2); print int($2); exit }' <<<"$battery_info")
 
-[[ -z $threshold_end ]] && threshold_end=$(cat "$battery_path"/charge_control_end_threshold 2>/dev/null | head -1)
-[[ -z $threshold_start ]] && threshold_start=$(cat "$battery_path"/charge_control_start_threshold 2>/dev/null | head -1)
-[[ -z $threshold_end ]] && threshold_end=$(cat "$power_supply_path"/BAT*/charge_control_end_threshold 2>/dev/null | head -1)
-[[ -z $threshold_start ]] && threshold_start=$(cat "$power_supply_path"/BAT*/charge_control_start_threshold 2>/dev/null | head -1)
+sysfs_end=""
+if [[ -r $battery_path/charge_control_end_threshold ]]; then
+  sysfs_end=$(<"$battery_path/charge_control_end_threshold")
+elif compgen -G "$power_supply_path/BAT*/charge_control_end_threshold" >/dev/null; then
+  sysfs_end=$(cat "$power_supply_path"/BAT*/charge_control_end_threshold 2>/dev/null | head -1)
+fi
+
+threshold_supported=false
+if [[ -n $sysfs_end ]] || grep -qiE 'charge-threshold-supported:\s*yes' <<<"$battery_info"; then
+  threshold_supported=true
+fi
+
+if [[ -n $sysfs_end ]]; then
+  threshold_end="$sysfs_end"
+else
+  threshold_end=$(awk '/charge-end-threshold:/ { gsub(/%/, "", $2); print int($2); exit }' <<<"$battery_info")
+fi
+
+sysfs_start=""
+if [[ -r $battery_path/charge_control_start_threshold ]]; then
+  sysfs_start=$(<"$battery_path/charge_control_start_threshold")
+elif compgen -G "$power_supply_path/BAT*/charge_control_start_threshold" >/dev/null; then
+  sysfs_start=$(cat "$power_supply_path"/BAT*/charge_control_start_threshold 2>/dev/null | head -1)
+fi
+
+if [[ -n $sysfs_start ]]; then
+  threshold_start="$sysfs_start"
+else
+  threshold_start=$(awk '/charge-start-threshold:/ { gsub(/%/, "", $2); print int($2); exit }' <<<"$battery_info")
+fi
 
 ac_online=false
 for supply in "$power_supply_path"/*; do
@@ -140,12 +164,18 @@ if [[ $shell_output == "true" ]]; then
   [[ -n $cycles ]] && printf 'cycles\t%s\n' "$cycles"
 
   if [[ -n $threshold_end ]]; then
-    if [[ -n $threshold_start && $threshold_start != $threshold_end ]]; then
-      printf 'threshold\t%s-%s%%\n' "$threshold_start" "$threshold_end"
+    if (( threshold_end < 99 )); then
+      if [[ -n $threshold_start && $threshold_start != $threshold_end ]]; then
+        printf 'threshold\t%s-%s%%\n' "$threshold_start" "$threshold_end"
+      else
+        printf 'threshold\t%s%%\n' "$threshold_end"
+      fi
     else
-      printf 'threshold\t%s%%\n' "$threshold_end"
+      printf 'threshold\t100%%\n'
     fi
   fi
+  printf 'threshold_end\t%s\n' "${threshold_end:-100}"
+  printf 'threshold_supported\t%s\n' "$threshold_supported"
 
   exit 0
 fi

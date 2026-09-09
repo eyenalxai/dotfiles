@@ -56,9 +56,6 @@
           "id": "omarchy.monitor"
         },
         {
-          "id": "battery-limit"
-        },
-        {
           "id": "ulsippoi.power"
         }
       ]

@@ -8,8 +8,8 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "omarchy.power"
-  ipcTarget: "omarchy.power"
+  moduleName: "ulsippoi.power"
+  ipcTarget: "ulsippoi.power"
   // manageIpc: false so this panel can own the single IpcHandler the target
   // permits — needed for the togglePercentage method below.
   manageIpc: false
@@ -27,6 +27,21 @@ Panel {
   readonly property bool batteryPresent: {
     var device = UPower.displayDevice
     return !!(device && device.isPresent)
+  }
+  readonly property bool chargeLimitSupported: batteryInfo.threshold_supported === "true" || (batteryInfo.threshold_end !== undefined && batteryInfo.threshold_end !== "")
+  readonly property int endThreshold: parseInt(batteryInfo.threshold_end || "100", 10)
+  readonly property bool isLimited: endThreshold > 0 && endThreshold <= 80
+
+  function setChargeLimit(enable) {
+    if (limitProc.running) return
+    limitProc.targetState = enable
+    var next = Object.assign({}, batteryInfo, { threshold_end: enable ? "80" : "100" })
+    batteryInfo = next
+    limitProc.running = true
+  }
+
+  function toggleChargeLimit() {
+    setChargeLimit(!root.isLimited)
   }
 
   function upowerStates() {
@@ -174,6 +189,21 @@ Panel {
   }
 
   IpcHandler {
+    target: "ulsippoi.power"
+
+    function open() { root.open() }
+    function close() { root.close() }
+    function show() { root.open() }
+    function hide() { root.close() }
+    function toggle() { root.toggle() }
+    function togglePercentage() { root.togglePercentage() }
+    function toggleLimit() { root.toggleChargeLimit() }
+    function enableLimit() { root.setChargeLimit(true) }
+    function disableLimit() { root.setChargeLimit(false) }
+    function refresh() { root.refresh() }
+  }
+
+  IpcHandler {
     target: "omarchy.power"
 
     function open() { root.open() }
@@ -182,6 +212,19 @@ Panel {
     function hide() { root.close() }
     function toggle() { root.toggle() }
     function togglePercentage() { root.togglePercentage() }
+    function toggleLimit() { root.toggleChargeLimit() }
+    function enableLimit() { root.setChargeLimit(true) }
+    function disableLimit() { root.setChargeLimit(false) }
+    function refresh() { root.refresh() }
+  }
+
+  IpcHandler {
+    target: "battery-limit"
+
+    function toggle() { root.toggleChargeLimit() }
+    function enable() { root.setChargeLimit(true) }
+    function disable() { root.setChargeLimit(false) }
+    function refresh() { root.refresh() }
   }
 
   onOpenedChanged: {
@@ -232,6 +275,23 @@ Panel {
     id: actionProc
     onExited: root.refresh()
   }
+
+  Process {
+    id: limitProc
+    property bool targetState: false
+    command: [
+      "sh", "-c",
+      "dev=$(upower -e 2>/dev/null | grep -iE '/devices/battery' | head -n 1); " +
+      "if [ -n \"$dev\" ]; then " +
+      "  gdbus call --system --dest org.freedesktop.UPower --object-path \"$dev\" --method org.freedesktop.UPower.Device.EnableChargeThreshold " + (limitProc.targetState ? "true" : "false") + " >/dev/null; " +
+      "fi"
+    ]
+    onExited: function(code) {
+      root.refresh()
+    }
+  }
+
+  Component.onCompleted: root.refresh()
 
   Timer { interval: 5000; running: root.opened; repeat: true; onTriggered: root.refresh() }
 
@@ -286,10 +346,13 @@ Panel {
       ? Math.round(root.batteryFraction * 100) + "% " + root.batteryIcon()
       : root.batteryIcon()
     slotSize: Style.bar.iconSlot * (root.showPercentage && !vertical ? 2 : 1)
-    tooltipText: ""
+    tooltipText: root.chargeLimitSupported
+      ? (root.isLimited ? "Battery limit: 80% (Active) · Middle-click to allow 100%" : "Battery limit: 100% · Middle-click to limit 80%")
+      : ""
     onPressed: function(b) {
       if (!root.batteryPresent) return
       if (b === Qt.RightButton) root.togglePercentage()
+      else if (b === Qt.MiddleButton && root.chargeLimitSupported) root.toggleChargeLimit()
       else root.toggle()
     }
   }
@@ -457,6 +520,74 @@ Panel {
                 : (root.discharging ? "Discharging" : (root.charging ? "Charging" : (root.batteryFull ? "Fully charged" : "Battery state")))
               value: root.chargeThresholdActive ? "Holding" : (root.batteryFull ? "-" : (root.batteryInfo.rate || ""))
             }
+          }
+        }
+
+        // ---------- Charge limit picker ----------
+        PanelSeparator {
+          visible: root.chargeLimitSupported
+          foreground: root.bar.foreground
+        }
+
+        Column {
+          visible: root.chargeLimitSupported
+          width: parent.width
+          spacing: Style.space(8)
+
+          PanelSectionHeader {
+            text: "CHARGE LIMIT"
+            foreground: root.bar.foreground
+            fontFamily: root.bar.fontFamily
+          }
+
+          Row {
+            id: limitRow
+            width: parent.width
+            spacing: Style.space(6)
+
+            readonly property real cellWidth: (width - spacing) / 2
+
+            Button {
+              width: limitRow.cellWidth
+              iconText: "󰚥"
+              iconSize: Style.font.title
+              text: "80% Limit"
+              fontSize: Style.font.bodySmall
+              foreground: root.bar.foreground
+              fontFamily: root.bar.fontFamily
+              horizontalPadding: Style.spacing.controlPaddingX
+              verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
+              bordered: true
+              active: root.isLimited
+              onClicked: root.setChargeLimit(true)
+            }
+
+            Button {
+              width: limitRow.cellWidth
+              iconText: "󰁹"
+              iconSize: Style.font.title
+              text: "100% Full"
+              fontSize: Style.font.bodySmall
+              foreground: root.bar.foreground
+              fontFamily: root.bar.fontFamily
+              horizontalPadding: Style.spacing.controlPaddingX
+              verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
+              bordered: true
+              active: !root.isLimited
+              onClicked: root.setChargeLimit(false)
+            }
+          }
+
+          Text {
+            textFormat: Text.PlainText
+            text: root.isLimited
+              ? "Capped at 80% to protect battery health and longevity"
+              : "Allowed to charge to 100% for maximum runtime"
+            color: Qt.darker(root.bar.foreground, 1.4)
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.caption
+            elide: Text.ElideRight
+            width: parent.width
           }
         }
 

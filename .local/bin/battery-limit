@@ -20,6 +20,8 @@ set_threshold() {
       --method org.freedesktop.UPower.Device.EnableChargeThreshold "$state" >/dev/null
   fi
   # Refresh running quickshell widget if available
+  omarchy-shell -q ulsippoi.power refresh || true
+  omarchy-shell -q omarchy.power refresh || true
   omarchy-shell -q battery-limit refresh || true
 }
 
