@@ -55,10 +55,76 @@ o.bind("SUPER + SHIFT + S", "Screenshot", "omarchy-capture-screenshot")
 -- o.bind("SUPER + PERIOD", nil, "omarchy-shell shell toggle omarchy.emojis")
 
 -- Move only the focused window between displays, not the whole workspace.
+-- Check that the target monitor exists before moving to prevent "Invalid monitor" errors.
+local function move_window_to_monitor(direction)
+  return function()
+    local active = hl.get_active_monitor()
+    if not active then
+      return
+    end
+
+    local monitors = hl.get_monitors()
+    if not monitors or #monitors <= 1 then
+      return
+    end
+
+    local ax, ay = active.position.x, active.position.y
+    local aw = active.width / (active.scale or 1)
+    local ah = active.height / (active.scale or 1)
+
+    local target_mon = nil
+    local min_dist = math.huge
+
+    for _, m in ipairs(monitors) do
+      if m.name ~= active.name and not m.is_mirror then
+        local mx, my = m.position.x, m.position.y
+        local mw = m.width / (m.scale or 1)
+        local mh = m.height / (m.scale or 1)
+        local valid, dist = false, 0
+
+        if direction == "l" or direction == "left" then
+          if mx < ax then
+            valid = true
+            dist = ax - (mx + mw)
+            if dist < 0 then dist = ax - mx end
+          end
+        elseif direction == "r" or direction == "right" then
+          if mx > ax then
+            valid = true
+            dist = mx - (ax + aw)
+            if dist < 0 then dist = mx - ax end
+          end
+        elseif direction == "u" or direction == "up" then
+          if my < ay then
+            valid = true
+            dist = ay - (my + mh)
+            if dist < 0 then dist = ay - my end
+          end
+        elseif direction == "d" or direction == "down" then
+          if my > ay then
+            valid = true
+            dist = my - (ay + ah)
+            if dist < 0 then dist = my - ay end
+          end
+        end
+
+        if valid and dist < min_dist then
+          min_dist = dist
+          target_mon = m
+        end
+      end
+    end
+
+    if target_mon then
+      hl.dispatch(hl.dsp.window.move({ monitor = target_mon.name }))
+    end
+  end
+end
+
 hl.unbind("SUPER + SHIFT + ALT + LEFT")
 hl.unbind("SUPER + SHIFT + ALT + RIGHT")
-o.bind("SUPER + SHIFT + ALT + LEFT", "Move window to left monitor", hl.dsp.window.move({ monitor = "l" }))
-o.bind("SUPER + SHIFT + ALT + RIGHT", "Move window to right monitor", hl.dsp.window.move({ monitor = "r" }))
+o.bind("SUPER + SHIFT + ALT + LEFT", "Move window to left monitor", move_window_to_monitor("l"))
+o.bind("SUPER + SHIFT + ALT + RIGHT", "Move window to right monitor", move_window_to_monitor("r"))
 
 -- Launch Helium browser
 o.bind("SUPER + B", "Helium", { launch = "helium-browser" })
