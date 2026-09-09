@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "battery-limit",
+  "name": "Battery Limit",
+  "version": "1.0.0",
+  "author": "ulsippoi",
+  "description": "Battery charge threshold controls",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Battery Limit",
+    "description": "Battery charge threshold controls",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
