@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/v2/cli.json",
+  "theme": {
+    "name": "system"
+  },
+  "keybinds": {
+    "session.message.user.previous": "alt+p,alt+k",
+    "session.message.user.next": "alt+n,alt+j"
+  }
+}
