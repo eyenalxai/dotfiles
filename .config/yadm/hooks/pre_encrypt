@@ -20,3 +20,10 @@ fi
 if [ -f "$CLIP_JSON" ]; then
     chmod 600 "$CLIP_JSON"
 fi
+
+# 3. Refresh OpenCode chat exports so the archive carries current transcripts
+SYNC_SCRIPT="$HOME/.config/yadm/scripts/opencode_sync.nu"
+if [ -x "$SYNC_SCRIPT" ] && command -v nu >/dev/null 2>&1; then
+    nu "$SYNC_SCRIPT" export ||
+        echo "Warning: OpenCode chat export failed; continuing without fresh transcripts." >&2
+fi
