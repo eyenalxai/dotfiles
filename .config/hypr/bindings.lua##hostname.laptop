@@ -1,0 +1,150 @@
+-- Keep only your personal keybinding overrides here. Add new bindings or
+-- unbind defaults before replacing them.
+
+-- See current bindings and descriptions:
+--   omarchy menu keybindings --print
+
+-- To disable every Omarchy default binding, set this in
+-- ~/.config/hypr/hyprland.lua before require("default.hypr.omarchy"), then add
+-- only the bindings you want below:
+--   omarchy_default_bindings = false
+
+-- To disable all preinstalled app/webapp bindings, set:
+--   omarchy_preinstalled_bindings = false
+
+-- Per-monitor workspaces (hyprsplit): SUPER+1..9 act on the focused display,
+-- so each monitor keeps its own independent set of 9 workspaces.
+local hyprsplit = require("hyprsplit")
+
+-- Unbind Omarchy's default global workspace keys (SUPER+1..9/0 plus moves).
+for workspace = 1, 10 do
+  local key = "code:" .. tostring(workspace + 9)
+  hl.unbind("SUPER + " .. key)
+  hl.unbind("SUPER + SHIFT + " .. key)
+  hl.unbind("SUPER + SHIFT + ALT + " .. key)
+end
+
+-- Rebind 1-9 to the focused monitor's local workspaces.
+for workspace = 1, 9 do
+  local key = "code:" .. tostring(workspace + 9)
+  o.bind("SUPER + " .. key, "Switch to workspace " .. workspace, hyprsplit.dsp.focus({ workspace = workspace }))
+  o.bind("SUPER + SHIFT + " .. key, "Move window to workspace " .. workspace, hyprsplit.dsp.window.move({ workspace = workspace, follow = true }))
+  o.bind("SUPER + SHIFT + ALT + " .. key, "Move window silently to workspace " .. workspace, hyprsplit.dsp.window.move({ workspace = workspace, follow = false }))
+end
+
+-- Screenshot on SUPER + SHIFT + S instead of PRINT
+-- (SUPER + SHIFT + S was previously bound to Google Maps)
+hl.unbind("PRINT")
+hl.unbind("SUPER + SHIFT + S")
+o.bind("SUPER + SHIFT + S", "Screenshot", "omarchy-capture-screenshot")
+
+-- Add a new binding.
+-- o.bind("SUPER + SHIFT + R", "SSH", "alacritty -e ssh your-server")
+
+-- Change an existing binding by unbinding it first, then binding the key again.
+-- This example changes SUPER+SPACE from the launcher to the Omarchy root menu.
+-- hl.unbind("SUPER + SPACE")
+-- o.bind("SUPER + SPACE", "Omarchy menu", "omarchy-menu toggle root")
+
+-- Disable a default binding without replacing it.
+-- hl.unbind("SUPER + SHIFT + B")
+
+-- Logitech MX Keys examples:
+-- o.bind("SUPER + SHIFT + S", nil, "omarchy-capture-screenshot")
+-- o.bind("SUPER + H", nil, "voxtype record toggle")
+-- o.bind("SUPER + PERIOD", nil, "omarchy-shell shell toggle omarchy.emojis")
+
+-- Move only the focused window between displays, not the whole workspace.
+-- Check that the target monitor exists before moving to prevent "Invalid monitor" errors.
+local function move_window_to_monitor(direction)
+  return function()
+    local active = hl.get_active_monitor()
+    if not active then
+      return
+    end
+
+    local monitors = hl.get_monitors()
+    if not monitors or #monitors <= 1 then
+      return
+    end
+
+    local ax, ay = active.position.x, active.position.y
+    local aw = active.width / (active.scale or 1)
+    local ah = active.height / (active.scale or 1)
+
+    local target_mon = nil
+    local min_dist = math.huge
+
+    for _, m in ipairs(monitors) do
+      if m.name ~= active.name and not m.is_mirror then
+        local mx, my = m.position.x, m.position.y
+        local mw = m.width / (m.scale or 1)
+        local mh = m.height / (m.scale or 1)
+        local valid, dist = false, 0
+
+        if direction == "l" or direction == "left" then
+          if mx < ax then
+            valid = true
+            dist = ax - (mx + mw)
+            if dist < 0 then dist = ax - mx end
+          end
+        elseif direction == "r" or direction == "right" then
+          if mx > ax then
+            valid = true
+            dist = mx - (ax + aw)
+            if dist < 0 then dist = mx - ax end
+          end
+        elseif direction == "u" or direction == "up" then
+          if my < ay then
+            valid = true
+            dist = ay - (my + mh)
+            if dist < 0 then dist = ay - my end
+          end
+        elseif direction == "d" or direction == "down" then
+          if my > ay then
+            valid = true
+            dist = my - (ay + ah)
+            if dist < 0 then dist = my - ay end
+          end
+        end
+
+        if valid and dist < min_dist then
+          min_dist = dist
+          target_mon = m
+        end
+      end
+    end
+
+    if target_mon then
+      hl.dispatch(hl.dsp.window.move({ monitor = target_mon.name }))
+    end
+  end
+end
+
+hl.unbind("SUPER + SHIFT + ALT + LEFT")
+hl.unbind("SUPER + SHIFT + ALT + RIGHT")
+o.bind("SUPER + SHIFT + ALT + LEFT", "Move window to left monitor", move_window_to_monitor("l"))
+o.bind("SUPER + SHIFT + ALT + RIGHT", "Move window to right monitor", move_window_to_monitor("r"))
+
+-- Launch Helium browser
+o.bind("SUPER + B", "Helium", { launch = "helium-browser" })
+
+-- Close window with Super + Q instead of Super + W
+hl.unbind("SUPER + W")
+o.bind("SUPER + Q", "Close window", hl.dsp.window.close())
+
+-- Clipboard manager on Super + Shift + X instead of Super + Ctrl + V
+hl.unbind("SUPER + CTRL + V")
+hl.unbind("SUPER + SHIFT + X")
+o.bind("SUPER + SHIFT + X", "Clipboard manager", "omarchy-shell shell toggle omarchy.clipboard")
+
+-- Dictation (push-to-talk, hold to talk) on F1
+hl.unbind("SUPER + SHIFT + D")
+hl.unbind("F9")
+hl.unbind("SUPER + CTRL + X")
+o.bind("F1", "Start dictation (push-to-talk)", "voxtype record start")
+o.bind("F1", "Stop dictation (push-to-talk)", "voxtype record stop", { release = true })
+
+-- Laptop-only: also open the Omarchy menu with CTRL + SPACE.
+-- (Omarchy doesn't bind plain CTRL + SPACE; SUPER + SPACE keeps working.)
+o.bind("CTRL + SPACE", "Omarchy menu", "omarchy-menu toggle")
