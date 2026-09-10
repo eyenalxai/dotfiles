@@ -130,6 +130,33 @@ function modeLabel(device, onBattery, states, batteryInfo) {
   return onBattery ? "On battery" : "Discharging"
 }
 
+function checkLowBatteryNotification(device, onBattery, states, batteryInfo, lastNotifyTime, now, threshold, intervalMs) {
+  var d = device || {}
+  if (!d.isPresent) return { notify: false, level: -1 }
+  if (!onBattery) return { notify: false, level: -1 }
+  if (isDeviceCharging(device, onBattery, states, batteryInfo)) return { notify: false, level: -1 }
+  if (!isDeviceDischarging(device, onBattery, states, batteryInfo)) return { notify: false, level: -1 }
+
+  var maxLevel = typeof threshold === "number" ? threshold : 30
+  var minInterval = typeof intervalMs === "number" ? intervalMs : 5 * 60 * 1000
+
+  var fraction = d.isPresent ? Math.max(0, Math.min(1, d.percentage)) : 0
+  var level = Math.round(fraction * 100)
+  if (level <= 0 && batteryInfo && batteryInfo.percentage) {
+    var parsed = parseInt(batteryInfo.percentage, 10)
+    if (!isNaN(parsed)) level = parsed
+  }
+  if (level < 0 || level > maxLevel) return { notify: false, level: level }
+
+  var currentTime = typeof now === "number" ? now : Date.now()
+  var last = typeof lastNotifyTime === "number" ? lastNotifyTime : 0
+  if (last > 0 && currentTime >= last && (currentTime - last) < minInterval) {
+    return { notify: false, level: level }
+  }
+
+  return { notify: true, level: level }
+}
+
 if (typeof module !== "undefined") {
   module.exports = {
     clampIndex: clampIndex,
@@ -142,6 +169,7 @@ if (typeof module !== "undefined") {
     chargeThresholdActive: chargeThresholdActive,
     isDeviceCharging: isDeviceCharging,
     batteryIcon: batteryIcon,
-    modeLabel: modeLabel
+    modeLabel: modeLabel,
+    checkLowBatteryNotification: checkLowBatteryNotification
   }
 }

@@ -31,6 +31,14 @@ Panel {
   readonly property bool chargeLimitSupported: batteryInfo.threshold_supported === "true" || (batteryInfo.threshold_end !== undefined && batteryInfo.threshold_end !== "")
   readonly property int endThreshold: parseInt(batteryInfo.threshold_end || "100", 10)
   readonly property bool isLimited: endThreshold > 0 && endThreshold <= 80
+  readonly property int lowBatteryThreshold: 30
+  readonly property int lowBatteryNotificationIntervalMs: 5 * 60 * 1000
+
+  PersistentProperties {
+    id: persisted
+    reloadableId: "ulsippoi-power-notifications"
+    property double lastLowBatteryNotificationTime: 0
+  }
 
   function setChargeLimit(enable) {
     if (limitProc.running) return
@@ -159,8 +167,36 @@ Panel {
     // Keep last known good data if a refresh briefly returns nothing — happens
     // around AC plug/unplug events. Avoids the section collapsing mid-transition.
     if (Object.keys(next).length === 0) return
-    if (targetName === "battery") batteryInfo = next
-    else systemInfo = next
+    if (targetName === "battery") {
+      batteryInfo = next
+      root.checkLowBattery()
+    } else {
+      systemInfo = next
+    }
+  }
+
+  function checkLowBattery() {
+    if (!batteryPresent) return
+    var result = Model.checkLowBatteryNotification(
+      UPower.displayDevice,
+      UPower.onBattery,
+      root.upowerStates(),
+      root.batteryInfo,
+      persisted.lastLowBatteryNotificationTime,
+      Date.now(),
+      root.lowBatteryThreshold,
+      root.lowBatteryNotificationIntervalMs
+    )
+    if (result.notify) {
+      persisted.lastLowBatteryNotificationTime = Date.now()
+      sendLowBatteryWarning(result.level)
+    }
+  }
+
+  function sendLowBatteryWarning(level) {
+    if (lowBatteryWarningProc.running) return
+    lowBatteryWarningProc.command = ["omarchy-battery-low", String(level)]
+    lowBatteryWarningProc.running = true
   }
 
   function updateProfiles(raw) {
@@ -200,6 +236,7 @@ Panel {
     function toggleLimit() { root.toggleChargeLimit() }
     function enableLimit() { root.setChargeLimit(true) }
     function disableLimit() { root.setChargeLimit(false) }
+    function checkLowBattery() { root.checkLowBattery() }
     function refresh() { root.refresh() }
   }
 
@@ -215,6 +252,7 @@ Panel {
     function toggleLimit() { root.toggleChargeLimit() }
     function enableLimit() { root.setChargeLimit(true) }
     function disableLimit() { root.setChargeLimit(false) }
+    function checkLowBattery() { root.checkLowBattery() }
     function refresh() { root.refresh() }
   }
 
@@ -291,7 +329,34 @@ Panel {
     }
   }
 
-  Component.onCompleted: root.refresh()
+  Process {
+    id: lowBatteryWarningProc
+  }
+
+  Component.onCompleted: {
+    root.refresh()
+    root.checkLowBattery()
+  }
+
+  onBatteryFractionChanged: root.checkLowBattery()
+  onDischargingChanged: root.checkLowBattery()
+
+  Timer {
+    id: lowBatteryTimer
+    interval: 30000
+    running: root.batteryPresent
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: root.checkLowBattery()
+  }
+
+  Connections {
+    target: UPower
+    function onOnBatteryChanged() {
+      root.refresh()
+      root.checkLowBattery()
+    }
+  }
 
   Timer { interval: 5000; running: root.opened; repeat: true; onTriggered: root.refresh() }
 
