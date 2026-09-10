@@ -21,7 +21,7 @@
     {
       "package": "./max-context",
       "options": {
-        "maxContext": 100000
+        "maxContext": 168000
       }
     }
   ]
