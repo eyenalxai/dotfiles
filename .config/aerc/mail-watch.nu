@@ -6,10 +6,13 @@
 # runs open-in-aerc.nu, which starts aerc if needed and opens the message.
 #
 # Usage: mail-watch.nu [--once] [--dry-run] [--interval <duration>]
+#                      [--accounts-file <path>] [--state-file <path>]
 #
-# Accounts come from aerc's accounts.conf (name, imap URL, default folder and
-# the op:// reference in source-cred-cmd). The last seen UID per mailbox is
-# kept in ~/.local/state/mail-watch/state.json.
+# Accounts come from aerc's accounts.conf (name, imaps:// URL, default folder
+# and the op:// reference in source-cred-cmd). Accounts that share a mailbox
+# (email aliases) are polled once. The last seen UID per mailbox is kept in
+# ~/.local/state/mail-watch/state.json. Accounts the watcher cannot use are
+# reported in the journal and skipped.
 
 use ./get-cred.nu credential
 
@@ -19,18 +22,18 @@ def open-script []: nothing -> string {
   $env.HOME | path join ".config/aerc/open-in-aerc.nu"
 }
 
-def accounts-file []: nothing -> string {
+def default-accounts-file []: nothing -> string {
   $env.HOME | path join ".config/aerc/accounts.conf"
 }
 
-def state-file []: nothing -> string {
+def default-state-file []: nothing -> string {
   $env.HOME | path join ".local/state/mail-watch/state.json"
 }
 
 # --- accounts.conf parsing ---------------------------------------------------
 
-def parse-accounts []: nothing -> list {
-  let raw = (open --raw (accounts-file))
+def parse-accounts [path: string]: nothing -> list {
+  let raw = (open --raw $path)
   let lines = (
     $raw | lines
     | each {|l| $l | str trim }
@@ -56,25 +59,40 @@ def parse-accounts []: nothing -> list {
   $accounts
 }
 
-def watch-targets []: nothing -> list {
-  parse-accounts | each {|a|
-    let source = ($a | get -o source | default "")
-    let cred_cmd = ($a | get -o "source-cred-cmd" | default "")
-    let m = ($source | parse --regex '^imaps://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)' | get -o 0)
-    let ref = ($cred_cmd | parse --regex '(?<ref>op://\S+)' | get -o 0.ref | default "")
-    if ($m == null) or ($ref == "") {
-      null
-    } else {
-      {
-        account: $a.name,
-        folder: ($a | get -o default | default "INBOX"),
-        user: ($m.user | url decode),
-        host: $m.host,
-        port: ($m.port | into int),
-        ref: $ref,
+def watch-targets [path: string]: nothing -> list {
+  let targets = (
+    parse-accounts $path | each {|a|
+      let source = ($a | get -o source | default "")
+      let cred_cmd = ($a | get -o "source-cred-cmd" | default "")
+      let m = ($source | parse --regex '^imaps://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)' | get -o 0)
+      let ref = ($cred_cmd | parse --regex '(?<ref>op://\S+)' | get -o 0.ref | default "")
+      if $m == null {
+        print $"mail-watch: skip ($a.name): only imaps:// sources are watched"
+        null
+      } else if ($ref == "") {
+        print $"mail-watch: skip ($a.name): source-cred-cmd has no op:// reference"
+        null
+      } else {
+        let folder = ($a | get -o default | default "INBOX")
+        let user = ($m.user | url decode)
+        {
+          account: $a.name,
+          mailbox: $"($m.host):($m.port)/($user)/($folder)",
+          folder: $folder,
+          user: $user,
+          host: $m.host,
+          port: ($m.port | into int),
+          ref: $ref,
+        }
       }
-    }
-  } | compact
+    } | compact
+  )
+  # Accounts that share a mailbox (email aliases) are one watch target; the
+  # click action can open the message through any of them.
+  $targets | group-by mailbox --to-table | each {|g|
+    let first = ($g.items | first)
+    $first | upsert accounts ($g.items | get account)
+  }
 }
 
 # --- IMAP over curl ----------------------------------------------------------
@@ -93,7 +111,9 @@ def imap-request [
 ]: nothing -> record {
   # The password goes through curl's config on stdin, never the command line.
   let cfg = $"user = \"(curl-escape $user):(curl-escape $password)\"\nsilent\nshow-error\n"
-  $cfg | ^curl -K - --silent --show-error -X $cmd $"imaps://($host):($port)/($folder)" | complete
+  # Percent-encode the mailbox for the URL but keep the hierarchy separators.
+  let url_folder = ($folder | url encode | str replace -a '%2F' '/' | str replace -a '%2f' '/')
+  $cfg | ^curl -K - --silent --show-error -X $cmd $"imaps://($host):($port)/($url_folder)" | complete
 }
 
 # --- header parsing ----------------------------------------------------------
@@ -190,13 +210,21 @@ def aerc-focused []: nothing -> bool {
   $t == "aerc"
 }
 
-def send-notification [from: string, subject: string, t: record, mid: string, dry_run: bool] {
+def send-notification [
+  from: string,
+  subject: string,
+  t: record,
+  mid: string,
+  dry_run: bool,
+  label: string,
+] {
   let who = (if ($from | is-empty) { $t.user } else { $from })
-  let title = $"New mail from ($who)"
+  let base = $"New mail from ($who)"
+  let title = (if ($label | is-empty) { $base } else { $base + " (" + $label + ")" })
   let body = (if ($subject | is-empty) { "(no subject)" } else { $subject })
 
   if $dry_run {
-    print $"DRY-RUN: ($title) | ($body) | ($t.account)/($t.folder) <($mid)>"
+    print $"DRY-RUN: ($title) | ($body) | ($t.mailbox) <($mid)>"
     return
   }
   if (aerc-focused) {
@@ -213,8 +241,14 @@ def send-notification [from: string, subject: string, t: record, mid: string, dr
 
 # --- polling -----------------------------------------------------------------
 
-def poll-target [t: record, secret: string, state: list, dry_run: bool]: nothing -> list {
-  let key = $"($t.account)/($t.folder)"
+def poll-target [
+  t: record,
+  secret: string,
+  state: list,
+  dry_run: bool,
+  label: string,
+]: nothing -> list {
+  let key = $t.mailbox
   let res = (imap-request $t.host $t.port $t.user $secret $t.folder $"EXAMINE ($t.folder)")
   if $res.exit_code != 0 {
     print $"($key): EXAMINE failed: ($res.stderr | str trim)"
@@ -235,9 +269,9 @@ def poll-target [t: record, secret: string, state: list, dry_run: bool]: nothing
     return (set-entry $state {key: $key, uidvalidity: $uidv, last_uid: ($next - 1)})
   }
 
-  mut last = $prev.last_uid
-  if ($next - 1) >= ($prev.last_uid + 1) {
-    for uid in ($prev.last_uid + 1)..($next - 1) {
+  mut last = ([$prev.last_uid, 0] | math max)
+  if ($next - 1) >= ($last + 1) {
+    for uid in ($last + 1)..($next - 1) {
       let cmd = "UID FETCH " + ($uid | into string) + " (BODY.PEEK[HEADER.FIELDS (FROM SUBJECT MESSAGE-ID)])"
       let f = (imap-request $t.host $t.port $t.user $secret $t.folder $cmd)
       if $f.exit_code != 0 {
@@ -251,7 +285,7 @@ def poll-target [t: record, secret: string, state: list, dry_run: bool]: nothing
         ($hdr | get -o message-id | default "")
         | str replace -r '^<' '' | str replace -r '>$' '' | str trim
       )
-      send-notification (sender-name $from_raw) $subject $t $mid $dry_run
+      send-notification (sender-name $from_raw) $subject $t $mid $dry_run $label
       $last = $uid
     }
   }
@@ -262,23 +296,39 @@ def poll-target [t: record, secret: string, state: list, dry_run: bool]: nothing
 
 # One poll wrapped so a broken mailbox can't stop the others; note that the
 # error handler must not capture a mutable variable, hence this helper.
-def poll-safe [t: record, state: list, dry_run: bool]: nothing -> list {
+def poll-safe [t: record, state: list, dry_run: bool, label: string]: nothing -> list {
   try {
-    poll-target $t (credential $t.ref) $state $dry_run
+    poll-target $t (credential $t.ref) $state $dry_run $label
   } catch {|e|
-    print $"($t.account): error: ($e.msg)"
+    print $"($t.mailbox): error: ($e.msg)"
     $state
   }
 }
 
-def main [--once, --dry-run, --interval: duration = $DEFAULT_INTERVAL] {
-  let state_path = (state-file)
-  let targets = (watch-targets)
+def main [
+  --once,
+  --dry-run,
+  --interval: duration = $DEFAULT_INTERVAL,
+  --accounts-file: string = "",
+  --state-file: string = "",
+] {
+  let acct_path = (if ($accounts_file | is-empty) { (default-accounts-file) } else { $accounts_file })
+  let state_path = (if ($state_file | is-empty) { (default-state-file) } else { $state_file })
+  let targets = (watch-targets $acct_path)
+  let multi = (($targets | length) > 1)
+  for t in $targets {
+    print $"mail-watch: watching ($t.mailbox) as ($t.accounts | str join "/")"
+  }
   print $"mail-watch: ($targets | length) mailboxes, polling every ($interval)"
   loop {
     mut state = (load-state $state_path)
+    let valid = ($targets | get mailbox)
+    $state = ($state | where {|e| $e.key in $valid })
     for t in $targets {
-      $state = (poll-safe $t $state $dry_run)
+      # With several mailboxes, say which one received the mail (the primary
+      # account name when aliases share a mailbox).
+      let label = (if $multi { ($t.accounts | first) } else { "" })
+      $state = (poll-safe $t $state $dry_run $label)
       save-state $state_path $state
     }
     if $once { break }
