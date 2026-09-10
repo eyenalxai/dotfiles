@@ -34,6 +34,12 @@ use starship.nu
 source zoxide.nu
 source mise.nu
 
+# mise.nu replaces $env.PATH with directories baked by `mise activate nu` on
+# another machine (stale /home/ulezot entries), discarding the user dirs that
+# env.nu prepends. Re-add ~/.local/bin ahead of the system paths so
+# user-installed tools (e.g. a locally built opencode2) take precedence.
+$env.PATH = ($env.PATH | prepend $"($env.HOME)/.local/bin" | uniq)
+
 # Custom completions
 source completions/git-completions.nu
 source completions/yadm-completions.nu
