@@ -227,7 +227,12 @@ if os.path.exists(zo_local_pre):
 EOF
 fi
 
-# Two-way merge for Clipboard history (text-only synchronization)
+# Two-way merge for Clipboard history (text-only synchronization).
+# Both snapshots are newest-first. The incoming (archive) order leads so the
+# entries a pull exists to surface stay at the top where the picker renders
+# them; local-only entries follow. Prepending every local-only entry instead
+# buried freshly pulled entries under the local ones, and the 500-entry cap
+# could then drop them outright.
 if ([ -f "$CLIP_JSON" ] || [ -f "$CLIP_LOCAL_PRE" ]) && command -v python3 >/dev/null 2>&1; then
     python3 - << 'EOF'
 import json, os, tempfile
@@ -290,21 +295,28 @@ def entry_key(entry):
         return ("image", os.path.basename(entry.get("path", "")))
     return None
 
-incoming_norm = [normalize_entry(e, True) for e in incoming if normalize_entry(e, True)]
-incoming_keys = {entry_key(e) for e in incoming_norm}
+incoming_norm = [e for e in (normalize_entry(e, True) for e in incoming) if e]
+local_norm = [e for e in (normalize_entry(e, False) for e in local) if e]
 
-local_norm = [normalize_entry(e, False) for e in local if normalize_entry(e, False)]
+incoming_keys = {entry_key(e) for e in incoming_norm}
 local_unique = [e for e in local_norm if entry_key(e) not in incoming_keys]
 
-merged = []
-seen = set()
-for e in local_unique + incoming_norm + local_norm:
-    k = entry_key(e)
-    if k and k not in seen:
-        seen.add(k)
-        merged.append(e)
+HISTORY_LIMIT = 500
+LOCAL_RESERVE = HISTORY_LIMIT // 5
 
-merged = merged[:500]
+# Incoming in its own order first, then local-only entries (newest first).
+# When the union overflows the cap, the incoming tail is trimmed before the
+# newest local-only entries, so nothing copied here since the last sync is
+# dropped while the freshly pulled entries stay visible at the top.
+if len(incoming_norm) + len(local_unique) <= HISTORY_LIMIT:
+    merged = incoming_norm + local_unique
+else:
+    local_kept = min(len(local_unique), LOCAL_RESERVE)
+    incoming_kept = min(len(incoming_norm), HISTORY_LIMIT - local_kept)
+    local_kept = min(len(local_unique), HISTORY_LIMIT - incoming_kept)
+    merged = incoming_norm[:incoming_kept] + local_unique[:local_kept]
+
+incoming_kept = sum(1 for e in merged if entry_key(e) in incoming_keys)
 
 dir_name = os.path.dirname(clip_file)
 os.makedirs(dir_name, exist_ok=True)
@@ -319,8 +331,8 @@ os.replace(temp_path, clip_file)
 if os.path.exists(clip_local_pre):
     os.remove(clip_local_pre)
 
-new_from_local = len(merged) - len(incoming_norm)
-print(f"✓ Clipboard history merged (text): {len(incoming_norm)} from archive + {max(0, new_from_local)} local unique = {len(merged)} total.")
+new_from_local = len(merged) - incoming_kept
+print(f"✓ Clipboard history merged (text): {incoming_kept} from archive + {max(0, new_from_local)} local unique = {len(merged)} total.")
 EOF
 fi
 
