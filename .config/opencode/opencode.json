@@ -16,5 +16,13 @@
     "summary": {
       "model": "openrouter/anthropic/claude-haiku-4.5"
     }
-  }
+  },
+  "plugins": [
+    {
+      "package": "./max-context",
+      "options": {
+        "maxContext": 100000
+      }
+    }
+  ]
 }
