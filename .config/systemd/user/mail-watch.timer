@@ -1,0 +1,15 @@
+[Unit]
+Description=Poll IMAP mailboxes for new mail every 20 seconds
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Timer]
+# First poll shortly after login, then every 20 seconds. AccuracySec defaults
+# to 1 minute, which would make a 20-second cadence meaningless.
+OnActiveSec=10s
+OnUnitActiveSec=20s
+AccuracySec=1s
+Unit=mail-watch.service
+
+[Install]
+WantedBy=graphical-session.target
