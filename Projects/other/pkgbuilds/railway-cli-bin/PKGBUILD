@@ -1,0 +1,39 @@
+# Maintainer: ulezot
+
+pkgname=railway-cli-bin
+pkgver=5.52.0
+pkgrel=1
+pkgdesc="Command Line Interface for Railway.app"
+arch=('x86_64' 'aarch64')
+url="https://github.com/railwayapp/cli"
+license=('MIT')
+depends=('ca-certificates')
+provides=('railway-cli' 'railwayapp-cli' 'railway')
+conflicts=('railway-cli' 'railwayapp-cli')
+options=('!strip' '!debug')
+
+source=("LICENSE::https://raw.githubusercontent.com/railwayapp/cli/v${pkgver}/LICENSE")
+sha256sums=('4a31388aeb41f97559f349ffca253e207181f2cf9d8a713e8891509333193da7')
+
+source_x86_64=("https://github.com/railwayapp/cli/releases/download/v${pkgver}/railway-v${pkgver}-x86_64-unknown-linux-musl.tar.gz")
+sha256sums_x86_64=('4f713297e1734075ba7fd6e889ae5e07af2192c50d94b212af6d7e301cad45c3')
+
+source_aarch64=("https://github.com/railwayapp/cli/releases/download/v${pkgver}/railway-v${pkgver}-aarch64-unknown-linux-musl.tar.gz")
+sha256sums_aarch64=('c1897be1499b41eaaa9a9eb86347f4a95bb56871b40da42047b415a1ef53e46f')
+
+package() {
+  install -Dm755 railway "$pkgdir/usr/bin/railway"
+
+  # Shell completions
+  install -dm755 "$pkgdir/usr/share/bash-completion/completions"
+  ./railway completion bash > "$pkgdir/usr/share/bash-completion/completions/railway"
+
+  install -dm755 "$pkgdir/usr/share/zsh/site-functions"
+  ./railway completion zsh > "$pkgdir/usr/share/zsh/site-functions/_railway"
+
+  install -dm755 "$pkgdir/usr/share/fish/vendor_completions.d"
+  ./railway completion fish > "$pkgdir/usr/share/fish/vendor_completions.d/railway.fish"
+
+  # License
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

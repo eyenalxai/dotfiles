@@ -1,0 +1,9 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+
+[railway-cli-bin]
+source = "github"
+github = "railwayapp/cli"
+use_latest_release = true
+prefix = "v"
