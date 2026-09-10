@@ -6,5 +6,8 @@
   "keybinds": {
     "session.message.user.previous": "alt+p,alt+k",
     "session.message.user.next": "alt+n,alt+j"
+  },
+  "attention": {
+    "enabled": true
   }
 }
