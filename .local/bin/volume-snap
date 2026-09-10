@@ -1,0 +1,46 @@
+#!/usr/bin/env nu
+# Snap the output volume to the next multiple of 5 in the direction of the
+# pressed key, then hand the delta to Omarchy's volume command so the OSD and
+# sink handling stay consistent.
+#
+#   volume-snap up     47 -> 50, 45 -> 50
+#   volume-snap down   47 -> 45, 45 -> 40
+#
+# Bound to XF86AudioRaiseVolume / XF86AudioLowerVolume in hypr/bindings.lua.
+
+def main [direction: string] {
+  let action = match ($direction | str lowercase) {
+    "up" | "raise" => "up"
+    "down" | "lower" => "down"
+    _ => (error make { msg: $"volume-snap: expected 'up' or 'down', got '($direction)'" })
+  }
+
+  # A DSP sink (speaker tuning, EasyEffects) can sit in front of the physical
+  # one; resolve to the sink whose volume actually moves the loudness.
+  let sink = (^omarchy-audio-output-sink | str trim)
+  if ($sink | is-empty) {
+    error make { msg: "volume-snap: no audio sink to control" }
+  }
+
+  let current = (
+    ^pactl get-sink-volume $sink
+    | lines
+    | first
+    | parse --regex '(?<percent>\d+)%'
+    | get percent
+    | first
+    | into int
+  )
+
+  let target = if $action == "up" {
+    let raised = ((($current / 5) | math floor) + 1) * 5
+    [$raised 100] | math min
+  } else {
+    let lowered = ((($current - 1) / 5) | math floor) * 5
+    [$lowered 0] | math max
+  }
+
+  let delta = $target - $current
+  let step = if $delta >= 0 { $"+($delta)" } else { $delta | into string }
+  ^omarchy-audio-output-volume $step
+}
