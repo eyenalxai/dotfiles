@@ -43,6 +43,7 @@ source completions/yay-completions.nu
 source completions/docker-completions.nu
 source completions/docker-compose-completions.nu
 source completions/pkill-completions.nu
+source completions/op-completions.nu
 
 # Aliases and custom commands
 source aliases.nu
