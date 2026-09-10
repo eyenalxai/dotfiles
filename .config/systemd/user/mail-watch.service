@@ -1,0 +1,13 @@
+[Unit]
+Description=IMAP new-mail watcher (desktop notifications; opens aerc on click)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nu --no-config-file %h/.config/aerc/mail-watch.nu
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
