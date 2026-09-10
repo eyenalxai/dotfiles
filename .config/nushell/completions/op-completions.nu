@@ -1,5 +1,6 @@
 # op-completions.nu
 # Custom completions for 1Password CLI (op) in Nushell
+# nu-version: 0.115.1
 
 # ==============================================================================
 # Helper Completers
@@ -22,6 +23,155 @@ def "nu-complete op accounts" [] {
   } catch {
     []
   }
+}
+
+# ==============================================================================
+# Dynamic (cached) data completers
+# ==============================================================================
+
+# Directory used to cache 1Password CLI data for completions
+def "nu-complete op cache-dir" [] {
+  let base = ($env.XDG_CACHE_HOME? | default ($env.HOME | path join ".cache"))
+  $base | path join "op-completions"
+}
+
+# Restrict permissions on cached 1Password data (best effort)
+def "nu-complete op cache-chmod" [path: string, mode: string] {
+  try { ^chmod $mode $path | ignore } catch {}
+}
+
+# Fetch JSON from the op CLI and store it in the completion cache (runs in a background job)
+def "nu-complete op cache-refresh" [name: string, args: list<string>, timeout: int] {
+  let dir = (nu-complete op cache-dir)
+  let file = ($dir | path join $"($name).json")
+  try {
+    let res = (do { ^timeout $timeout op ...$args } | complete)
+    if $res.exit_code == 0 and ($res.stdout | is-not-empty) {
+      if not ($dir | path exists) { mkdir $dir }
+      nu-complete op cache-chmod $dir 700
+      let tmp = ($dir | path join $"($name).tmp.json")
+      $res.stdout | from json | to json | save -f $tmp
+      mv -f $tmp $file
+      nu-complete op cache-chmod $file 600
+    }
+  }
+}
+
+# Return cached JSON produced by an op command, refreshing it in the background when stale
+def "nu-complete op cached-json" [
+  name: string        # Cache file name
+  args: list<string>  # op arguments that produce JSON output
+  ttl: duration       # How long cached data is considered fresh
+] {
+  let dir = (nu-complete op cache-dir)
+  let file = ($dir | path join $"($name).json")
+  let lock = ($dir | path join $"($name).lock")
+  if not ($dir | path exists) { mkdir $dir }
+  nu-complete op cache-chmod $dir 700
+
+  let exists = ($file | path exists)
+  let fresh = if $exists {
+    try { ((date now) - (ls -D $file | get 0.modified)) < $ttl } catch { false }
+  } else {
+    false
+  }
+  if $fresh {
+    return (try { open $file } catch { [] })
+  }
+
+  if not $exists {
+    # First run: wait briefly so completions are useful immediately
+    let res = (do { ^timeout 6 op ...$args } | complete)
+    if $res.exit_code == 0 and ($res.stdout | is-not-empty) {
+      try {
+        let data = ($res.stdout | from json)
+        let tmp = ($dir | path join $"($name).tmp.json")
+        $data | to json | save -f $tmp
+        mv -f $tmp $file
+        nu-complete op cache-chmod $file 600
+        return $data
+      } catch {}
+    }
+  }
+
+  # Serve stale data and refresh the cache in the background
+  let lock_fresh = if ($lock | path exists) {
+    try { ((date now) - (ls -D $lock | get 0.modified)) < 1min } catch { false }
+  } else {
+    false
+  }
+  if not $lock_fresh {
+    touch $lock
+    job spawn {|| nu-complete op cache-refresh $name $args 30 } | ignore
+  }
+
+  try { open $file } catch { [] }
+}
+
+# Extract the vault name or ID given to --vault (or --current-vault) on the command line
+def "nu-complete op vault-from-context" [context: string] {
+  let matches = ($context | parse -r "--(?:current-)?vault(?:=|\\s+)(?:\"(?<dq>[^\"]*)\"|'(?<sq>[^']*)'|(?<bare>\\S+))")
+  if ($matches | is-empty) { return "" }
+  let m = ($matches | last)
+  if ((($m.dq? | default "") | is-not-empty)) { return $m.dq }
+  if ((($m.sq? | default "") | is-not-empty)) { return $m.sq }
+  ($m.bare? | default "")
+}
+
+# Complete 1Password item names and IDs, filtered by --vault when present
+def "nu-complete op items" [context: string] {
+  let data = (nu-complete op cached-json "items" [item list --format json] 5min)
+  let vault = (nu-complete op vault-from-context $context)
+  let items = if ($vault | is-empty) {
+    $data
+  } else {
+    $data | where { |i| $i.vault.name == $vault or $i.vault.id == $vault }
+  }
+  let titles = ($items | each { |i|
+    let info = ($i.additional_information? | default "")
+    let extra = if ($info | is-not-empty) and ($info != "—") { $" • ($info)" } else { "" }
+    { value: $i.title, description: $"($i.category | str lowercase) in ($i.vault.name)($extra)" }
+  })
+  let ids = ($items | each { |i|
+    { value: $i.id, description: $"($i.title) • ($i.category | str lowercase) in ($i.vault.name)" }
+  })
+  $titles | append $ids
+}
+
+# Complete 1Password document names and IDs
+def "nu-complete op documents" [] {
+  let data = (nu-complete op cached-json "documents" [document list --format json] 30min)
+  $data | each { |d|
+    let title = ($d.title? | default ($d.id? | default ""))
+    [
+      { value: $title, description: "document" }
+      { value: ($d.id? | default $title), description: $title }
+    ]
+  } | flatten
+}
+
+# Complete 1Password vault names
+def "nu-complete op vaults" [] {
+  nu-complete op cached-json "vaults" [vault list --format json] 30min
+  | each { |v| { value: $v.name, description: $"($v.items?) items" } }
+}
+
+# Complete 1Password users by name and email
+def "nu-complete op users" [] {
+  nu-complete op cached-json "users" [user list --format json] 30min
+  | each { |u|
+    let kind = ($u.type? | default "member" | str lowercase)
+    [
+      { value: $u.name, description: $"($u.email) • ($kind)" }
+      { value: $u.email, description: $"($u.name) • ($kind)" }
+    ]
+  } | flatten
+}
+
+# Complete 1Password groups
+def "nu-complete op groups" [] {
+  nu-complete op cached-json "groups" [group list --format json] 30min
+  | each { |g| { value: $g.name, description: ($g.description? | default "") } }
 }
 
 # Complete 1Password item categories
@@ -361,7 +511,7 @@ export extern "op connect" [
 # Grant a group access to manage Secrets Automation
 export extern "op connect group grant" [
   --all-servers # Grant access to all current and future servers in the authenticated account.
-  --group: string # The group to receive access.
+  --group: string@"nu-complete op groups"              # The group to receive access.
   --server: string # The server to grant access to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
@@ -378,7 +528,7 @@ export extern "op connect group grant" [
 # Revoke a group's access to manage Secrets Automation
 export extern "op connect group revoke" [
   --all-servers # Revoke access to all current and future servers in the authenticated account.
-  --group: string # The group to revoke access from.
+  --group: string@"nu-complete op groups"              # The group to revoke access from.
   --server: string # The server to revoke access to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
@@ -474,7 +624,7 @@ export extern "op connect token create" [
   token_name: string # Name of token
   --expires-in: string # Set how long the Connect token is valid for in (s)econds, (m)inutes, (h)ours, (d)ays, and/or (w)eeks.
   --server: string # Issue a token for this server.
-  --vault: string # Issue a token on these vaults.
+  --vault: string@"nu-complete op vaults"              # Issue a token on these vaults.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -538,7 +688,7 @@ export extern "op connect token list" [
 # Grant a Connect server access to a vault
 export extern "op connect vault grant" [
   --server: string # The server to be granted access.
-  --vault: string # The vault to grant access to.
+  --vault: string@"nu-complete op vaults"              # The vault to grant access to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -554,7 +704,7 @@ export extern "op connect vault grant" [
 # Revoke a Connect server's access to a vault
 export extern "op connect vault revoke" [
   --server: string # The server to revoke access from.
-  --vault: string # The vault to revoke a server's access to.
+  --vault: string@"nu-complete op vaults"              # The vault to revoke a server's access to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -587,7 +737,7 @@ export extern "op document create" [
   --file-name: string # Set the file's name.
   --tags: string # Set the tags to the specified (comma-separated) values.
   --title: string # Set the document item's title.
-  --vault: string # Save the document in this vault. Default: Private, Personal, or Employee, depending on your account type.
+  --vault: string@"nu-complete op vaults"              # Save the document in this vault. Default: Private, Personal, or Employee, depending on your account type.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -602,12 +752,12 @@ export extern "op document create" [
 
 # Download a document
 export extern "op document get" [
-  item: string # Document item name or ID
+  item: string@"nu-complete op documents"              # Document item name or ID
   --file-mode: string # Set filemode for the output file. It is ignored without the --out-file flag. (default 0600)
   --force # Forcibly print an unintelligible document to an interactive terminal. If --out-file is specified, save the document to a file without prompting for confirmation.
   --include-archive # Include document items in the Archive. Can also be set using OP_INCLUDE_ARCHIVE environment variable.
   --out-file(-o): path # Save the document to the file path instead of stdout.
-  --vault: string # Look for the document in this vault.
+  --vault: string@"nu-complete op vaults"              # Look for the document in this vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -622,12 +772,12 @@ export extern "op document get" [
 
 # Edit a document item
 export extern "op document edit" [
-  item: string # Document item name or ID
+  item: string@"nu-complete op documents"              # Document item name or ID
   file?: path # Path to new file, or - for stdin
   --file-name: string # Set the file's name.
   --tags: string # Set the tags to the specified (comma-separated) values. An empty value removes all tags.
   --title: string # Set the document item's title.
-  --vault: string # Look up document in this vault.
+  --vault: string@"nu-complete op vaults"              # Look up document in this vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -642,9 +792,9 @@ export extern "op document edit" [
 
 # Delete or archive a document item
 export extern "op document delete" [
-  item?: string # Document item name or ID
+  item?: string@"nu-complete op documents"             # Document item name or ID
   --archive # Move the document to the Archive.
-  --vault: string # Delete the document in this vault.
+  --vault: string@"nu-complete op vaults"              # Delete the document in this vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -660,7 +810,7 @@ export extern "op document delete" [
 # Get a list of documents
 export extern "op document list" [
   --include-archive # Include document items in the Archive. Can also be set using OP_INCLUDE_ARCHIVE environment variable.
-  --vault: string # Only list documents in this vault.
+  --vault: string@"nu-complete op vaults"              # Only list documents in this vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -736,7 +886,7 @@ export extern "op group create" [
 
 # Get details about a group
 export extern "op group get" [
-  group?: string # Group name or ID
+  group?: string@"nu-complete op groups"               # Group name or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -751,7 +901,7 @@ export extern "op group get" [
 
 # Edit a group's name or description
 export extern "op group edit" [
-  group?: string # Group name or ID
+  group?: string@"nu-complete op groups"               # Group name or ID
   --description: string # Change the group's description.
   --name: string # Change the group's name.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
@@ -768,7 +918,7 @@ export extern "op group edit" [
 
 # Remove a group
 export extern "op group delete" [
-  group?: string # Group name or ID
+  group?: string@"nu-complete op groups"               # Group name or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -783,8 +933,8 @@ export extern "op group delete" [
 
 # List groups
 export extern "op group list" [
-  --user: string # List groups that a user belongs to.
-  --vault: string # List groups that have direct access to a vault.
+  --user: string@"nu-complete op users"                # List groups that a user belongs to.
+  --vault: string@"nu-complete op vaults"              # List groups that have direct access to a vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -799,9 +949,9 @@ export extern "op group list" [
 
 # Add a user to a group
 export extern "op group user grant" [
-  --group: string # Specify the group to add the user to.
+  --group: string@"nu-complete op groups"              # Specify the group to add the user to.
   --role: string@"nu-complete op group-roles" # Specify the user's role as a member or manager. Default: member.
-  --user: string # Specify the user to add to the group.
+  --user: string@"nu-complete op users"                # Specify the user to add to the group.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -816,8 +966,8 @@ export extern "op group user grant" [
 
 # Remove a user from a group
 export extern "op group user revoke" [
-  --group: string # Specify the group to remove the user from.
-  --user: string # Specify the user to remove from the group.
+  --group: string@"nu-complete op groups"              # Specify the group to remove the user from.
+  --user: string@"nu-complete op users"                # Specify the user to remove from the group.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -832,7 +982,7 @@ export extern "op group user revoke" [
 
 # Retrieve users that belong to a group
 export extern "op group user list" [
-  group: string # Group name or ID
+  group: string@"nu-complete op groups"                # Group name or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -871,7 +1021,7 @@ export extern "op item create" [
   --template: path # Specify the file path to read an item template from.
   --title: string # Set the item's title.
   --url: string # Set the URL associated with the item
-  --vault: string # Save the item in this vault. Default: Private, Personal, or Employee, depending on your account type.
+  --vault: string@"nu-complete op vaults"              # Save the item in this vault. Default: Private, Personal, or Employee, depending on your account type.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -886,13 +1036,13 @@ export extern "op item create" [
 
 # Get an item's details
 export extern "op item get" [
-  item?: string # Item name, ID, or share link
+  item?: string@"nu-complete op items"                 # Item name, ID, or share link
   --fields: string # Return data from specific fields. Use 'label=' to get the field by name or 'type=' to filter fields by type. Specify multiple in a comma-separated list.
   --include-archive # Include items in the Archive. Can also be set using OP_INCLUDE_ARCHIVE environment variable.
   --otp # Output the primary one-time password for this item.
   --reveal # Don't conceal sensitive fields.
   --share-link # Get a shareable link for the item.
-  --vault: string # Look for the item in this vault.
+  --vault: string@"nu-complete op vaults"              # Look for the item in this vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -907,7 +1057,7 @@ export extern "op item get" [
 
 # Edit an item's details
 export extern "op item edit" [
-  item?: string # Item name, ID, or share link
+  item?: string@"nu-complete op items"                 # Item name, ID, or share link
   ...assignment: string # Field assignments
   --dry-run # Perform a dry run of the command and output a preview of the resulting item.
   --favorite # Whether this item is a favorite item. Options: true, false --generate-password[=recipe]   Give the item a randomly generated password.
@@ -916,7 +1066,7 @@ export extern "op item edit" [
   --template: path # Specify the filepath to read an item template from.
   --title: string # Set the item's title.
   --url: string # Set the URL associated with the item
-  --vault: string # Edit the item in this vault.
+  --vault: string@"nu-complete op vaults"              # Edit the item in this vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -931,9 +1081,9 @@ export extern "op item edit" [
 
 # Delete or archive an item
 export extern "op item delete" [
-  item?: string # Item name, ID, or share link
+  item?: string@"nu-complete op items"                 # Item name, ID, or share link
   --archive # Move the item to the Archive.
-  --vault: string # Look for the item in this vault.
+  --vault: string@"nu-complete op vaults"              # Look for the item in this vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -953,7 +1103,7 @@ export extern "op item list" [
   --include-archive # Include items in the Archive. Can also be set using OP_INCLUDE_ARCHIVE environment variable.
   --long # Output a more detailed item list.
   --tags: string # Only list items with these tags (comma-separated).
-  --vault: string # Only list items in this vault.
+  --vault: string@"nu-complete op vaults"              # Only list items in this vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -968,9 +1118,9 @@ export extern "op item list" [
 
 # Move an item between vaults
 export extern "op item move" [
-  item?: string # Item name, ID, or share link
-  --current-vault: string # Vault where the item is currently saved.
-  --destination-vault: string # The vault you want to move the item to.
+  item?: string@"nu-complete op items"                 # Item name, ID, or share link
+  --current-vault: string@"nu-complete op vaults"      # Vault where the item is currently saved.
+  --destination-vault: string@"nu-complete op vaults"  # The vault you want to move the item to.
   --reveal # Don't conceal sensitive fields.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
@@ -986,10 +1136,10 @@ export extern "op item move" [
 
 # Share an item
 export extern "op item share" [
-  item: string # Item name or ID to share
+  item: string@"nu-complete op items"                  # Item name or ID to share
   --emails: string # Email addresses to share with.
   --expires-in: string # Expire link after the duration specified in (s)econds, (m)inutes, (h)ours, (d)ays, and/or (w)eeks. (default 7d)
-  --vault: string # Look for the item in this vault.
+  --vault: string@"nu-complete op vaults"              # Look for the item in this vault.
   --view-once # Expire link after a single view.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
@@ -1221,7 +1371,7 @@ export extern "op user provision" [
 
 # Confirm a user
 export extern "op user confirm" [
-  user?: string # User email, name, or ID
+  user?: string@"nu-complete op users"                 # User email, name, or ID
   --all # Confirm all unconfirmed users.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
@@ -1237,7 +1387,7 @@ export extern "op user confirm" [
 
 # Get details about a user
 export extern "op user get" [
-  user?: string # User email, name, or ID
+  user?: string@"nu-complete op users"                 # User email, name, or ID
   --fingerprint # Get the user's public key fingerprint.
   --me # Get the authenticated user's details.
   --public-key # Get the user's public key.
@@ -1255,7 +1405,7 @@ export extern "op user get" [
 
 # Edit a user's name or Travel Mode status
 export extern "op user edit" [
-  user?: string # User email, name, or ID
+  user?: string@"nu-complete op users"                 # User email, name, or ID
   --name: string # Set the user's name.
   --travel-mode: string@"nu-complete op travel-mode" # Turn Travel Mode on or off for the user. (default off)
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
@@ -1272,7 +1422,7 @@ export extern "op user edit" [
 
 # Suspend a user
 export extern "op user suspend" [
-  user?: string # User email, name, or ID
+  user?: string@"nu-complete op users"                 # User email, name, or ID
   --deauthorize-devices-after: string # Deauthorize the user's devices after a time (rounded down to seconds).
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
@@ -1288,7 +1438,7 @@ export extern "op user suspend" [
 
 # Reactivate a suspended user
 export extern "op user reactivate" [
-  user?: string # User email, name, or ID
+  user?: string@"nu-complete op users"                 # User email, name, or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1303,7 +1453,7 @@ export extern "op user reactivate" [
 
 # Remove a user and all their data from the account
 export extern "op user delete" [
-  user?: string # User email, name, or ID
+  user?: string@"nu-complete op users"                 # User email, name, or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1318,8 +1468,8 @@ export extern "op user delete" [
 
 # List users
 export extern "op user list" [
-  --group: string # List users who belong to a group.
-  --vault: string # List users who have direct access to vault.
+  --group: string@"nu-complete op groups"              # List users who belong to a group.
+  --vault: string@"nu-complete op vaults"              # List users who have direct access to vault.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1334,7 +1484,7 @@ export extern "op user list" [
 
 # Begin recovery for users in your 1Password account
 export extern "op user recovery begin" [
-  user?: string # User email, name, or ID
+  user?: string@"nu-complete op users"                 # User email, name, or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1381,7 +1531,7 @@ export extern "op vault create" [
 
 # Get details about a vault
 export extern "op vault get" [
-  vault?: string # Vault name or ID
+  vault?: string@"nu-complete op vaults"               # Vault name or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1396,7 +1546,7 @@ export extern "op vault get" [
 
 # Edit a vault's name, description, icon, or Travel Mode status
 export extern "op vault edit" [
-  vault?: string # Vault name or ID
+  vault?: string@"nu-complete op vaults"               # Vault name or ID
   --description: string # Change the vault's description.
   --icon: string@"nu-complete op vault icons" # Change the vault's icon.
   --name: string # Change the vault's name.
@@ -1415,7 +1565,7 @@ export extern "op vault edit" [
 
 # Remove a vault
 export extern "op vault delete" [
-  vault?: string # Vault name or ID
+  vault?: string@"nu-complete op vaults"               # Vault name or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1430,9 +1580,9 @@ export extern "op vault delete" [
 
 # List all vaults in the account
 export extern "op vault list" [
-  --group: string # List vaults a group has access to.
-  --permission: string # List only vaults that the specified user/group has this permission for.
-  --user: string # List vaults that a given user has access to.
+  --group: string@"nu-complete op groups"              # List vaults a group has access to.
+  --permission: string@"nu-complete op vault permissions" # List only vaults that the specified user/group has this permission for.
+  --user: string@"nu-complete op users"                # List vaults that a given user has access to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1447,10 +1597,10 @@ export extern "op vault list" [
 
 # Grant a group permissions to a vault
 export extern "op vault group grant" [
-  --group: string # The group to receive access.
+  --group: string@"nu-complete op groups"              # The group to receive access.
   --no-input: string # Do not prompt for input on interactive terminal.
   --permissions: string@"nu-complete op vault permissions" # The permissions to grant to the group.
-  --vault: string # The vault to grant group permissions to.
+  --vault: string@"nu-complete op vaults"              # The vault to grant group permissions to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1465,10 +1615,10 @@ export extern "op vault group grant" [
 
 # Revoke a group's permissions to a vault
 export extern "op vault group revoke" [
-  --group: string # The group to revoke access from.
+  --group: string@"nu-complete op groups"              # The group to revoke access from.
   --no-input: string # Do not prompt for input on interactive terminal.
   --permissions: string@"nu-complete op vault permissions" # The permissions to revoke from the group.
-  --vault: string # The vault to revoke access to.
+  --vault: string@"nu-complete op vaults"              # The vault to revoke access to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1483,7 +1633,7 @@ export extern "op vault group revoke" [
 
 # List all the groups that have access to the given vault
 export extern "op vault group list" [
-  vault?: string # Vault name or ID
+  vault?: string@"nu-complete op vaults"               # Vault name or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1500,8 +1650,8 @@ export extern "op vault group list" [
 export extern "op vault user grant" [
   --no-input: string # Do not prompt for input on interactive terminal.
   --permissions: string@"nu-complete op vault permissions" # The permissions to grant to the user.
-  --user: string # The user to receive access.
-  --vault: string # The vault to grant access to.
+  --user: string@"nu-complete op users"                # The user to receive access.
+  --vault: string@"nu-complete op vaults"              # The vault to grant access to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1518,8 +1668,8 @@ export extern "op vault user grant" [
 export extern "op vault user revoke" [
   --no-input: string # Do not prompt for input on interactive terminal.
   --permissions: string@"nu-complete op vault permissions" # The permissions to revoke from the user.
-  --user: string # The user to revoke access from.
-  --vault: string # The vault to revoke access to.
+  --user: string@"nu-complete op users"                # The user to revoke access from.
+  --vault: string@"nu-complete op vaults"              # The vault to revoke access to.
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
@@ -1534,7 +1684,7 @@ export extern "op vault user revoke" [
 
 # List all users with access to the vault and their permissions
 export extern "op vault user list" [
-  vault: string # Vault name or ID
+  vault: string@"nu-complete op vaults"                # Vault name or ID
   --account: string@"nu-complete op accounts"          # Select the account to execute the command by account shorthand, sign-in address, account ID, or user ID
   --cache: string@"nu-complete op boolean"             # Store and use cached information (true, false)
   --config: path                                       # Use this configuration directory
