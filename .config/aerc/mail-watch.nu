@@ -1,12 +1,13 @@
 #!/usr/bin/env nu
-# Watches IMAP mailboxes and raises Omarchy desktop notifications for new mail.
+# Polls IMAP mailboxes once and raises Omarchy desktop notifications for new
+# mail. mail-watch.timer starts this script every 20 seconds; each invocation
+# checks every mailbox and exits.
 #
-# Independent of aerc: this service polls the mailboxes itself, so
+# Independent of aerc: this script talks to the servers itself, so
 # notifications arrive even when aerc isn't running. Clicking a notification
 # runs open-in-aerc.nu, which starts aerc if needed and opens the message.
 #
-# Usage: mail-watch.nu [--once] [--dry-run] [--interval <duration>]
-#                      [--accounts-file <path>] [--state-file <path>]
+# Usage: mail-watch.nu [--dry-run] [--accounts-file <path>] [--state-file <path>]
 #
 # Accounts come from aerc's accounts.conf (name, imaps:// URL, default folder
 # and the op:// reference in source-cred-cmd). Accounts that share a mailbox
@@ -16,7 +17,21 @@
 
 use ./get-cred.nu credential
 
-const DEFAULT_INTERVAL = 20sec
+# --- logging -----------------------------------------------------------------
+
+# Report one message at the given syslog priority. mail-watch.service runs with
+# LogLevelMax=notice so systemd's per-run start and finish lines stay out of
+# the journal. Under systemd the message gets a syslog priority prefix, which
+# journald strips while recording the priority and keeping the message
+# attributed to the unit; run by hand (or with --dry-run) it is plain text.
+def log [msg: string, --priority: string = "notice"] {
+  if (($env | get -o JOURNAL_STREAM | default "") | is-empty) {
+    print $msg
+  } else {
+    let level = ({err: 3, warning: 4, notice: 5, info: 6} | get -o $priority | default 5)
+    print $"<($level)>($msg)"
+  }
+}
 
 def open-script []: nothing -> string {
   $env.HOME | path join ".config/aerc/open-in-aerc.nu"
@@ -67,10 +82,10 @@ def watch-targets [path: string]: nothing -> list {
       let m = ($source | parse --regex '^imaps://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)' | get -o 0)
       let ref = ($cred_cmd | parse --regex '(?<ref>op://\S+)' | get -o 0.ref | default "")
       if $m == null {
-        print $"mail-watch: skip ($a.name): only imaps:// sources are watched"
+        log $"skip ($a.name): only imaps:// sources are watched" --priority warning
         null
       } else if ($ref == "") {
-        print $"mail-watch: skip ($a.name): source-cred-cmd has no op:// reference"
+        log $"skip ($a.name): source-cred-cmd has no op:// reference" --priority warning
         null
       } else {
         let folder = ($a | get -o default | default "INBOX")
@@ -113,7 +128,7 @@ def imap-request [
   let cfg = $"user = \"(curl-escape $user):(curl-escape $password)\"\nsilent\nshow-error\n"
   # Percent-encode the mailbox for the URL but keep the hierarchy separators.
   let url_folder = ($folder | url encode | str replace -a '%2F' '/' | str replace -a '%2f' '/')
-  $cfg | ^curl -K - --silent --show-error -X $cmd $"imaps://($host):($port)/($url_folder)" | complete
+  $cfg | ^curl -K - --silent --show-error --connect-timeout 10 --max-time 15 -X $cmd $"imaps://($host):($port)/($url_folder)" | complete
 }
 
 # --- header parsing ----------------------------------------------------------
@@ -224,11 +239,11 @@ def send-notification [
   let body = (if ($subject | is-empty) { "(no subject)" } else { $subject })
 
   if $dry_run {
-    print $"DRY-RUN: ($title) | ($body) | ($t.mailbox) <($mid)>"
+    log $"DRY-RUN: ($title) | ($body) | ($t.mailbox) <($mid)>"
     return
   }
   if (aerc-focused) {
-    print $"skip (aerc focused): ($title)"
+    log $"skip (aerc focused): ($title)" --priority info
     return
   }
   if ($mid | is-empty) {
@@ -236,7 +251,7 @@ def send-notification [
   } else {
     ^omarchy-notification-send --app-name aerc -u normal $title $body --exec /usr/bin/nu --no-config-file (open-script) $t.account $t.folder $mid | complete | ignore
   }
-  print $"notified: ($title)"
+  log $"notified: ($title)"
 }
 
 # --- polling -----------------------------------------------------------------
@@ -251,13 +266,13 @@ def poll-target [
   let key = $t.mailbox
   let res = (imap-request $t.host $t.port $t.user $secret $t.folder $"EXAMINE ($t.folder)")
   if $res.exit_code != 0 {
-    print $"($key): EXAMINE failed: ($res.stderr | str trim)"
+    log $"($key): EXAMINE failed: ($res.stderr | str trim)" --priority err
     return $state
   }
   let uidv = ($res.stdout | parse --regex 'UIDVALIDITY\s+(?<v>\d+)' | get -o 0.v | default "0" | into int)
   let next = ($res.stdout | parse --regex 'UIDNEXT\s+(?<v>\d+)' | get -o 0.v | default "0" | into int)
   if ($uidv == 0) or ($next == 0) {
-    print $"($key): could not read UIDVALIDITY/UIDNEXT"
+    log $"($key): could not read UIDVALIDITY/UIDNEXT" --priority err
     return $state
   }
 
@@ -265,7 +280,7 @@ def poll-target [
   if ($prev == null) or ($prev.uidvalidity != $uidv) {
     # First sight of this mailbox (or the server renumbered it): remember where
     # it stands without notifying for the backlog.
-    print $"($key): baseline at UID ($next - 1)"
+    log $"($key): baseline at UID ($next - 1)"
     return (set-entry $state {key: $key, uidvalidity: $uidv, last_uid: ($next - 1)})
   }
 
@@ -275,7 +290,7 @@ def poll-target [
       let cmd = "UID FETCH " + ($uid | into string) + " (BODY.PEEK[HEADER.FIELDS (FROM SUBJECT MESSAGE-ID)])"
       let f = (imap-request $t.host $t.port $t.user $secret $t.folder $cmd)
       if $f.exit_code != 0 {
-        print $"($key): fetch ($uid) failed: ($f.stderr | str trim)"
+        log $"($key): fetch ($uid) failed: ($f.stderr | str trim)" --priority err
         break
       }
       let hdr = (parse-headers $f.stdout)
@@ -300,15 +315,13 @@ def poll-safe [t: record, state: list, dry_run: bool, label: string]: nothing ->
   try {
     poll-target $t (credential $t.ref) $state $dry_run $label
   } catch {|e|
-    print $"($t.mailbox): error: ($e.msg)"
+    log $"($t.mailbox): error: ($e.msg)" --priority err
     $state
   }
 }
 
 def main [
-  --once,
   --dry-run,
-  --interval: duration = $DEFAULT_INTERVAL,
   --accounts-file: string = "",
   --state-file: string = "",
 ] {
@@ -316,22 +329,14 @@ def main [
   let state_path = (if ($state_file | is-empty) { (default-state-file) } else { $state_file })
   let targets = (watch-targets $acct_path)
   let multi = (($targets | length) > 1)
+  mut state = (load-state $state_path)
+  let valid = ($targets | get -o mailbox | default [])
+  $state = ($state | where {|e| $e.key in $valid })
   for t in $targets {
-    print $"mail-watch: watching ($t.mailbox) as ($t.accounts | str join "/")"
-  }
-  print $"mail-watch: ($targets | length) mailboxes, polling every ($interval)"
-  loop {
-    mut state = (load-state $state_path)
-    let valid = ($targets | get mailbox)
-    $state = ($state | where {|e| $e.key in $valid })
-    for t in $targets {
-      # With several mailboxes, say which one received the mail (the primary
-      # account name when aliases share a mailbox).
-      let label = (if $multi { ($t.accounts | first) } else { "" })
-      $state = (poll-safe $t $state $dry_run $label)
-      save-state $state_path $state
-    }
-    if $once { break }
-    sleep $interval
+    # With several mailboxes, say which one received the mail (the primary
+    # account name when aliases share a mailbox).
+    let label = (if $multi { ($t.accounts | first) } else { "" })
+    $state = (poll-safe $t $state $dry_run $label)
+    save-state $state_path $state
   }
 }

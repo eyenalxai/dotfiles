@@ -1,13 +1,14 @@
 [Unit]
-Description=IMAP new-mail watcher (desktop notifications; opens aerc on click)
+Description=One IMAP poll for new mail (desktop notifications; opens aerc on click)
 After=graphical-session.target
 PartOf=graphical-session.target
 
 [Service]
-Type=simple
+Type=oneshot
 ExecStart=/usr/bin/nu --no-config-file %h/.config/aerc/mail-watch.nu
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=graphical-session.target
+# A poll runs every 20 seconds; LogLevelMax keeps systemd's per-run start and
+# finish lines out of the journal. The script marks its own events with syslog
+# priorities on stdout, which journald records under this identifier.
+LogLevelMax=notice
+SyslogIdentifier=mail-watch
+TimeoutStartSec=60
