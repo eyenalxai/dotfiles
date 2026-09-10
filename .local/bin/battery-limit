@@ -1,0 +1,69 @@
+#!/bin/bash
+set -euo pipefail
+
+get_battery() {
+  upower -e 2>/dev/null | grep -iE '/devices/battery' | head -n 1
+}
+
+get_threshold() {
+  cat /sys/class/power_supply/macsmc-battery/charge_control_end_threshold 2>/dev/null \
+    || cat /sys/class/power_supply/BAT*/charge_control_end_threshold 2>/dev/null \
+    || echo 100
+}
+
+set_threshold() {
+  local state="$1"
+  local dev
+  dev=$(get_battery)
+  if [[ -n "$dev" ]]; then
+    gdbus call --system --dest org.freedesktop.UPower --object-path "$dev" \
+      --method org.freedesktop.UPower.Device.EnableChargeThreshold "$state" >/dev/null
+  fi
+  # Refresh running quickshell widget if available
+  omarchy-shell -q ulsippoi.power refresh || true
+  omarchy-shell -q omarchy.power refresh || true
+  omarchy-shell -q battery-limit refresh || true
+}
+
+cmd="${1:-status}"
+
+case "$cmd" in
+  on|enable|80)
+    set_threshold "true"
+    echo "Battery limit set to 80%"
+    ;;
+  off|disable|100)
+    set_threshold "false"
+    echo "Battery limit disabled (100%)"
+    ;;
+  toggle)
+    current=$(get_threshold)
+    if [[ "$current" -le 80 ]]; then
+      set_threshold "false"
+      echo "Battery limit disabled (100%)"
+    else
+      set_threshold "true"
+      echo "Battery limit set to 80%"
+    fi
+    ;;
+  status)
+    current=$(get_threshold)
+    if [[ "$current" -le 80 ]]; then
+      echo "Battery limit: 80% (Active)"
+    else
+      echo "Battery limit: 100% (Inactive)"
+    fi
+    ;;
+  -h|--help)
+    echo "Usage: battery-limit [on|off|toggle|status]"
+    echo "  on, 80       Limit charging to 80%"
+    echo "  off, 100     Allow charging to 100%"
+    echo "  toggle       Toggle between 80% and 100%"
+    echo "  status       Show current threshold"
+    ;;
+  *)
+    echo "Unknown argument: $cmd" >&2
+    echo "Usage: battery-limit [on|off|toggle|status]" >&2
+    exit 1
+    ;;
+esac
