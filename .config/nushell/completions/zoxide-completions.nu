@@ -2,36 +2,141 @@
 # Custom completions for zoxide's z and zi commands in Nushell
 # nu-version: 0.115.1
 
-# Directories from the zoxide database matching the words typed after z/zi.
-# Returns the completion envelope so the engine matches substrings (a typed
-# keyword like `nushell` can match `/home/.../nushell`) and keeps zoxide's
-# frecency order instead of re-sorting alphabetically.
-def "nu-complete zoxide path" [context: string] {
-  # context is the command text up to the cursor, e.g. `z nushell`
-  let keywords = (
-    $context
-    | split words
-    | skip 1
-    | each {|word| $word | str replace -a '"' '' | str replace -a "'" '' }
-    | where {|word| $word | is-not-empty }
+# Quote a path that contains characters which would break out of a bare word,
+# mirroring how nu-cli escapes its own file completions.
+def "nu-complete zoxide escape" [path: string] {
+  if ($path =~ '[*?\[]') or ($path | str contains '`') {
+    # glob metacharacters and backticks: single quotes keep them literal
+    if ($path | str contains "'") {
+      $path | to nuon
+    } else {
+      $"'($path)'"
+    }
+  } else if ($path =~ "[\\s'\"#(){}|;]") or ($path | str contains ']') {
+    $"`($path)`"
+  } else {
+    $path
+  }
+}
+
+# Split a command line into words the way the parser does: whitespace separates
+# words and single or double quotes group their contents into one word (the
+# quote characters themselves are dropped). Returns the words plus the word the
+# cursor is inside, which is empty right after a separator.
+def "nu-complete zoxide words" [context: string] {
+  mut words = []
+  mut word = ''
+  mut quote = ''
+  mut separated = true
+  for char in ($context | split chars) {
+    if ($quote | is-not-empty) {
+      $separated = false
+      if $char == $quote {
+        $quote = ''
+      } else {
+        $word += $char
+      }
+    } else if $char == '"' or $char == "'" {
+      $separated = false
+      $quote = $char
+    } else if ($char =~ '\s') {
+      if ($word | is-not-empty) {
+        $words ++= [$word]
+        $word = ''
+      }
+      $separated = true
+    } else {
+      $separated = false
+      $word += $char
+    }
+  }
+  if ($word | is-not-empty) { $words ++= [$word] }
+  {
+    words: $words
+    token: (if $separated { '' } else { $word })
+  }
+}
+
+# Directories that the word being completed names: `b` -> `bin` in the current
+# directory, `~/Pro` -> `~/Projects`, `Projects/ot` -> the children of
+# `Projects` whose name starts with `ot`. `z <directory>` jumps straight to such
+# a path without consulting the database, so these are listed before database
+# matches.
+def "nu-complete zoxide dirs" [token: string] {
+  if ($token | is-empty) { return [] }
+
+  # `Projects/` lists the children of `Projects`; `Projects/ot` narrows them.
+  let parts = (
+    if ($token | str ends-with '/') {
+      {
+        base: (if $token == '/' { '/' } else { $token | str trim --right --char '/' })
+        prefix: ''
+      }
+    } else if $token == '~' {
+      { base: '~', prefix: '' }
+    } else {
+      let parsed = ($token | path parse)
+      {
+        base: (if ($parsed.parent | is-empty) { '.' } else { $parsed.parent })
+        prefix: $parsed.stem
+      }
+    }
   )
 
-  let dirs = (
+  # Expand the base first: `ls` does not expand a `~` that comes from a
+  # variable, and absolute names make the candidates independent of the cwd.
+  let base = ($parts.base | path expand)
+  let entries = (try { ls --all $base } catch { [] })
+
+  $entries
+  | where type == 'dir'
+  | where {|entry| ($entry.name | path basename) | str starts-with --ignore-case $parts.prefix }
+  | get name
+  | each {|name| nu-complete zoxide escape ($name | path expand) }
+  | sort
+}
+
+# Arguments of z and zi: directories the current word names plus entries from
+# the zoxide database in frecency order. The engine's own narrowing is disabled
+# because both sources already decide what matches, and zoxide's order must be
+# preserved rather than re-sorted.
+def "nu-complete zoxide path" [context: string] {
+  let line = (nu-complete zoxide words $context)
+  let words = ($line.words | skip 1)
+  # While the cursor is still in the command name there is no word to complete.
+  let token = (if ($words | is-empty) { '' } else { $line.token })
+
+  let from_db = (
     try {
-      ^zoxide query --list --exclude $env.PWD -- ...$keywords
+      ^zoxide query --list --exclude $env.PWD -- ...$words
       | lines
       | where {|dir| $dir | is-not-empty }
       | first 100
+      | each {|dir| nu-complete zoxide escape $dir }
     } catch {
       []
     }
   )
 
+  # `z` treats its argument as a path only when it is the sole argument.
+  let from_disk = (
+    if ($words | length) <= 1 {
+      nu-complete zoxide dirs $token
+    } else {
+      []
+    }
+  )
+
+  let completions = (
+    $from_disk
+    | append ($from_db | where {|dir| $dir not-in $from_disk })
+    | first 100
+  )
+
   {
-    completions: $dirs
+    completions: $completions
     options: {
-      completion_algorithm: "substring"
-      case_sensitive: false
+      filter: false
       sort: false
     }
   }
