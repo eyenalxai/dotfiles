@@ -1,0 +1,63 @@
+#!/usr/bin/env nu
+# keyd-mac-modifiers - apply the MacBook modifier rotation via keyd:
+#   Command -> Control, Option -> Super, Control -> Alt
+#
+# The single source of truth is ~/.config/keyd/default.conf (tracked with yadm).
+# This script symlinks it into /etc/keyd/ and enables/reloads the keyd daemon.
+#
+# Usage:  sudo keyd-mac-modifiers
+
+print "keyd-mac-modifiers: MacBook modifier rotation via keyd"
+print "  Command -> Control, Option -> Super, Control -> Alt"
+print ""
+
+if (^id -u | str trim) != "0" {
+    error make {msg: "this script must be run as root - try: sudo ~/.local/bin/keyd-mac-modifiers"}
+}
+
+# Resolve the invoking user's home even when run through sudo.
+let user = if ($env.SUDO_USER? | is-empty) {
+    ^stat -c '%U' ($env.CURRENT_FILE | path expand)
+} else {
+    $env.SUDO_USER
+}
+let home = (^getent passwd $user | split row ':' | get 5)
+
+let src = $"($home)/.config/keyd/default.conf"
+let dst = "/etc/keyd/default.conf"
+
+print $"  config: ($src)"
+print $"  deploy: ($dst)"
+print ""
+
+if not ($src | path exists) {
+    error make {msg: $"($src) not found"}
+}
+
+if (which keyd | is-empty) {
+    print "keyd is not installed - installing it..."
+    ^pacman -S --needed --noconfirm keyd
+}
+
+print $"Linking ($src) -> ($dst)"
+^install -d /etc/keyd
+^ln -sfn $src $dst
+
+print "Validating the config with `keyd check`..."
+let check = (^keyd check $dst | complete)
+print ($check.stdout | str trim)
+if $check.exit_code != 0 {
+    error make {msg: "keyd check reported issues above - not enabling keyd"}
+}
+print "  config is valid"
+print ""
+
+print "Enabling and (re)starting keyd..."
+^systemctl enable --now keyd
+^systemctl restart keyd
+
+print ""
+print "Done - the rotation is active:"
+print "  Command -> Control, Option -> Super, Control -> Alt"
+print "  Panic:  Backspace+Escape+Enter stops keyd"
+print $"  Revert: sudo systemctl disable --now keyd && sudo rm ($dst)"
