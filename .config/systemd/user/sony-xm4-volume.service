@@ -1,5 +1,5 @@
 [Unit]
-Description=Automatically set Sony XM4 volume to 30%% on connect
+Description=Automatically set Sony XM4 volume to 30% on connect
 After=pipewire.service wireplumber.service
 Wants=pipewire.service
 
@@ -8,7 +8,6 @@ Type=simple
 ExecStart=%h/.local/bin/sony-xm4-volume-monitor
 Restart=always
 RestartSec=3
-Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=default.target
