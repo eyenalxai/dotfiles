@@ -133,10 +133,10 @@ o.bind("SUPER + B", "Helium", { launch = "helium-browser" })
 hl.unbind("SUPER + W")
 o.bind("SUPER + Q", "Close window", hl.dsp.window.close())
 
--- Clipboard manager on Super + Shift + X instead of Super + Ctrl + V
+-- Laptop-only: clipboard manager on CTRL + SHIFT + X instead of Super + Ctrl + V
 hl.unbind("SUPER + CTRL + V")
 hl.unbind("SUPER + SHIFT + X")
-o.bind("SUPER + SHIFT + X", "Clipboard manager", "omarchy-shell shell toggle omarchy.clipboard")
+o.bind("CTRL + SHIFT + X", "Clipboard manager", "omarchy-shell shell toggle omarchy.clipboard")
 
 -- Dictation (push-to-talk, hold to talk) on F1
 hl.unbind("SUPER + SHIFT + D")
