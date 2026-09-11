@@ -2,6 +2,8 @@
 # Custom completions for 1Password CLI (op) in Nushell
 # nu-version: 0.115.1
 
+use ./completion-helpers.nu *
+
 # ==============================================================================
 # Helper Completers
 # ==============================================================================
@@ -29,85 +31,6 @@ def "nu-complete op accounts" [] {
 # Dynamic (cached) data completers
 # ==============================================================================
 
-# Directory used to cache 1Password CLI data for completions
-def "nu-complete op cache-dir" [] {
-  let base = ($env.XDG_CACHE_HOME? | default ($env.HOME | path join ".cache"))
-  $base | path join "op-completions"
-}
-
-# Restrict permissions on cached 1Password data (best effort)
-def "nu-complete op cache-chmod" [path: string, mode: string] {
-  try { ^chmod $mode $path | ignore } catch {}
-}
-
-# Fetch JSON from the op CLI and store it in the completion cache (runs in a background job)
-def "nu-complete op cache-refresh" [name: string, args: list<string>, timeout: int] {
-  let dir = (nu-complete op cache-dir)
-  let file = ($dir | path join $"($name).json")
-  try {
-    let res = (do { ^timeout $timeout op ...$args } | complete)
-    if $res.exit_code == 0 and ($res.stdout | is-not-empty) {
-      if not ($dir | path exists) { mkdir $dir }
-      nu-complete op cache-chmod $dir 700
-      let tmp = ($dir | path join $"($name).tmp.json")
-      $res.stdout | from json | to json | save -f $tmp
-      mv -f $tmp $file
-      nu-complete op cache-chmod $file 600
-    }
-  }
-}
-
-# Return cached JSON produced by an op command, refreshing it in the background when stale
-def "nu-complete op cached-json" [
-  name: string        # Cache file name
-  args: list<string>  # op arguments that produce JSON output
-  ttl: duration       # How long cached data is considered fresh
-] {
-  let dir = (nu-complete op cache-dir)
-  let file = ($dir | path join $"($name).json")
-  let lock = ($dir | path join $"($name).lock")
-  if not ($dir | path exists) { mkdir $dir }
-  nu-complete op cache-chmod $dir 700
-
-  let exists = ($file | path exists)
-  let fresh = if $exists {
-    try { ((date now) - (ls -D $file | get 0.modified)) < $ttl } catch { false }
-  } else {
-    false
-  }
-  if $fresh {
-    return (try { open $file } catch { [] })
-  }
-
-  if not $exists {
-    # First run: wait briefly so completions are useful immediately
-    let res = (do { ^timeout 6 op ...$args } | complete)
-    if $res.exit_code == 0 and ($res.stdout | is-not-empty) {
-      try {
-        let data = ($res.stdout | from json)
-        let tmp = ($dir | path join $"($name).tmp.json")
-        $data | to json | save -f $tmp
-        mv -f $tmp $file
-        nu-complete op cache-chmod $file 600
-        return $data
-      } catch {}
-    }
-  }
-
-  # Serve stale data and refresh the cache in the background
-  let lock_fresh = if ($lock | path exists) {
-    try { ((date now) - (ls -D $lock | get 0.modified)) < 1min } catch { false }
-  } else {
-    false
-  }
-  if not $lock_fresh {
-    touch $lock
-    job spawn {|| nu-complete op cache-refresh $name $args 30 } | ignore
-  }
-
-  try { open $file } catch { [] }
-}
-
 # Extract the vault name or ID given to --vault (or --current-vault) on the command line
 def "nu-complete op vault-from-context" [context: string] {
   let matches = ($context | parse -r "--(?:current-)?vault(?:=|\\s+)(?:\"(?<dq>[^\"]*)\"|'(?<sq>[^']*)'|(?<bare>\\S+))")
@@ -120,7 +43,7 @@ def "nu-complete op vault-from-context" [context: string] {
 
 # Complete 1Password item names and IDs, filtered by --vault when present
 def "nu-complete op items" [context: string] {
-  let data = (nu-complete op cached-json "items" [item list --format json] 5min)
+  let data = (nu-complete cached json "op" "items" [op item list --format json] 5min)
   let vault = (nu-complete op vault-from-context $context)
   let items = if ($vault | is-empty) {
     $data
@@ -140,7 +63,7 @@ def "nu-complete op items" [context: string] {
 
 # Complete 1Password document names and IDs
 def "nu-complete op documents" [] {
-  let data = (nu-complete op cached-json "documents" [document list --format json] 30min)
+  let data = (nu-complete cached json "op" "documents" [op document list --format json] 30min)
   $data | each { |d|
     let title = ($d.title? | default ($d.id? | default ""))
     [
@@ -152,13 +75,13 @@ def "nu-complete op documents" [] {
 
 # Complete 1Password vault names
 def "nu-complete op vaults" [] {
-  nu-complete op cached-json "vaults" [vault list --format json] 30min
+  nu-complete cached json "op" "vaults" [op vault list --format json] 30min
   | each { |v| { value: $v.name, description: $"($v.items?) items" } }
 }
 
 # Complete 1Password users by name and email
 def "nu-complete op users" [] {
-  nu-complete op cached-json "users" [user list --format json] 30min
+  nu-complete cached json "op" "users" [op user list --format json] 30min
   | each { |u|
     let kind = ($u.type? | default "member" | str lowercase)
     [
@@ -170,7 +93,7 @@ def "nu-complete op users" [] {
 
 # Complete 1Password groups
 def "nu-complete op groups" [] {
-  nu-complete op cached-json "groups" [group list --format json] 30min
+  nu-complete cached json "op" "groups" [op group list --format json] 30min
   | each { |g| { value: $g.name, description: ($g.description? | default "") } }
 }
 
