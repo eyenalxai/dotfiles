@@ -51,6 +51,7 @@ source completions/docker-compose-completions.nu
 source completions/pkill-completions.nu
 source completions/op-completions.nu
 source completions/zoxide-completions.nu
+source completions/gh-completions.nu
 
 # Aliases and custom commands
 source aliases.nu
