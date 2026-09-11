@@ -8,7 +8,7 @@
     "session.message.user.next": "alt+n,alt+j"
   },
   "attention": {
-    "enabled": true
+    "enabled": false
   },
   "session": {
     "sidebar": "auto",
