@@ -190,6 +190,15 @@
       "skillFolderHash": "3ffa3bc78b8aaa9a05d85f90d518400ef7d5a05f",
       "installedAt": "2026-09-11T00:37:48.312Z",
       "updatedAt": "2026-09-11T00:37:48.312Z"
+    },
+    "varlock": {
+      "source": "dmno-dev/varlock",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/dmno-dev/varlock.git",
+      "skillPath": "skills/varlock/SKILL.md",
+      "skillFolderHash": "3db2cd9981a6679f776071ff9c875bb5b1cba2b8",
+      "installedAt": "2026-09-11T00:51:41.625Z",
+      "updatedAt": "2026-09-11T00:51:41.625Z"
     }
   },
   "dismissed": {
