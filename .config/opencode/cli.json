@@ -5,7 +5,9 @@
   },
   "keybinds": {
     "session.message.user.previous": "alt+p,alt+k",
-    "session.message.user.next": "alt+n,alt+j"
+    "session.message.user.next": "alt+n,alt+j",
+    "session.messages_last_user": "alt+end",
+    "session.last": "ctrl+alt+g,end"
   },
   "attention": {
     "enabled": false
