@@ -341,10 +341,3 @@ fi
 if pgrep -x nu >/dev/null 2>&1; then
     echo "Note: Running Nushell sessions must run 'exec nu' or restart to reload history."
 fi
-
-# Import OpenCode chat transcripts restored from the archive
-SYNC_SCRIPT="$HOME/.config/yadm/scripts/opencode_sync.nu"
-if [ -x "$SYNC_SCRIPT" ] && command -v nu >/dev/null 2>&1; then
-    nu "$SYNC_SCRIPT" import ||
-        echo "Warning: OpenCode chat import failed." >&2
-fi
