@@ -2,60 +2,7 @@
 # Custom completions for zoxide's z and zi commands in Nushell
 # nu-version: 0.115.1
 
-# Quote a path that contains characters which would break out of a bare word,
-# mirroring how nu-cli escapes its own file completions.
-def "nu-complete zoxide escape" [path: string] {
-  if ($path =~ '[*?\[]') or ($path | str contains '`') {
-    # glob metacharacters and backticks: single quotes keep them literal
-    if ($path | str contains "'") {
-      $path | to nuon
-    } else {
-      $"'($path)'"
-    }
-  } else if ($path =~ "[\\s'\"#(){}|;]") or ($path | str contains ']') {
-    $"`($path)`"
-  } else {
-    $path
-  }
-}
-
-# Split a command line into words the way the parser does: whitespace separates
-# words and single or double quotes group their contents into one word (the
-# quote characters themselves are dropped). Returns the words plus the word the
-# cursor is inside, which is empty right after a separator.
-def "nu-complete zoxide words" [context: string] {
-  mut words = []
-  mut word = ''
-  mut quote = ''
-  mut separated = true
-  for char in ($context | split chars) {
-    if ($quote | is-not-empty) {
-      $separated = false
-      if $char == $quote {
-        $quote = ''
-      } else {
-        $word += $char
-      }
-    } else if $char == '"' or $char == "'" {
-      $separated = false
-      $quote = $char
-    } else if ($char =~ '\s') {
-      if ($word | is-not-empty) {
-        $words ++= [$word]
-        $word = ''
-      }
-      $separated = true
-    } else {
-      $separated = false
-      $word += $char
-    }
-  }
-  if ($word | is-not-empty) { $words ++= [$word] }
-  {
-    words: $words
-    token: (if $separated { '' } else { $word })
-  }
-}
+use ./completion-helpers.nu *
 
 # Directories that the word being completed names: `b` -> `bin` in the current
 # directory, `~/Pro` -> `~/Projects`, `Projects/ot` -> the children of
@@ -92,7 +39,7 @@ def "nu-complete zoxide dirs" [token: string] {
   | where type == 'dir'
   | where {|entry| ($entry.name | path basename) | str starts-with --ignore-case $parts.prefix }
   | get name
-  | each {|name| nu-complete zoxide escape ($name | path expand) }
+  | each {|name| nu-complete escape ($name | path expand) }
   | sort
 }
 
@@ -101,7 +48,7 @@ def "nu-complete zoxide dirs" [token: string] {
 # because both sources already decide what matches, and zoxide's order must be
 # preserved rather than re-sorted.
 def "nu-complete zoxide path" [context: string] {
-  let line = (nu-complete zoxide words $context)
+  let line = (nu-complete words $context)
   let words = ($line.words | skip 1)
   # While the cursor is still in the command name there is no word to complete.
   let token = (if ($words | is-empty) { '' } else { $line.token })
@@ -112,7 +59,7 @@ def "nu-complete zoxide path" [context: string] {
       | lines
       | where {|dir| $dir | is-not-empty }
       | first 100
-      | each {|dir| nu-complete zoxide escape $dir }
+      | each {|dir| nu-complete escape $dir }
     } catch {
       []
     }
