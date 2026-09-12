@@ -6,6 +6,7 @@ gh = "latest"
 node = "latest"
 opencode = "latest"
 railway = "latest"
+uv = "latest"
 
 [settings.upgrade]
 auto_prune = true
