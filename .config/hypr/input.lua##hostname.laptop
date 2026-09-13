@@ -14,6 +14,7 @@ hl.config({
     kb_options = "grp:caps_toggle,shift:both_capslock_cancel",
     touchpad = {
       scroll_factor = 0.2,
+      natural_scroll = true,
     },
   },
   gestures = {
