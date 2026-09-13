@@ -19,5 +19,8 @@
   },
   "debug": {
     "devtools": false
+  },
+  "diffs": {
+    "view": "split"
   }
 }
