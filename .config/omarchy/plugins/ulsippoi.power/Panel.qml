@@ -195,8 +195,16 @@ Panel {
 
   function sendLowBatteryWarning(level) {
     if (lowBatteryWarningProc.running) return
-    lowBatteryWarningProc.command = ["omarchy-battery-low", String(level)]
+    lowBatteryWarningProc.command = [root.batteryNotifyScript, String(level)]
     lowBatteryWarningProc.running = true
+  }
+
+  // Drop every low-battery toast on screen — whether this panel or the
+  // built-in battery service sent it — now that we're back on AC.
+  function clearLowBatteryNotifications() {
+    if (lowBatteryClearProc.running) return
+    lowBatteryClearProc.command = [root.batteryNotifyScript, "--clear"]
+    lowBatteryClearProc.running = true
   }
 
   function updateProfiles(raw) {
@@ -291,6 +299,12 @@ Panel {
     return Quickshell.env("HOME") + "/.config/omarchy/plugins/ulsippoi.power/battery-status.sh"
   }
 
+  readonly property string batteryNotifyScript: {
+    var resolved = Qt.resolvedUrl("battery-notify.sh").toString().replace(/^file:\/\//, "")
+    if (resolved && resolved.length > 0) return resolved
+    return Quickshell.env("HOME") + "/.config/omarchy/plugins/ulsippoi.power/battery-notify.sh"
+  }
+
   Process {
     id: batteryProc
     command: [root.batteryScript, "--shell"]
@@ -333,9 +347,16 @@ Panel {
     id: lowBatteryWarningProc
   }
 
+  Process {
+    id: lowBatteryClearProc
+  }
+
   Component.onCompleted: {
     root.refresh()
     root.checkLowBattery()
+    // A persistent critical toast is restored across shell restarts; if we
+    // come back up on AC it no longer applies.
+    if (batteryPresent && !UPower.onBattery) root.clearLowBatteryNotifications()
   }
 
   onBatteryFractionChanged: root.checkLowBattery()
@@ -353,6 +374,7 @@ Panel {
   Connections {
     target: UPower
     function onOnBatteryChanged() {
+      if (!UPower.onBattery) root.clearLowBatteryNotifications()
       root.refresh()
       root.checkLowBattery()
     }
