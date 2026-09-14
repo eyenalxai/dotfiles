@@ -16,8 +16,9 @@ import "Resources.js" as Resources
 //
 // The badge is icon-only; the tooltip carries the numbers. One module
 // definition backs every indicator so the sampling and presentation stay in a
-// single place. Left-click opens btop, or focuses it when it is already
-// running.
+// single place. Left-click opens btop (or focuses it when already running) for
+// CPU and RAM; the disk badge takes no click because btop has no disk-space
+// view.
 //
 // CPU usage is the busy share between two /proc/stat samples; RAM is
 // MemTotal - MemAvailable from /proc/meminfo, both read in-process through
@@ -49,7 +50,7 @@ BarWidget {
   readonly property bool ready: isDisk ? diskReady : isRam ? ramTotalKib > 0 : cpuReady
   readonly property real percent: isDisk ? diskPercent : isRam ? ramPercent : cpuPercent
   readonly property string tooltip: {
-    var hint = " · Click for btop"
+    var hint = isDisk ? "" : " · Click for btop"
     if (!ready) return label + hint
     if (isDisk) {
       var free = Resources.formatGib(diskFreeKib) + " GiB free"
@@ -96,7 +97,9 @@ BarWidget {
   property int memoryNotificationId: 0
   property bool memoryWarned: false
 
-  function openBtop() {
+  function activate() {
+    // btop has no disk-space view, so the disk badge hands the click nowhere.
+    if (root.isDisk) return
     if (root.bar) root.bar.run("omarchy-launch-or-focus-tui btop")
   }
 
@@ -203,7 +206,7 @@ BarWidget {
     text: root.glyph
     tooltipText: root.tooltip
     onPressed: function(button) {
-      if (button === Qt.LeftButton) root.openBtop()
+      if (button === Qt.LeftButton) root.activate()
     }
   }
 
