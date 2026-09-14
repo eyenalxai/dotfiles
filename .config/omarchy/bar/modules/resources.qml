@@ -35,6 +35,12 @@ import "Resources.js" as Resources
 // a critical notification, refreshes it in place at most once per
 // lowMemoryNotificationIntervalMs, and clears it when memory recovers. The
 // notification's click action opens btop.
+//
+// The disk instance mirrors that guard: free space at or below
+// lowDiskThresholdPercent for lowDiskSustainMs posts a critical notification
+// carrying btrfs's worst-case minimum when it constrains, refreshed at most
+// once per lowDiskNotificationIntervalMs and cleared when space recovers.
+// Its click action stays inert, like the badge's.
 BarWidget {
   id: root
 
@@ -49,23 +55,35 @@ BarWidget {
   readonly property string label: isDisk ? (mount === "/" ? "Disk" : "Disk " + mount) : isRam ? "RAM" : "CPU"
   readonly property bool ready: isDisk ? diskReady : isRam ? ramTotalKib > 0 : cpuReady
   readonly property real percent: isDisk ? diskPercent : isRam ? ramPercent : cpuPercent
+  // "42.3 GiB free (est.), min 22.5 GiB" — one description feeds the tooltip
+  // and the low-disk notification, so both read the btrfs numbers the same
+  // way. The min is btrfs's worst case when the remaining chunk profiles
+  // constrain allocation; it appears only when it is tighter than the
+  // estimate.
+  readonly property string diskFreeText: {
+    if (!diskReady) return ""
+    var free = Resources.formatGib(diskFreeKib) + " GiB free"
+    if (diskEstimated) free += " (est.)"
+    if (diskMinFreeKib >= 0 && diskMinFreeKib < diskFreeKib)
+      free += ", min " + Resources.formatGib(diskMinFreeKib) + " GiB"
+    return free
+  }
+
   readonly property string tooltip: {
     var hint = isDisk ? "" : " · Click for btop"
     if (!ready) return label + hint
-    if (isDisk) {
-      var free = Resources.formatGib(diskFreeKib) + " GiB free"
-      if (diskEstimated) free += " (est.)"
-      // The min is btrfs's worst case when the remaining profiles constrain
-      // allocation; show it only when it is actually tighter than the estimate.
-      if (diskMinFreeKib >= 0 && diskMinFreeKib < diskFreeKib)
-        free += ", min " + Resources.formatGib(diskMinFreeKib) + " GiB"
-      return label + " " + diskPercent.toFixed(1) + "% · " + free + hint
-    }
+    if (isDisk)
+      return label + " " + diskPercent.toFixed(1) + "% · " + diskFreeText + hint
     if (isRam)
       return label + " " + ramPercent.toFixed(1) + "% · "
         + Resources.formatGib(ramAvailableKib) + " GiB available" + hint
     return label + " " + cpuPercent.toFixed(1) + "%" + hint
   }
+
+  // The low-disk toast reuses the badge's wording; the summary is also what
+  // the dismiss call matches on.
+  readonly property string diskNotificationSummary: label + " is almost full"
+  readonly property string diskNotificationBody: diskFreeText + " · " + Math.round(diskPercent) + "% used"
 
   // Memory guard thresholds: warn under 10% available, ignore blips shorter
   // than a few samples, and refresh the toast (same as the low-battery
@@ -73,6 +91,14 @@ BarWidget {
   readonly property int lowMemoryThresholdPercent: 10
   readonly property int lowMemorySustainMs: 3 * 1000
   readonly property int lowMemoryNotificationIntervalMs: 5 * 60 * 1000
+
+  // Disk guard thresholds: samples land a minute apart, so one sampling
+  // interval of low readings (two samples) is the sustain. Disks fill far
+  // slower than RAM, so the toast refreshes every half hour, not every five
+  // minutes.
+  readonly property int lowDiskThresholdPercent: 10
+  readonly property int lowDiskSustainMs: 60 * 1000
+  readonly property int lowDiskNotificationIntervalMs: 30 * 60 * 1000
 
   property real cpuPercent: 0
   property real ramPercent: 0
@@ -85,6 +111,7 @@ BarWidget {
   // does not own. minFreeKib is -1 when btrfs reports no minimum.
   property real diskPercent: 0
   property real diskFreeKib: 0
+  property real diskTotalKib: 0
   property real diskMinFreeKib: -1
   property bool diskReady: false
   property bool diskEstimated: false
@@ -96,6 +123,11 @@ BarWidget {
   property double lastMemoryNotificationAt: 0
   property int memoryNotificationId: 0
   property bool memoryWarned: false
+  // Disk guard state, mirroring the memory guard.
+  property double diskLowSince: 0
+  property double lastDiskNotificationAt: 0
+  property int diskNotificationId: 0
+  property bool diskWarned: false
 
   function activate() {
     // btop has no disk-space view, so the disk badge hands the click nowhere.
@@ -135,10 +167,12 @@ BarWidget {
   function applyDiskUsage(usage, estimated) {
     if (!usage) return false
     root.diskFreeKib = usage.freeKib
+    root.diskTotalKib = usage.totalKib
     root.diskMinFreeKib = usage.minFreeKib
     root.diskPercent = Resources.usedPercent(usage.totalKib, usage.freeKib)
     root.diskEstimated = estimated
     root.diskReady = true
+    root.checkLowDisk()
     return true
   }
 
@@ -194,6 +228,41 @@ BarWidget {
     root.memoryWarned = false
     root.memoryNotificationId = 0
     memoryDismissProc.running = true
+  }
+
+  function checkLowDisk() {
+    if (!Resources.isDiskLow(root.diskFreeKib, root.diskTotalKib, root.lowDiskThresholdPercent)) {
+      root.diskLowSince = 0
+      root.clearLowDiskNotification()
+      return
+    }
+
+    var now = Date.now()
+    if (root.diskLowSince === 0) root.diskLowSince = now
+    // Like memory, only a sustained drop is worth a critical alert. Disk
+    // samples are a minute apart, so this fires on the second low reading.
+    if (now - root.diskLowSince < root.lowDiskSustainMs) return
+    if (!Resources.notificationIntervalElapsed(root.lastDiskNotificationAt, now, root.lowDiskNotificationIntervalMs)) return
+
+    root.lastDiskNotificationAt = now
+    root.sendLowDiskNotification()
+  }
+
+  function sendLowDiskNotification() {
+    if (diskNotifyProc.running) return
+    var command = ["omarchy-notification-send", "-p", "-u", "critical", "-g", root.glyph]
+    if (root.diskNotificationId > 0) command = command.concat(["-r", String(root.diskNotificationId)])
+    command = command.concat([root.diskNotificationSummary, root.diskNotificationBody])
+    diskNotifyProc.command = command
+    root.diskWarned = true
+    diskNotifyProc.running = true
+  }
+
+  function clearLowDiskNotification() {
+    if (!root.diskWarned || diskNotifyProc.running || diskDismissProc.running) return
+    root.diskWarned = false
+    root.diskNotificationId = 0
+    diskDismissProc.running = true
   }
 
   implicitWidth: button.implicitWidth
@@ -284,5 +353,21 @@ BarWidget {
   Process {
     id: memoryDismissProc
     command: ["omarchy-notification-dismiss", "Memory is almost full"]
+  }
+
+  Process {
+    id: diskNotifyProc
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var id = parseInt(String(text || "").trim(), 10)
+        if (!isNaN(id) && id > 0) root.diskNotificationId = id
+      }
+    }
+  }
+
+  Process {
+    id: diskDismissProc
+    command: ["omarchy-notification-dismiss", root.diskNotificationSummary]
   }
 }

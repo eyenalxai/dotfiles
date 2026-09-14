@@ -2,7 +2,7 @@
 //
 // CPU and RAM are sampled in-process from /proc (Quickshell FileView); disk
 // usage comes from btrfs or df, whichever the mount understands. The QML side
-// stays presentation-only so the parsing, the math and the low-memory
+// stays presentation-only so the parsing, the math and the low-space
 // notification policy can be reasoned about — and exercised — on their own.
 
 // One sample of the aggregate CPU counters from /proc/stat's `cpu` line:
@@ -45,15 +45,22 @@ function parseMeminfo(raw) {
   return memory
 }
 
-// Available memory as a percentage of total, or -1 when a sample is unusable.
-function memoryAvailablePercent(availableKib, totalKib) {
-  if (!(totalKib > 0) || !(availableKib >= 0)) return -1
-  return availableKib / totalKib * 100
+// Free share of a total, in percent, or -1 when a sample is unusable. Memory
+// calls this "available" and disks call it "free"; the guard math is the same.
+function freePercent(freeKib, totalKib) {
+  if (!(totalKib > 0) || !(freeKib >= 0)) return -1
+  return freeKib / totalKib * 100
 }
 
 // True while free memory sits at or below `thresholdPercent` of total.
 function isMemoryLow(availableKib, totalKib, thresholdPercent) {
-  var percent = memoryAvailablePercent(availableKib, totalKib)
+  var percent = freePercent(availableKib, totalKib)
+  return percent >= 0 && percent <= thresholdPercent
+}
+
+// True while free disk space sits at or below `thresholdPercent` of total.
+function isDiskLow(freeKib, totalKib, thresholdPercent) {
+  var percent = freePercent(freeKib, totalKib)
   return percent >= 0 && percent <= thresholdPercent
 }
 
@@ -135,8 +142,9 @@ if (typeof module !== "undefined") {
     parseCpuStat: parseCpuStat,
     cpuUsage: cpuUsage,
     parseMeminfo: parseMeminfo,
-    memoryAvailablePercent: memoryAvailablePercent,
+    freePercent: freePercent,
     isMemoryLow: isMemoryLow,
+    isDiskLow: isDiskLow,
     usedPercent: usedPercent,
     parseBtrfsUsage: parseBtrfsUsage,
     parseDf: parseDf,
