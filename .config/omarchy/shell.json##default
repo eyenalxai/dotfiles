@@ -73,5 +73,15 @@
       ]
     }
   },
-  "plugins": []
+  "plugins": [
+    {
+      "id": "ulsippoi.notifications"
+    }
+  ],
+  "disabledPlugins": [
+    "omarchy.notifications"
+  ],
+  "cloneSourceRestores": [
+    "ulsippoi.notifications"
+  ]
 }
