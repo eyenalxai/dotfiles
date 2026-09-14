@@ -56,6 +56,18 @@
           "id": "omarchy.monitor"
         },
         {
+          "id": "cpu",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/resources.qml",
+          "metric": "cpu"
+        },
+        {
+          "id": "ram",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/resources.qml",
+          "metric": "ram"
+        },
+        {
           "id": "ulsippoi.power"
         }
       ]
