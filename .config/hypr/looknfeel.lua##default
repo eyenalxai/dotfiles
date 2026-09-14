@@ -5,6 +5,25 @@
 -- overrides that tag to fully opaque while leaving app-specific rules alone.
 o.window({ tag = "default-opacity" }, { opacity = "1 1" })
 
+-- Ghostty keeps 90% opacity so the desktop shows through it. This comes after
+-- the tag rule above on purpose: the last matching rule wins.
+o.window("com.mitchellh.ghostty", { opacity = "0.9 0.9" })
+
+-- Blur whatever sits behind translucent windows. Every other window is pinned
+-- opaque above, so in practice only Ghostty shows this. Ghostty must declare
+-- the blur region itself (background-blur = true in its config); Hyprland
+-- deliberately skips the backdrop blur for windows that speak
+-- ext-background-effect-v1 without declaring a region.
+hl.config({
+  decoration = {
+    blur = {
+      enabled = true,
+      size = 10,
+      passes = 2,
+    },
+  },
+})
+
 -- https://wiki.hypr.land/Configuring/Basics/Variables/#general
 -- hl.config({
 --   general = {

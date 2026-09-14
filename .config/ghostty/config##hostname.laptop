@@ -12,6 +12,11 @@ window-padding-y = 14
 confirm-close-surface=false
 resize-overlay = never
 
+# Backdrop blur. Hyprland does the actual blurring (decoration.blur in
+# looknfeel.lua); Ghostty just has to declare the blur region, otherwise
+# Hyprland skips the backdrop blur entirely for its windows.
+background-blur = true
+
 # Cursor styling
 cursor-style = "block"
 cursor-style-blink = false
