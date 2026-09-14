@@ -1,0 +1,10 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+
+# VCS package: track the upstream development branch commit instead of tags.
+[rift]
+source = "git"
+git = "https://github.com/anomalyco/rift.git"
+use_commit = true
+branch = "dev"

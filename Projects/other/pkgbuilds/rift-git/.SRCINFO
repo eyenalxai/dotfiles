@@ -1,0 +1,23 @@
+pkgbase = rift-git
+	pkgdesc = Copy-on-write workspaces as a faster alternative to git worktrees
+	pkgver = 0.0.10.r2.g757a22c
+	pkgrel = 1
+	url = https://github.com/anomalyco/rift
+	arch = x86_64
+	license = MIT
+	makedepends = cargo
+	makedepends = git
+	makedepends = libgit2
+	makedepends = pkgconf
+	depends = gcc-libs
+	depends = glibc
+	depends = libgit2
+	provides = rift
+	conflicts = rift
+	conflicts = rift-bin
+	options = !debug
+	options = !lto
+	source = rift::git+file:///home/ulezot/Projects/other/rift
+	sha256sums = SKIP
+
+pkgname = rift-git

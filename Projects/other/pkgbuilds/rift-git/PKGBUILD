@@ -1,0 +1,47 @@
+# Maintainer: ulezot
+
+_pkgname=rift
+pkgname=$_pkgname-git
+pkgver=0.0.10.r2.g757a22c
+pkgrel=1
+pkgdesc="Copy-on-write workspaces as a faster alternative to git worktrees"
+arch=('x86_64')
+url="https://github.com/anomalyco/rift"
+license=('MIT')
+
+depends=('gcc-libs' 'glibc' 'libgit2')
+
+makedepends=('cargo' 'git' 'libgit2' 'pkgconf')
+
+provides=("$_pkgname")
+conflicts=("$_pkgname" "$_pkgname-bin")
+
+# !lto: makepkg's -flto CFLAGS break the bundled SQLite C objects at link time
+# !debug: cargo release builds carry no debug info, so the debug package is empty
+options=('!debug' '!lto')
+
+# If building from a local repository checkout, use it; otherwise clone from GitHub
+_local_repo="/home/ulezot/Projects/other/rift"
+if [ -d "$_local_repo/.git" ]; then
+  source=("$_pkgname::git+file://$_local_repo")
+else
+  source=("$_pkgname::git+https://github.com/anomalyco/rift.git")
+fi
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/$_pkgname"
+  git describe --long --tags --abbrev=7 HEAD 2>/dev/null |
+    sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ||
+    printf "0.0.10.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+build() {
+  cd "$srcdir/$_pkgname"
+  cargo build --release --locked
+}
+
+package() {
+  cd "$srcdir/$_pkgname"
+  install -Dm755 "target/release/rift" "$pkgdir/usr/bin/rift"
+}
