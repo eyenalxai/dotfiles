@@ -63,3 +63,6 @@ if ($starship_config | path exists) {
 
 # Go path
 $env.GOPATH = $"($env.HOME)/go"
+
+# Ghidra install (used by gmcp/GhidraMCP for PS2 R5900 analysis)
+$env.GHIDRA_INSTALL_DIR = "/opt/ghidra"
