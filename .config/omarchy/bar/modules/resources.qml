@@ -44,7 +44,7 @@ BarWidget {
   readonly property string mount: String(setting("mount", "/"))
   // nf-fa-microchip / nf-fa-memory / nf-fa-hard-drive. The RAM stick stays
   // visibly apart from the CPU and the drive at bar size.
-  readonly property string glyph: isDisk ? "" : isRam ? "" : ""
+  readonly property string glyph: isDisk ? "" : isRam ? "" : ""
   readonly property string label: isDisk ? (mount === "/" ? "Disk" : "Disk " + mount) : isRam ? "RAM" : "CPU"
   readonly property bool ready: isDisk ? diskReady : isRam ? ramTotalKib > 0 : cpuReady
   readonly property real percent: isDisk ? diskPercent : isRam ? ramPercent : cpuPercent
