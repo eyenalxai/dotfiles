@@ -10,10 +10,6 @@
 path=/home/ulsippoi/Mail
 mail_root=/home/ulsippoi/Mail
 
-[user]
-name=Sax Dhiut
-primary_email=REDACTED
-
 [new]
 tags=unread;inbox;
 ignore=/^[.].*$|/[.].*$/

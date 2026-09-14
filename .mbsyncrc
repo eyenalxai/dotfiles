@@ -4,15 +4,13 @@
 # individual IMAP accounts, so the local store is bounded by your inboxes.
 #
 # Archiving or deleting on the server drops the local copy on the next run
-# (Expunge Both). Credentials come from the same 1Password-backed cache that
-# aerc uses; see ~/.config/aerc/get-cred.nu.
-#
-# Kept out of the dotfiles repo on purpose: unlike the rest of the mail
-# config, it contains the account addresses.
+# (Expunge Both). Both the login name and the password are read from
+# 1Password at run time through ~/.config/aerc/get-cred.nu (cached in the
+# login keyring), so no addresses live in this file.
 
 IMAPAccount personal
 Host imap.migadu.com
-User REDACTED
+UserCmd "nu --no-config-file ~/.config/aerc/get-cred.nu op://Private/Migadu/username"
 PassCmd "nu --no-config-file ~/.config/aerc/get-cred.nu op://Private/Migadu/main-mailbox-password"
 TLSType IMAPS
 
@@ -34,7 +32,7 @@ SyncState *
 
 IMAPAccount gmail
 Host imap.gmail.com
-User REDACTED
+UserCmd "nu --no-config-file ~/.config/aerc/get-cred.nu op://Private/dtulitrcicexylmwntwjup42qe/username"
 PassCmd "nu --no-config-file ~/.config/aerc/get-cred.nu op://Private/dtulitrcicexylmwntwjup42qe/apppassword"
 TLSType IMAPS
 
