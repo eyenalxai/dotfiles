@@ -8,6 +8,7 @@
 
 [database]
 path=/home/ulsippoi/Mail
+mail_root=/home/ulsippoi/Mail
 
 [user]
 name=Sax Dhiut
