@@ -1,0 +1,21 @@
+# notmuch database for the inbox mirror created by mbsync (~/.mbsyncrc).
+# aerc's [Unified] account uses this via source = notmuch://.
+#
+# maildir.synchronize_flags keeps notmuch tags and maildir flags (read state)
+# in sync, so :read in aerc becomes \Seen on the IMAP servers after mbsync.
+# The ignore regex keeps mbsync's .mbsyncstate/.uidvalidity bookkeeping files
+# out of the database.
+
+[database]
+path=/home/ulsippoi/Mail
+
+[user]
+name=Sax Dhiut
+primary_email=REDACTED
+
+[new]
+tags=unread;inbox;
+ignore=/^[.].*$|/[.].*$/
+
+[maildir]
+synchronize_flags=true
