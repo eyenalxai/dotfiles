@@ -46,7 +46,7 @@
             "output": ["text"]
           },
           "limit": {
-            "context": 1048576,
+            "context": 256000,
             "output": 384000
           },
           "cost": {
