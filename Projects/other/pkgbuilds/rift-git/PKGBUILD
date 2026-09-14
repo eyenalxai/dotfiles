@@ -20,13 +20,7 @@ conflicts=("$_pkgname" "$_pkgname-bin")
 # !debug: cargo release builds carry no debug info, so the debug package is empty
 options=('!debug' '!lto')
 
-# If building from a local repository checkout, use it; otherwise clone from GitHub
-_local_repo="/home/ulezot/Projects/other/rift"
-if [ -d "$_local_repo/.git" ]; then
-  source=("$_pkgname::git+file://$_local_repo")
-else
-  source=("$_pkgname::git+https://github.com/anomalyco/rift.git")
-fi
+source=("$_pkgname::git+https://github.com/anomalyco/rift.git")
 sha256sums=('SKIP')
 
 pkgver() {

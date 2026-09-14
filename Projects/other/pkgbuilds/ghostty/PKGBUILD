@@ -41,13 +41,7 @@ makedepends=(
   'zig>=0.16.0'
 )
 
-# If building from a local repository checkout, use it; otherwise clone from GitHub
-_local_repo="/home/ulezot/Projects/other/ghostty"
-if [ -d "$_local_repo/.git" ]; then
-  source=("$_pkgbase::git+file://$_local_repo")
-else
-  source=("$_pkgbase::git+https://github.com/ghostty-org/$_pkgbase.git")
-fi
+source=("$_pkgbase::git+https://github.com/ghostty-org/$_pkgbase.git")
 sha256sums=('SKIP')
 
 pkgver() {

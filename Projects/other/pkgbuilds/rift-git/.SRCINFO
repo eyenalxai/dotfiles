@@ -17,7 +17,7 @@ pkgbase = rift-git
 	conflicts = rift-bin
 	options = !debug
 	options = !lto
-	source = rift::git+file:///home/ulezot/Projects/other/rift
+	source = rift::git+https://github.com/anomalyco/rift.git
 	sha256sums = SKIP
 
 pkgname = rift-git

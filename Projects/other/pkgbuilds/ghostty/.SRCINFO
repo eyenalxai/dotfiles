@@ -35,7 +35,7 @@ pkgbase = ghostty-git
 	depends = wayland
 	depends = libwayland-client.so
 	depends = zlib
-	source = ghostty::git+file:///home/ulezot/Projects/other/ghostty
+	source = ghostty::git+https://github.com/ghostty-org/ghostty.git
 	sha256sums = SKIP
 
 pkgname = ghostty-git

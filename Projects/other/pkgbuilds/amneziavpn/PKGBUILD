@@ -48,13 +48,7 @@ conflicts=("$_pkgname" "$_pkgname-bin")
 options=('!debug')
 install="$_pkgname.install"
 
-# If building from a local repository checkout, use it; otherwise clone from GitHub
-_local_repo="/home/ulezot/Projects/other/amnezia-client"
-if [ -d "$_local_repo/.git" ]; then
-  source=("amnezia-client::git+file://$_local_repo")
-else
-  source=("amnezia-client::git+https://github.com/amnezia-vpn/amnezia-client.git#branch=dev")
-fi
+source=("amnezia-client::git+https://github.com/amnezia-vpn/amnezia-client.git#branch=dev")
 sha256sums=('SKIP')
 
 pkgver() {
