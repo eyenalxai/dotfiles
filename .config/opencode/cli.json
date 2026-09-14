@@ -15,12 +15,25 @@
   "session": {
     "sidebar": "auto",
     "scrollbar": true,
-    "thinking": "hide"
+    "thinking": "hide",
+    "new_location": "launch"
   },
   "debug": {
     "devtools": false
   },
   "diffs": {
     "view": "split"
+  },
+  "tabs": {
+    "scope": "cwd",
+    "layout": "horizontal",
+    "indicators": "status"
+  },
+  "prompt": {
+    "paste": "full",
+    "image_preview": true
+  },
+  "terminal": {
+    "copy": "manual"
   }
 }
