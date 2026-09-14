@@ -10,23 +10,33 @@
 # Instead the secret is read from 1Password once and cached in the login
 # keyring; later calls are served from there without any prompt.
 #
+# Both the keyring and 1Password calls are bounded by a timeout, so an
+# unanswered unlock or authorization prompt makes this command fail with an
+# error instead of blocking its caller (mbsync exits non-zero; aerc reports
+# the failure and retries on the next check).
+#
 # After rotating the password in 1Password, refresh the cached copy with:
 #   nu ~/.config/aerc/get-cred.nu --refresh op://Private/Migadu/main-mailbox-password
 
 const SERVICE = "aerc-secret"
+const KEYRING_TIMEOUT = 30
+const OP_TIMEOUT = 90
 
 def keyring-lookup [ref: string]: nothing -> string {
-  let r = (^secret-tool lookup $SERVICE $ref | complete)
+  let r = (^timeout $KEYRING_TIMEOUT secret-tool lookup $SERVICE $ref | complete)
   if $r.exit_code == 0 { $r.stdout | str trim } else { "" }
 }
 
 def keyring-store [ref: string, secret: string] {
-  $secret | ^secret-tool store --label $"aerc: ($ref)" $SERVICE $ref | complete | ignore
+  $secret | ^timeout $KEYRING_TIMEOUT secret-tool store --label $"aerc: ($ref)" $SERVICE $ref | complete | ignore
 }
 
 def read-op [ref: string]: nothing -> string {
-  let r = (^op read $ref | complete)
+  let r = (^timeout $OP_TIMEOUT op read $ref | complete)
   if $r.exit_code != 0 {
+    if $r.exit_code == 124 {
+      error make { msg: $"timed out after ($OP_TIMEOUT)s waiting for 1Password; approve the prompt and retry" }
+    }
     let why = ($r.stderr | str trim)
     error make { msg: (if ($why | is-empty) { $"op read failed for ($ref)" } else { $why }) }
   }
