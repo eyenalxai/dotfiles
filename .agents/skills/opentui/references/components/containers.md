@@ -30,19 +30,14 @@ box.add(child)
 
 <box
   border
-  borderStyle="single"    // single | double | rounded | bold | none
+  borderStyle="single"    // single | double | rounded | heavy
   borderColor="#FFFFFF"
 >
   Styled border
 </box>
 
-// Individual borders
-<box
-  borderTop
-  borderBottom
-  borderLeft={false}
-  borderRight={false}
->
+// Selected sides
+<box border={["top", "bottom"]}>
   Top and bottom only
 </box>
 ```
@@ -54,7 +49,7 @@ box.add(child)
 | `single` | `┌─┐│ │└─┘` |
 | `double` | `╔═╗║ ║╚═╝` |
 | `rounded` | `╭─╮│ │╰─╯` |
-| `bold` | `┏━┓┃ ┃┗━┛` |
+| `heavy` | `┏━┓┃ ┃┗━┛` |
 
 ### Title
 
@@ -62,11 +57,22 @@ box.add(child)
 <box
   border
   title="Settings"
-  titleAlignment="center"   // left | center | right
+  titleColor="#FFCC00"          // Title text color (defaults to border color)
+  titleAlignment="center"       // left | center | right
+  bottomTitle="Press q to quit" // Title text in the bottom border
+  bottomTitleAlignment="right"  // left | center | right
 >
   Panel content
 </box>
 ```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | – | Title text in the top border |
+| `titleColor` | `string \| RGBA` | border color | Color of the title text |
+| `titleAlignment` | `"left" \| "center" \| "right"` | `"left"` | Top title position |
+| `bottomTitle` | `string` | – | Title text in the bottom border |
+| `bottomTitleAlignment` | `"left" \| "center" \| "right"` | `"left"` | Bottom title position |
 
 ### Background
 
@@ -253,7 +259,94 @@ scrollbox.scrollTo(0)           // Scroll to top
 scrollbox.scrollTo(100)         // Scroll to position
 scrollbox.scrollBy(10)          // Scroll relative
 scrollbox.scrollToBottom()      // Scroll to end
+
+// Scroll a child into view (nearest alignment)
+scrollbox.scrollChildIntoView("child-id")  // Searches descendants by ID
 ```
+
+`scrollChildIntoView(childId)` scrolls the minimum amount needed to make the identified descendant visible. It mirrors `Element.scrollIntoView({ block: "nearest" })` from the CSSOM View spec. Works with nested descendants and handles both horizontal and vertical scrolling.
+
+## ScrollBar Component
+
+A **standalone** scrollbar (separate from `scrollbox`) with optional arrows, a
+draggable thumb, and keyboard navigation. `ScrollBarRenderable` is exported from
+`@opentui/core`. Connect it to any content by wiring its size/position props.
+
+```typescript
+import { ScrollBarRenderable } from "@opentui/core"
+
+const scrollbar = new ScrollBarRenderable(renderer, {
+  id: "scrollbar",
+  orientation: "vertical",   // "vertical" | "horizontal"
+  showArrows: false,
+  scrollSize: 0,             // Total content size
+  viewportSize: 0,           // Visible size
+  scrollPosition: 0,         // Current position
+  onChange: (position) => {
+    // Sync your content to the new scroll position
+  },
+})
+
+// Drive it from your content dimensions, then focus for keyboard control
+scrollbar.scrollSize = content.length
+scrollbar.viewportSize = visibleRows
+scrollbar.scrollPosition = 0
+scrollbar.focus()
+```
+
+| Prop | Type | Default |
+|------|------|---------|
+| `orientation` | `"vertical" \| "horizontal"` | – |
+| `showArrows` | `boolean` | `false` |
+| `arrowOptions` | `ArrowOptions` | – |
+| `trackOptions` | `Partial<SliderOptions>` | – |
+| `scrollSize` | `number` | `0` |
+| `viewportSize` | `number` | `0` |
+| `scrollPosition` | `number` | `0` |
+| `scrollStep` | `number` | – |
+| `onChange` | `(position: number) => void` | – |
+
+When focused: arrows / `hjkl`, `PageUp`/`PageDown`, `Home`/`End`.
+
+> Most apps should use `scrollbox` (which embeds a scrollbar). Reach for
+> `ScrollBarRenderable` only when you need a scrollbar decoupled from a
+> `scrollbox` viewport.
+
+## Embedded Terminal Component
+
+`EmbeddedTerminalRenderable` is a Core-only Ghostty VT parser and screen. It is
+not a process or PTY: write child output into it and send `onData` bytes back to
+the child.
+
+```typescript
+import { EmbeddedTerminalRenderable } from "@opentui/core"
+
+const terminal = new EmbeddedTerminalRenderable(renderer, {
+  width: 80,
+  height: 24,
+  maxScrollback: 10_000, // Bytes, not lines
+  onData(data, source) {
+    child.write(data)    // source is "input" or "response"
+  },
+  onTerminalResize(cols, rows) {
+    child.resize(cols, rows)
+  },
+})
+
+renderer.root.add(terminal)
+terminal.write(childOutput) // string | Uint8Array
+terminal.focus()
+```
+
+Key methods are `write()`, `encodeKey()`, `encodePaste()`, `screen()`,
+`invalidate()`, `focus()`, and `blur()`. The renderable handles focused key,
+paste, mouse, cursor, scrollback, and selection behavior. `selectable` defaults
+to `true`; `cols`/`rows` default to numeric layout dimensions or `80x24`.
+Destroy the child and renderable together.
+
+React and Solid do not register an element for this component. Use Core or
+register an adapter with `extend()`; catalogue registration alone cannot supply
+non-default constructor-only `cols`, `rows`, or `maxScrollback` in Solid.
 
 ## Composition Patterns
 
@@ -269,9 +362,7 @@ function Card({ title, children }) {
       marginBottom={1}
     >
       {title && (
-        <text fg="#00FFFF" bold>
-          {title}
-        </text>
+        <text fg="#00FFFF"><strong>{title}</strong></text>
       )}
       <box marginTop={title ? 1 : 0}>
         {children}
@@ -294,11 +385,11 @@ function Panel({ title, children, width = 40 }) {
     >
       {title && (
         <box
-          borderBottom
+          border={["bottom"]}
           padding={1}
           backgroundColor="#2a2a4e"
         >
-          <text bold>{title}</text>
+          <text><strong>{title}</strong></text>
         </box>
       )}
       <box padding={2}>

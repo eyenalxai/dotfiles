@@ -41,6 +41,8 @@ input.focus()
 ```tsx
 <input
   width={30}
+  maxLength={100}                // Maximum characters
+  minLength={3}                  // Minimum length for submit() to succeed
   backgroundColor="#1a1a1a"
   textColor="#FFFFFF"
   cursorColor="#00FF00"
@@ -48,6 +50,10 @@ input.focus()
   placeholderColor="#666666"
 />
 ```
+
+> **`minLength`** (default `0`) does not block typing — it only makes `submit()`
+> (Enter) fail silently while the value is shorter than `minLength`. Setting
+> `minLength > maxLength` throws.
 
 ### Events
 
@@ -102,20 +108,9 @@ Multi-line text input field.
 ### Basic Usage
 
 ```tsx
-// React
+// React / Solid (Textarea is imperative, not a controlled input)
 <textarea
-  value={text}
-  onChange={(newText) => setText(newText)}
-  placeholder="Enter multiple lines..."
-  width={40}
-  height={10}
-  focused
-/>
-
-// Solid
-<textarea
-  value={text()}
-  onInput={(newText) => setText(newText)}
+  initialValue="Draft text"
   placeholder="Enter multiple lines..."
   width={40}
   height={10}
@@ -135,22 +130,35 @@ const textarea = new TextareaRenderable(renderer, {
 
 ```tsx
 <textarea
-  showLineNumbers        // Display line numbers
-  wrapText              // Wrap long lines
-  readOnly              // Disable editing
-  tabSize={2}           // Tab character width
+  initialValue="Draft"
+  wrapMode="word"       // "none" | "char" | "word"
+  selectionOccupancy="boundary" // Half-open insert-style selection
+  cursorStyle={{ style: "line" }}
 />
 ```
 
-### Syntax Highlighting
+Textarea does not expose controlled `value`/`onChange`, `language`,
+`showLineNumbers`, `readOnly`, `wrapText`, or `tabSize` props. Keep a renderable
+ref, use `plainText`/`setText()`, and listen with `onContentChange`. For syntax
+highlighting, create and pass a `SyntaxStyle`; compose a
+`LineNumberRenderable` when line numbers are needed.
 
-```tsx
-<textarea
-  language="typescript"
-  value={code}
-  onChange={setCode}
-/>
+### Cursor, Selection, and Tab Width
+
+```typescript
+textarea.gotoVisualLineEnd({ select: true })
+textarea.setSelection(start, end)          // Half-open [start, end)
+textarea.setSelectionInclusive(start, end) // Includes end grapheme in cell mode
+textarea.clearSelection()
+
+textarea.editBuffer.setTabWidth(4)
+console.log(textarea.editBuffer.getTabWidth())
 ```
+
+`selectionOccupancy` is `"cell"` (default, both endpoint cells) or
+`"boundary"` (half-open insertion range). Cursor style only changes paint; use
+boundary occupancy with a line/bar cursor when insert-style selection is
+desired.
 
 ## Select Component
 
@@ -215,17 +223,22 @@ interface SelectOption {
   height={8}                    // Visible height
   selectedIndex={0}             // Initially selected
   showScrollIndicator           // Show scroll arrows
+  showSelectionIndicator={true} // Show "▶ " marker + gutter (default true)
   selectedBackgroundColor="#333"
   selectedTextColor="#fff"
-  highlightBackgroundColor="#444"
 />
 ```
+
+> **`showSelectionIndicator`** (default `true`): when `false`, the `▶ ` marker is
+> hidden AND its 2-column gutter is reclaimed, so option text shifts left by 2.
+> In Core, toggle at runtime with `select.showSelectionIndicator = false`.
 
 ### Navigation
 
 Default keybindings:
 - `Up` / `k` - Move up
 - `Down` / `j` - Move down
+- `Shift+Up` / `Shift+Down` - Move by `fastScrollStep` (default 5)
 - `Enter` - Select item
 
 ### Events
@@ -345,6 +358,40 @@ Default keybindings:
 - `Right` / `]` - Next tab
 - `Enter` - Select tab
 
+## Slider Component
+
+A draggable value slider (`SliderRenderable`, exported from `@opentui/core`).
+
+```typescript
+// Core
+import { SliderRenderable, createCliRenderer } from "@opentui/core"
+
+const slider = new SliderRenderable(renderer, {
+  id: "volume",
+  orientation: "horizontal",   // "horizontal" | "vertical"
+  width: 30,
+  height: 1,
+  min: 0,
+  max: 100,
+  value: 25,
+  onChange: (value) => console.log("Value:", value),
+})
+renderer.root.add(slider)
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `orientation` | `"vertical" \| "horizontal"` | – | Required direction |
+| `value` | `number` | `min` | Current value |
+| `min` | `number` | `0` | Minimum |
+| `max` | `number` | `100` | Maximum |
+| `viewPortSize` | `number` | range × 0.1 | Thumb size relative to content |
+| `backgroundColor` | `string \| RGBA` | – | Track color |
+| `foregroundColor` | `string \| RGBA` | – | Thumb color |
+| `onChange` | `(value: number) => void` | – | Fired on change |
+
+Vertical example: `{ orientation: "vertical", width: 2, height: 10, min: 0, max: 1, value: 0.5 }`.
+
 ## Focus Management
 
 ### Single Focused Input
@@ -388,7 +435,7 @@ function Form() {
 ```typescript
 input.focus()      // Give focus
 input.blur()       // Remove focus
-input.isFocused()  // Check focus state
+input.focused      // Check focus state
 ```
 
 ## Form Patterns

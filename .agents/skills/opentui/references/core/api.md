@@ -10,7 +10,8 @@ Creates and initializes the CLI renderer.
 import { createCliRenderer, type CliRendererConfig } from "@opentui/core"
 
 const renderer = await createCliRenderer({
-  targetFPS: 60,              // Target frames per second
+  targetFps: 30,              // Continuous rendering target (default: 30)
+  maxFps: 60,                 // Cap immediate re-renders (default: 60)
   exitOnCtrlC: true,          // Exit process on Ctrl+C
   consoleOptions: {           // Debug console overlay
     position: ConsolePosition.BOTTOM,
@@ -20,6 +21,42 @@ const renderer = await createCliRenderer({
   onDestroy: () => {},        // Cleanup callback
 })
 ```
+
+#### Custom stdin/stdout (SSH, PTY, xterm.js)
+
+`CliRendererConfig` accepts custom streams so the renderer can drive a transport
+other than the local terminal. When `stdout` is not `process.stdout`, native
+frame bytes are routed through an internal `NativeSpanFeed`.
+
+```typescript
+const renderer = await createCliRenderer({
+  stdin,                      // NodeJS.ReadStream (default: process.stdin)
+  stdout,                     // NodeJS.WriteStream (default: process.stdout)
+  width: cols,                // Fallback columns for non-TTY / custom stdout
+  height: rows,               // Fallback rows for non-TTY / custom stdout
+  remote: true,               // Treat output as a remote terminal (auto-detects SSH/mosh for process.stdout)
+  forwardEnvKeys: [],         // Local env names forwarded to remote capability detection
+  exitOnCtrlC: false,
+})
+
+// SIGWINCH is only auto-registered for process.stdout — call resize() manually
+// when an external terminal reports a new size:
+renderer.resize(newCols, newRows)
+
+// Each stdin/stdout object may be owned by one renderer at a time. destroy()
+// releases ownership and restores stdout.write. Allow a microtask to flush
+// feed-backed bytes before closing the transport:
+renderer.destroy()
+await new Promise<void>((resolve) => queueMicrotask(resolve))
+```
+
+Size resolution order: `stdout.columns/rows` → `config.width/height` → `80x24`.
+Env overrides: `OTUI_OVERRIDE_STDOUT` (force stdout routing),
+`OTUI_USE_ALTERNATE_SCREEN`.
+
+A feed-backed custom `stdout` defaults to `remote: true` and forwards no local
+environment values. Pass only terminal-related names that genuinely describe
+the remote terminal in `forwardEnvKeys`.
 
 ### CliRenderer Instance
 
@@ -34,7 +71,173 @@ renderer.start()           // Start render loop
 renderer.stop()            // Stop render loop
 renderer.destroy()         // Cleanup and exit alternate screen
 renderer.requestRender()   // Request a re-render
+
+renderer.setCursorStyle(options)  // Set cursor style
+renderer.setCursorColor(color)    // Set cursor color
+renderer.setMousePointer(style)   // Set mouse pointer shape
 ```
+
+### Cursor & Mouse Pointer
+
+```typescript
+import { type CursorStyleOptions, type MousePointerStyle } from "@opentui/core"
+
+// Set cursor style (options object)
+renderer.setCursorStyle({
+  style: "block",           // "block" | "line" | "underline" | "default"
+  blinking: true,           // Cursor blink
+  color: RGBA.fromHex("#FF0000"),  // Cursor color
+  cursor: "pointer",        // Mouse pointer shape
+})
+
+// Set mouse pointer shape (OSC 22)
+renderer.setMousePointer("pointer")
+// Available: "default" | "pointer" | "text" | "crosshair" | "move" | "not-allowed"
+```
+
+### Renderer Events
+
+```typescript
+renderer.on("resize", (width, height) => {})     // Terminal resized
+renderer.on("focus", () => {})                    // Terminal window gained focus
+renderer.on("blur", () => {})                     // Terminal window lost focus
+renderer.on("theme_mode", (mode) => {})           // "dark" | "light"
+renderer.on("capabilities", (caps) => {})         // Terminal capabilities detected
+renderer.on("selection", (selection) => {})       // Text selection finished (mouse-up)
+renderer.on("destroy", () => {})                  // Renderer destroyed
+renderer.on("memory:snapshot", (snapshot) => {})  // Memory snapshot
+renderer.on("debugOverlay:toggle", () => {})      // Debug overlay toggled
+renderer.on("frame", ({ frameId }) => {})         // A frame was committed
+renderer.on("focused_renderable", (current, previous) => {})  // Focus moved
+renderer.on("render:error", ({ error, renderable }) => {})     // Render pass threw
+renderer.on("handler:error", ({ error, event }) => {})         // Mouse handler threw
+```
+
+If neither error event has a listener, OpenTUI logs the error. During a render
+error, `renderable` identifies the node that was executing when available.
+Mouse events expose both their original `target` and bubbling `currentTarget`.
+
+### Scheduler & Idle
+
+```typescript
+await renderer.idle()             // Resolves when no render pass/scheduled render is pending
+renderer.getSchedulerState()      // { isRunning, isRendering, hasScheduledRender }
+renderer.resize(width, height)    // Apply an external terminal resize
+```
+
+### Desktop Notifications (OSC)
+
+Send a terminal notification via OSC 9 / 777 / 99. Returns `true` only when a
+supported protocol was detected.
+
+```typescript
+if (renderer.capabilities?.notifications) {
+  renderer.triggerNotification("Tests passed", "CI")  // (message, title?)
+}
+```
+
+tmux requires `set -g allow-passthrough on`; Zellij uses OSC 99. Env overrides:
+`OPENTUI_NOTIFICATION_PROTOCOL` (`osc9`/`osc777`/`osc99`/`none`),
+`OPENTUI_NOTIFICATIONS=0`.
+
+### Audio
+
+Native playback, streaming, capture, and recording exported from
+`@opentui/core`.
+
+#### Loaded Sounds
+
+```typescript
+import { Audio } from "@opentui/core"
+
+const audio = Audio.create({ autoStart: false })  // or setupAudio(options?)
+audio.on("error", (error, context) => console.error(`${context.action}: ${error.message}`))
+
+const sound = await audio.loadSoundFile("click.wav")
+if (sound != null && audio.start()) {
+  audio.play(sound, { volume: 0.8, pan: 0, loop: false })
+}
+
+// Keep the engine alive while playback is active. Stop/dispose it during
+// application cleanup, not immediately after play().
+// audio.stop()
+// audio.dispose()
+```
+
+Key methods: `start()`, `stop()`, `loadSound(data)`, `loadSoundFile(path)`,
+`play(sound, options?)`, `stopVoice(voice)`, `group(name)`, `setGroupVolume()`,
+`setMasterVolume()`, `listPlaybackDevices()`, `getStats()`, `dispose()`.
+`AudioPlayOptions`: `{ volume?, pan?, loop?, groupId? }` (32 voice slots).
+
+#### Streaming MP3 or FLAC
+
+Start playback before creating a stream. Setup errors reject the entry method;
+later errors are `AudioStream` events, so attach an error listener immediately.
+
+```typescript
+import { Audio, type AudioStream } from "@opentui/core"
+
+const audio = Audio.create({ autoStart: false })
+const abortController = new AbortController()
+audio.on("error", (error, context) => console.error(context.action, error))
+if (!audio.start()) throw new Error("No playback device")
+
+const stream: AudioStream = await audio.playStreamUrl("https://example.com/radio.mp3", {
+  format: "mp3",                    // "mp3" | "flac"
+  buffer: { capacityMs: 2000, startupMs: 1000, resumeMs: 1000 },
+  reconnect: { maxRetries: 5 },
+  signal: abortController.signal,
+})
+stream.on("error", (error, context) => console.error(context.action, error))
+stream.on("metadata", (metadata) => console.log(metadata)) // ICY metadata for URL streams
+await stream.closed
+```
+
+Choose the source API by ownership:
+
+| Method | Source policy |
+|--------|---------------|
+| `playStream(source, options?)` | One `ReadableStream<Uint8Array>` or `AsyncIterable<Uint8Array>` to EOF |
+| `playStreamUrl(url, options?)` | Fetch, content-type validation, ICY metadata, optional reconnect |
+| `playStreamSource(connector, options?)` | Custom connection and per-connection demuxer |
+
+`AudioStream` exposes `state`, `closed`, `getStats()`, `getMetadata()`,
+`setVolume()`, `setPan()`, `setGroup()`, and `dispose()`. Use
+`createIcyStreamDemuxer()` for ICY framing on custom transports. Streaming does
+not support WAV, AAC, Ogg, Opus, HLS, seeking, or pause.
+
+#### Input Capture and WAV Recording
+
+Capture is independent of playback. One `Audio` engine permits one capture
+owner at a time.
+
+```typescript
+const capture = await audio.openCapture({ channels: 1, chunkFrames: 2048 })
+capture.on("error", (error, context) => console.error(context.action, error))
+const consumption = (async () => {
+  for await (const pcm of capture.readable) {
+    processFloat32Pcm(pcm, capture.channels)
+  }
+})()
+await new Promise((resolve) => setTimeout(resolve, 1000))
+capture.stop()                     // Gracefully drains unread PCM
+await consumption
+await capture.closed
+
+const recorder = await audio.recordToFile("recording.wav", { channels: 1 })
+recorder.on("error", (error, context) => console.error(context.action, error))
+await new Promise((resolve) => setTimeout(resolve, 1000))
+recorder.stop()                    // Finalizes and publishes PCM16 WAV
+await recorder.closed
+```
+
+`openCapture()` returns an `AudioCaptureStream` with `readable`, `state`,
+`getStats()`, `stop()`, `dispose()`, and `closed`. `recordToFile()` returns an
+`AudioRecorder` with the same lifecycle plus `filePath` and `format: "wav"`.
+For polling, use `startCapture()`, `readCaptureFrames()`, `getCaptureStats()`,
+and `stopCapture()`. Device APIs are `listCaptureDevices()`,
+`selectCaptureDevice()`, and `clearCaptureDeviceSelection()`. Microphone
+permissions and device availability are platform-dependent.
 
 ### Console Overlay
 
@@ -53,7 +256,7 @@ All renderables extend the base `Renderable` class and share common properties.
 
 ```typescript
 interface CommonProps {
-  id?: string                    // Unique identifier
+  id?: string                    // Identifier; duplicate IDs are allowed
   
   // Positioning
   position?: "relative" | "absolute"
@@ -95,7 +298,7 @@ interface CommonProps {
   gap?: number
   
   // Display
-  display?: "flex" | "none"
+  visible?: boolean
   overflow?: "visible" | "hidden" | "scroll"
   zIndex?: number
 }
@@ -148,172 +351,47 @@ const styled = new TextRenderable(renderer, {
 - `TextAttributes.HIDDEN`
 - `TextAttributes.STRIKETHROUGH`
 
-### BoxRenderable
+`createTextAttributes({ bold, italic, underline, dim, blink, inverse, reverse,
+hidden, strikethrough })` builds the bit mask. `reverse` is an alias for
+`inverse`.
 
-Container with borders and layout.
+### Box, Input, Select, Tab Select, ScrollBox, ASCII Font
 
-```typescript
-import { BoxRenderable } from "@opentui/core"
-
-const box = new BoxRenderable(renderer, {
-  id: "box",
-  width: 40,
-  height: 10,
-  backgroundColor: "#1a1a2e",
-  border: true,
-  borderStyle: "single" | "double" | "rounded" | "bold" | "none",
-  borderColor: "#FFFFFF",
-  title: "Panel Title",
-  titleAlignment: "left" | "center" | "right",
-  onMouseDown: (event) => {},
-  onMouseUp: (event) => {},
-  onMouseMove: (event) => {},
-})
-```
-
-### InputRenderable
-
-Single-line text input.
+Every component is `new <Name>Renderable(renderer, options)`, composed with
+`.add()`. **Full option props for each live in the shared
+[components](../components/REFERENCE.md) references** (e.g. Box titles →
+[containers.md](../components/containers.md); `minLength` /
+`showSelectionIndicator` → [inputs.md](../components/inputs.md)). This section
+covers only the **Core-specific** surface: imperative composition and event
+enums.
 
 ```typescript
-import { InputRenderable, InputRenderableEvents } from "@opentui/core"
+import { BoxRenderable, TextRenderable } from "@opentui/core"
 
-const input = new InputRenderable(renderer, {
-  id: "input",
-  width: 30,
-  placeholder: "Enter text...",
-  value: "",                       // Initial value
-  backgroundColor: "#1a1a1a",
-  textColor: "#FFFFFF",
-  cursorColor: "#00FF00",
-  focusedBackgroundColor: "#2a2a2a",
-})
-
-input.on(InputRenderableEvents.CHANGE, (value: string) => {
-  console.log("Value:", value)
-})
-
-input.focus()  // Must be focused to receive input
+const box = new BoxRenderable(renderer, { id: "box", border: true, title: "Panel" })
+box.add(new TextRenderable(renderer, { content: "Hello" }))  // Compose imperatively
+box.focus()                                                   // Focusable boxes only
 ```
 
-### SelectRenderable
-
-List selection component.
+**Events (Core uses enums; React/Solid use `onChange`/`onSelect` props):**
 
 ```typescript
-import { SelectRenderable, SelectRenderableEvents } from "@opentui/core"
+import {
+  InputRenderableEvents,
+  SelectRenderableEvents,
+  TabSelectRenderableEvents,
+} from "@opentui/core"
 
-const select = new SelectRenderable(renderer, {
-  id: "select",
-  width: 30,
-  height: 10,
-  options: [
-    { name: "Option 1", description: "First option", value: "1" },
-    { name: "Option 2", description: "Second option", value: "2" },
-  ],
-  selectedIndex: 0,
-})
+input.on(InputRenderableEvents.CHANGE, (value: string) => {})
 
-// Called when Enter is pressed - selection confirmed
-select.on(SelectRenderableEvents.ITEM_SELECTED, (index, option) => {
-  console.log("Selected:", option.name)
-  performAction(option)
-})
-
-// Called when navigating with arrow keys
-select.on(SelectRenderableEvents.SELECTION_CHANGED, (index, option) => {
-  console.log("Browsing:", option.name)
-  showPreview(option)
-})
-
-select.focus()  // Navigate with up/down/j/k, select with enter
+// ITEM_SELECTED = Enter (confirm selection); SELECTION_CHANGED = arrow keys (browse)
+select.on(SelectRenderableEvents.ITEM_SELECTED, (index, option) => {})
+select.on(SelectRenderableEvents.SELECTION_CHANGED, (index, option) => {})
+tabs.on(TabSelectRenderableEvents.ITEM_SELECTED, (index, option) => {})
 ```
 
-**Event distinction:**
-- `ITEM_SELECTED` - Enter key pressed, user confirms selection
-- `SELECTION_CHANGED` - Arrow keys, user navigating/browsing options
-
-### TabSelectRenderable
-
-Horizontal tab selection.
-
-```typescript
-import { TabSelectRenderable, TabSelectRenderableEvents } from "@opentui/core"
-
-const tabs = new TabSelectRenderable(renderer, {
-  id: "tabs",
-  width: 60,
-  options: [
-    { name: "Home", description: "Dashboard" },
-    { name: "Settings", description: "Configuration" },
-  ],
-  tabWidth: 20,
-})
-
-// Called when Enter is pressed - tab selected
-tabs.on(TabSelectRenderableEvents.ITEM_SELECTED, (index, option) => {
-  console.log("Tab selected:", option.name)
-  switchToTab(index)
-})
-
-// Called when navigating with arrow keys
-tabs.on(TabSelectRenderableEvents.SELECTION_CHANGED, (index, option) => {
-  console.log("Browsing tab:", option.name)
-})
-
-tabs.focus()  // Navigate with left/right/[/], select with enter
-```
-
-**Event distinction** (same as SelectRenderable):
-- `ITEM_SELECTED` - Enter key pressed, user confirms tab
-- `SELECTION_CHANGED` - Arrow keys, user navigating tabs
-
-### ScrollBoxRenderable
-
-Scrollable container.
-
-```typescript
-import { ScrollBoxRenderable } from "@opentui/core"
-
-const scrollbox = new ScrollBoxRenderable(renderer, {
-  id: "scrollbox",
-  width: 40,
-  height: 20,
-  showScrollbar: true,
-  scrollbarOptions: {
-    showArrows: true,
-    trackOptions: {
-      foregroundColor: "#7aa2f7",
-      backgroundColor: "#414868",
-    },
-  },
-})
-
-// Add content that exceeds viewport
-for (let i = 0; i < 100; i++) {
-  scrollbox.add(new TextRenderable(renderer, {
-    id: `line-${i}`,
-    content: `Line ${i}`,
-  }))
-}
-
-scrollbox.focus()  // Scroll with arrow keys
-```
-
-### ASCIIFontRenderable
-
-ASCII art text.
-
-```typescript
-import { ASCIIFontRenderable, RGBA } from "@opentui/core"
-
-const title = new ASCIIFontRenderable(renderer, {
-  id: "title",
-  text: "OPENTUI",
-  font: "tiny" | "block" | "slick" | "shade",
-  color: RGBA.fromHex("#FFFFFF"),
-})
-```
+The `ITEM_SELECTED` / `SELECTION_CHANGED` distinction is identical for Select and
+Tab Select. Inputs must be focused to receive keys (`input.focus()`).
 
 ### FrameBufferRenderable
 
@@ -332,7 +410,11 @@ const canvas = new FrameBufferRenderable(renderer, {
 canvas.frameBuffer.fillRect(10, 5, 20, 8, RGBA.fromHex("#FF0000"))
 canvas.frameBuffer.drawText("Custom", 12, 7, RGBA.fromHex("#FFFFFF"))
 canvas.frameBuffer.setCell(x, y, char, fg, bg)
+canvas.frameBuffer.drawImage(nativeImage, x, y, width, height)
 ```
+
+See [Image Component](../components/text-display.md#image-component) for
+`NativeImage` ownership and terminal graphics protocols.
 
 ## Constructs (VNode API)
 
@@ -460,7 +542,8 @@ renderer.keyInput.on("keypress", (key: KeyEvent) => {
   console.log(key.eventType)      // "press" | "release" | "repeat"
 })
 
-renderer.keyInput.on("paste", (text: string) => {
+renderer.keyInput.on("paste", (event: PasteEvent) => {
+  const text = decodePasteBytes(event.bytes)
   console.log("Pasted:", text)
 })
 ```
@@ -481,15 +564,15 @@ timeline.add(
   {
     width: 50,
     duration: 1000,
-    ease: "easeOutQuad",
+    ease: "outQuad",
     onUpdate: (anim) => {
-      box.setWidth(anim.targets[0].width)
+      box.width = anim.targets[0].width
     },
   },
 )
 
 engine.attach(renderer)
-engine.addTimeline(timeline)
+engine.register(timeline)
 ```
 
 ## Type Exports
@@ -501,6 +584,9 @@ import type {
   RenderContext,
   KeyEvent,
   Renderable,
+  WidthMethod,          // "wcwidth" | "unicode" | "unicode-wide"
+  SelectionOccupancy,  // "cell" | "boundary"
+  SelectionBehavior,   // "cell" | "word" | "line"
   // ... and more
 } from "@opentui/core"
 ```

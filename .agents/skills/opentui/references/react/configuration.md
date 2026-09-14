@@ -30,8 +30,8 @@ bun install @opentui/react @opentui/core react
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     
     "jsx": "react-jsx",
     "jsxImportSource": "@opentui/react",
@@ -48,6 +48,7 @@ bun install @opentui/react @opentui/core react
 **Critical settings:**
 - `jsx: "react-jsx"` - Use the new JSX transform
 - `jsxImportSource: "@opentui/react"` - Import JSX runtime from OpenTUI
+- `module` / `moduleResolution: "NodeNext"` - Recommended for OpenTUI compatibility
 
 ### Why DOM lib?
 
@@ -142,7 +143,7 @@ import { createCliRenderer, ConsolePosition } from "@opentui/core"
 
 const renderer = await createCliRenderer({
   // Rendering
-  targetFPS: 60,
+  targetFps: 30,
   
   // Behavior
   exitOnCtrlC: true,        // Set false to handle Ctrl+C yourself

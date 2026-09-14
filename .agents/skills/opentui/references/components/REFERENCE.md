@@ -10,18 +10,18 @@ Use this reference when you need to find the right component category or compare
 
 | Category | Components | File |
 |----------|------------|------|
-| Text & Display | text, ascii-font, styled text | [text-display.md](./text-display.md) |
-| Containers | box, scrollbox, borders | [containers.md](./containers.md) |
-| Inputs | input, textarea, select, tab-select | [inputs.md](./inputs.md) |
-| Code & Diff | code, line-number, diff, markdown | [code-diff.md](./code-diff.md) |
+| Text & Display | text, ascii-font, image, time-to-first-draw, styled text, qr-code | [text-display.md](./text-display.md) |
+| Containers | box, scrollbox, scrollbar, embedded-terminal, borders | [containers.md](./containers.md) |
+| Inputs | input, textarea, select, tab-select, slider | [inputs.md](./inputs.md) |
+| Code & Diff | code, line-number, diff, markdown, text-table | [code-diff.md](./code-diff.md) |
 
 ## Component Chooser
 
 ```
 Need a component?
-├─ Styled text or ASCII art -> text-display.md
-├─ Containers, borders, scrolling -> containers.md
-├─ Forms or input controls -> inputs.md
+├─ Styled text, images, diagnostics, ASCII art, or QR code -> text-display.md
+├─ Containers, borders, scrolling, scrollbar, embedded terminal -> containers.md
+├─ Forms, input controls, sliders -> inputs.md
 └─ Code blocks, diffs, line numbers, markdown -> code-diff.md
 ```
 
@@ -39,12 +39,20 @@ Components have different names across frameworks:
 | Select | `SelectRenderable` | `<select>` | `<select>` |
 | Tab Select | `TabSelectRenderable` | `<tab-select>` | `<tab_select>` |
 | ASCII Font | `ASCIIFontRenderable` | `<ascii-font>` | `<ascii_font>` |
+| Image | `ImageRenderable` | `<image>` | `<image>` |
+| Time to First Draw | `TimeToFirstDrawRenderable` | `<time-to-first-draw>` / `TimeToFirstDraw` | `<time_to_first_draw>` / `TimeToFirstDraw` |
 | Code | `CodeRenderable` | `<code>` | `<code>` |
 | Line Number | `LineNumberRenderable` | `<line-number>` | `<line_number>` |
 | Diff | `DiffRenderable` | `<diff>` | `<diff>` |
 | Markdown | `MarkdownRenderable` | `<markdown>` | `<markdown>` |
+| TextTable | `TextTableRenderable` | N/A (Core only) | N/A (Core only) |
+| Slider | `SliderRenderable` | N/A (Core only) | N/A (Core only) |
+| ScrollBar | `ScrollBarRenderable` | N/A (Core only) | N/A (Core only) |
+| FrameBuffer | `FrameBufferRenderable` | N/A (Core + construct) | N/A (Core + construct) |
+| Embedded Terminal | `EmbeddedTerminalRenderable` | N/A (Core only) | N/A (Core only) |
+| QR Code | `QRCodeRenderable` | `<qr-code>` * | `<qr_code>` * |
 
-**Note**: Solid uses underscores (`tab_select`) while React uses hyphens (`tab-select`).
+**Note**: Solid uses underscores (`tab_select`) while React uses hyphens (`tab-select`). `TextTableRenderable` is used internally by `MarkdownRenderable` for table rendering and is also available as a standalone Core component. `SliderRenderable`, `ScrollBarRenderable`, and `EmbeddedTerminalRenderable` do not expose built-in reconciler elements — use Core (or explicitly register a custom catalogue entry). `FrameBufferRenderable` is Core-only with a `FrameBuffer({...})` construct wrapper. `* QRCodeRenderable` ships in the separate `@opentui/qrcode` package and requires `registerQRCode()` before the JSX element is available (see [text-display.md](./text-display.md)).
 
 ## Common Properties
 
@@ -70,8 +78,8 @@ paddingX, paddingY              // Axis shorthand (horizontal/vertical)
 margin, marginTop, marginRight, marginBottom, marginLeft
 marginX, marginY                // Axis shorthand (horizontal/vertical)
 
-// Display
-display="flex" | "none"
+// Visibility
+visible
 overflow="visible" | "hidden" | "scroll"
 zIndex
 ```

@@ -350,9 +350,11 @@ function FocusableForm() {
 import { useKeyboard } from "@opentui/solid"
 
 function App() {
+  const renderer = useRenderer()
+  
   useKeyboard((key) => {
     if (key.name === "escape") {
-      process.exit(0)
+      renderer.destroy()  // Never use process.exit() directly!
     }
     
     if (key.ctrl && key.name === "s") {
@@ -520,7 +522,7 @@ function AnimatedProgress() {
       {
         value: 50,
         duration: 2000,
-        ease: "easeOutQuad",
+        ease: "outQuad",
         onUpdate: (anim) => {
           setWidth(Math.round(anim.targets[0].value))
         },

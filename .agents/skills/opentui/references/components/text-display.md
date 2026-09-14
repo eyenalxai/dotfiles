@@ -67,6 +67,8 @@ const text = new TextRenderable(renderer, {
 </text>
 ```
 
+For copy-on-selection and the full selection API, see `keyboard/REFERENCE.md` (selection).
+
 ## Text Modifiers
 
 Inline styling elements that must be used inside `<text>`:
@@ -198,6 +200,9 @@ const title = new ASCIIFontRenderable(renderer, {
 | `block` | Block-style letters |
 | `slick` | Sleek modern style |
 | `shade` | Shaded 3D effect |
+| `huge` | Large font |
+| `grid` | Grid-style font |
+| `pallet` | Pallet-style font |
 
 ### Styling
 
@@ -233,6 +238,153 @@ Font: block
 ▀▀▀▀ ▀    ▀▀▀ ▀  ▀
 ```
 
+## Image Component
+
+Display PNG, JPEG, WebP, GIF, or raw image data. OpenTUI chooses Kitty,
+Sixel, or Unicode block rendering based on terminal capabilities.
+
+```tsx
+// React and Solid
+<image source="./cover.webp" fit="cover" protocol="auto" width={40} height={15} />
+
+// Core
+const image = new ImageRenderable(renderer, {
+  source: "./cover.webp",
+  width: 40,
+  height: 15,
+  fit: "cover",
+  protocol: "auto",
+  onError: console.error,
+})
+renderer.root.add(image)
+await image.loadPromise
+```
+
+`source` accepts a path, supported URL, `URL`, `Blob`, `Response`,
+`Uint8Array`, `ArrayBuffer`, or `NativeImage`. Replacing `source` keeps the
+current image visible until the replacement succeeds.
+
+| Option | Values | Description |
+|--------|--------|-------------|
+| `fit` | `fit`, `cover`, `fill` | Contain (default), crop, or stretch |
+| `protocol` | `auto`, `kitty`, `sixel`, `blocks` | Requested terminal rendering protocol |
+| `onLoad` | `(image: NativeImage) => void` | Current source loaded |
+| `onError` | `(error: unknown) => void` | Current source failed |
+
+State includes `image`, `loading`, `loadError`, `loadPromise`,
+`effectiveProtocol`, and `getFittedSize()`. Set
+`OPENTUI_IMAGE_PROTOCOL=auto|kitty|sixel|blocks` for a global default;
+`OPENTUI_GRAPHICS=false` disables Kitty and Sixel detection.
+
+### NativeImage
+
+Use `NativeImage` when you need to inspect, transform, or share decoded pixels:
+
+```typescript
+import { NativeImage, imageInfo } from "@opentui/core"
+
+const source = await NativeImage.load("photo.jpg")
+const thumbnail = source.resize({ width: 320 })
+const shared = thumbnail.retain() // Independent handle, no pixel copy
+
+try {
+  console.log(imageInfo(await Bun.file("photo.jpg").arrayBuffer()))
+  const rgba = thumbnail.raw("rgba8")
+} finally {
+  shared.dispose()
+  thumbnail.dispose()
+  source.dispose()
+}
+```
+
+Creation methods are `load()`, `decode()`, and `fromRgba()`. Pixel methods are
+`raw()`, `copyTo()`, and ownership-transferring `takeRaw()`. Transform methods
+include `resize()`, `extract()`, `extend()`, `rotate()`, `flip()`, `flop()`, and
+`composite()`. `retain()` shares storage, `clone()` copies it, and every returned
+native handle must be disposed separately. `ensureEncodedPng()` prepares an
+encoded PNG for low-level native consumers. `ImageRenderable` retains a supplied
+`NativeImage`, so the caller still owns and must dispose its source reference.
+
+## Time to First Draw
+
+`TimeToFirstDrawRenderable` is a rendering diagnostic. It captures
+`performance.now()` on its first draw; this is a runtime-relative timestamp,
+not elapsed application startup time.
+
+```tsx
+// React
+<time-to-first-draw label="First draw timestamp" precision={1} />
+
+// Solid
+<time_to_first_draw label="First draw timestamp" precision={1} />
+
+// Core
+const firstDraw = new TimeToFirstDrawRenderable(renderer, {
+  label: "First draw timestamp",
+  precision: 1,
+})
+renderer.root.add(firstDraw)
+```
+
+React and Solid also export a `TimeToFirstDraw` wrapper. `runtimeMs` is `null`
+before the first draw; call `reset()` to capture again. Keep `precision` an
+integer from 0 through 100.
+
+## QR Code Component
+
+Render a QR code in the terminal. Ships as a **separate package**,
+`@opentui/qrcode` (not part of `@opentui/core`).
+
+```bash
+bun add @opentui/qrcode
+```
+
+```typescript
+// Core
+import { createCliRenderer } from "@opentui/core"
+import { QRCodeRenderable } from "@opentui/qrcode"
+
+const renderer = await createCliRenderer()
+const qr = new QRCodeRenderable(renderer, {
+  id: "docs-link",
+  content: "https://opentui.com/docs/getting-started",
+  quietZone: 4,
+  scale: 2,
+})
+renderer.root.add(qr)
+```
+
+React and Solid require explicit element registration (the elements are not
+built in):
+
+```tsx
+// React — element <qr-code>
+import { registerQRCode } from "@opentui/qrcode/react"
+registerQRCode()
+<qr-code content="https://opentui.com" quietZone={4} scale={2} />
+
+// Solid — element <qr_code> (underscore)
+import { registerQRCode } from "@opentui/qrcode/solid"
+registerQRCode()
+<qr_code content="https://opentui.com" quietZone={4} scale={2} />
+```
+
+| Prop | Type | Default | Notes |
+|------|------|---------|-------|
+| `content` | `string` | `""` | Text/URL to encode |
+| `errorCorrectionLevel` | `ErrorCorrectionLevel` | `M` | `.L` / `.M` / `.Q` / `.H` |
+| `quietZone` | `number` | `4` | Must be ≥ 4 (throws otherwise) |
+| `scale` | `number` | `1` | Columns per module before fitting |
+| `fit` | `"contain" \| "none"` | `"contain"` | `contain` shrinks to parent |
+| `foregroundColor` | `ColorInput` | `"#000000"` | Dark module color |
+| `backgroundColor` | `ColorInput` | `"#ffffff"` | Light module / quiet-zone color |
+| `fallbackContent` | `string` | `""` | Shown when too small to render |
+| `fallbackColor` | `ColorInput` | `"#ffffff"` | Fallback text color |
+
+Import `ErrorCorrectionLevel` from `@opentui/qrcode`, e.g.
+`errorCorrectionLevel: ErrorCorrectionLevel.H`. Read-only getters: `version`,
+`moduleCount`.
+
 ## Colors
 
 ### Color Formats
@@ -252,53 +404,21 @@ Font: block
 
 ### RGBA Class
 
-The `RGBA` class from `@opentui/core` can be used in **all frameworks** (Core, React, Solid) for programmatic color manipulation:
-
-```typescript
-import { RGBA } from "@opentui/core"
-
-// From hex string (most common)
-const red = RGBA.fromHex("#FF0000")
-const shortHex = RGBA.fromHex("#F00")       // Short form supported
-
-// From integers (0-255 range for each channel)
-const green = RGBA.fromInts(0, 255, 0, 255)   // r, g, b, a
-const semiGreen = RGBA.fromInts(0, 255, 0, 128) // 50% transparent
-
-// From normalized floats (0.0-1.0 range)
-const blue = RGBA.fromValues(0.0, 0.0, 1.0, 1.0)  // r, g, b, a
-const overlay = RGBA.fromValues(0.1, 0.1, 0.1, 0.7) // Dark semi-transparent
-
-// Common use cases
-const backgroundColor = RGBA.fromHex("#1a1a2e")
-const textColor = RGBA.fromHex("#FFFFFF")
-const borderColor = RGBA.fromInts(122, 162, 247, 255) // Tokyo Night blue
-const shadowColor = RGBA.fromValues(0.0, 0.0, 0.0, 0.5) // 50% black
-```
-
-**When to use each method:**
-- `fromHex()` - When working with design specs or CSS colors
-- `fromInts()` - When you have 8-bit color values (0-255)
-- `fromValues()` - When doing color math or interpolation (normalized 0.0-1.0)
-
-### Using RGBA in React/Solid
+Color props accept string formats (`"#FF0000"`, `"#F00"`, `"red"`, `"transparent"`)
+in all frameworks. For programmatic color manipulation, the `RGBA` class from
+`@opentui/core` (`fromHex` / `fromInts` / `fromValues` / `parseColor`) works in
+Core, React, and Solid alike:
 
 ```tsx
-// React or Solid - RGBA works with color props
 import { RGBA } from "@opentui/core"
 
-const primaryColor = RGBA.fromHex("#7aa2f7")
-
-function MyComponent() {
-  return (
-    <box backgroundColor={primaryColor} borderColor={primaryColor}>
-      <text fg={RGBA.fromHex("#c0caf5")}>Styled with RGBA</text>
-    </box>
-  )
-}
+<box backgroundColor={RGBA.fromHex("#1a1a2e")} borderColor={RGBA.fromInts(122, 162, 247, 255)}>
+  <text fg={RGBA.fromHex("#c0caf5")}>Styled with RGBA</text>
+</box>
 ```
 
-Most props that accept color strings (`"#FF0000"`, `"red"`) also accept `RGBA` objects directly.
+See **[core/api.md → Colors (RGBA)](../core/api.md#colors-rgba)** for the full
+constructor reference and the "when to use each method" guidance.
 
 ## Text Wrapping
 

@@ -15,7 +15,7 @@ render(() => <App />)
 // With config
 render(() => <App />, {
   exitOnCtrlC: false,
-  targetFPS: 60,
+  targetFps: 30,
 })
 
 // With existing renderer
@@ -159,13 +159,15 @@ function GameControls() {
 
 ### usePaste(handler)
 
-Handle paste events.
+Handle paste events. Receives a `PasteEvent` with raw bytes.
 
 ```tsx
 import { usePaste } from "@opentui/solid"
+import { decodePasteBytes } from "@opentui/core"
 
 function PasteHandler() {
-  usePaste((text) => {
+  usePaste((event) => {
+    const text = decodePasteBytes(event.bytes)
     console.log("Pasted:", text)
   })
   
@@ -208,9 +210,33 @@ function ResponsiveLayout() {
 }
 ```
 
+### onFocus(callback) / onBlur(callback)
+
+Handle terminal window focus and blur events. React exposes equivalent
+`useFocus` and `useBlur` hooks.
+
+```tsx
+import { onFocus, onBlur } from "@opentui/solid"
+
+function App() {
+  onFocus(() => {
+    console.log("Terminal window gained focus")
+  })
+  
+  onBlur(() => {
+    console.log("Terminal window lost focus")
+  })
+  
+  return <text>Focus/blur tracking</text>
+}
+```
+
+These hooks fire when the terminal emulator window gains or loses operating system focus. The renderer deduplicates events (won't re-emit the same focus state).
+
 ### useSelectionHandler(handler)
 
-Handle text selection events. Solid-only hook - React does not have this.
+Handle text selection events. Fires when the user finishes a mouse selection
+(mouse-up). React exposes an equivalent `useSelectionHandler` hook.
 
 ```tsx
 import { useSelectionHandler } from "@opentui/solid"
@@ -218,13 +244,13 @@ import type { Selection } from "@opentui/core"
 
 function SelectableText() {
   const [selected, setSelected] = createSignal("")
+  const renderer = useRenderer()
   
   useSelectionHandler((selection: Selection) => {
     const text = selection.getSelectedText()
     if (text) {
       setSelected(text)
-      // Copy to clipboard if needed
-      selection.copyToClipboard()
+      renderer.copyToClipboardOSC52(text)
     }
   })
   
@@ -237,11 +263,7 @@ function SelectableText() {
 }
 ```
 
-**Selection properties/methods:**
-- `getSelectedText(): string` - Get the selected text content
-- `copyToClipboard(): void` - Copy selection to system clipboard (via OSC 52)
-- `start: ConsolePosition` - Selection start position
-- `end: ConsolePosition` - Selection end position
+The `Selection` object aggregates selected text from all selectable renderables in the tree. See `keyboard/REFERENCE.md` (selection) for full details on the selection API and traversal model.
 
 ### useTimeline(options?)
 
@@ -265,7 +287,7 @@ function AnimatedBox() {
       {
         width: 50,
         duration: 2000,
-        ease: "easeOutQuad",
+        ease: "outQuad",
         onUpdate: (anim) => {
           setWidth(Math.round(anim.targets[0].width))
         },
@@ -279,186 +301,55 @@ function AnimatedBox() {
 
 ## Components
 
-### Text Component
+Full props for every component live in the shared **[components](../components/REFERENCE.md)**
+references. This section only covers what is **Solid-specific**; read the linked
+category file for the complete prop list.
+
+### JSX Element Names (Solid uses underscores)
+
+Multi-word elements use **underscores** (not hyphens like React):
+
+| Element | Full props |
+|---------|-----------|
+| `<text>`, `<span>`, `<strong>`, `<em>`, `<u>`, `<a>`, `<br>`, `<image>`, `<time_to_first_draw>` | [text-display.md](../components/text-display.md) |
+| `<box>`, `<scrollbox>` | [containers.md](../components/containers.md) |
+| `<input>`, `<textarea>`, `<select>`, `<tab_select>` | [inputs.md](../components/inputs.md) |
+| `<code>`, `<line_number>`, `<diff>`, `<markdown>` | [code-diff.md](../components/code-diff.md) |
+| `<ascii_font>` | [text-display.md](../components/text-display.md) |
+
+### Text Styling Uses Nested Tags (Solid-specific)
 
 ```tsx
-<text
-  content="Hello"           // Or use children
-  fg="#FFFFFF"              // Foreground color
-  bg="#000000"              // Background color
-  selectable={true}         // Allow text selection
->
-  {/* Use nested modifier tags for styling */}
-  <span fg="red">Red</span>
-  <strong>Bold</strong>
-  <em>Italic</em>
-  <u>Underline</u>
-  <br />
-  <a href="https://...">Link</a>
+<text fg="#FFFFFF" bg="#000000" selectable>
+  <span fg="red">Red</span> <strong>Bold</strong> <em>Italic</em> <u>Underline</u>
 </text>
 ```
 
-> **Note**: Do NOT use `bold`, `italic`, `underline` as props on `<text>`. Use nested modifier tags like `<strong>`, `<em>`, `<u>` instead.
+> **Note**: Do NOT use `bold`, `italic`, `underline` as props on `<text>`. Use
+> nested modifier tags like `<strong>`, `<em>`, `<u>` instead.
 
-### Box Component
+### Reactive Values + `onInput` (Solid-specific)
 
-```tsx
-<box
-  // Borders
-  border                    // Enable border
-  borderStyle="single"      // single | double | rounded | bold
-  borderColor="#FFFFFF"
-  title="Title"
-  titleAlignment="center"   // left | center | right
-  
-  // Colors
-  backgroundColor="#1a1a2e"
-  
-  // Layout
-  flexDirection="row"
-  justifyContent="center"
-  alignItems="center"
-  gap={2}
-  
-  // Spacing
-  padding={2}
-  paddingX={2}              // Horizontal (left + right)
-  paddingY={1}              // Vertical (top + bottom)
-  margin={1}
-  marginX={2}               // Horizontal (left + right)
-  marginY={1}               // Vertical (top + bottom)
-  
-  // Dimensions
-  width={40}
-  height={10}
-  flexGrow={1}
-  
-  // Focus
-  focusable                 // Allow box to receive focus
-  focused={isFocused()}     // Controlled focus state
-  
-  // Events
-  onMouseDown={(e) => {}}
-  onMouseUp={(e) => {}}
->
-  {children}
-</box>
-```
-
-### Scrollbox Component
+Solid uses **`onInput`** (not React's `onChange`) for single-line inputs, and values are
+signals. Use `<For>` inside `<scrollbox>` for lists:
 
 ```tsx
-<scrollbox
-  focused                   // Enable keyboard scrolling
-  style={{
-    scrollbarOptions: {
-      showArrows: true,
-      trackOptions: {
-        foregroundColor: "#7aa2f7",
-        backgroundColor: "#414868",
-      },
-    },
-  }}
->
-  <For each={items()}>
-    {(item) => <text>{item}</text>}
-  </For>
+<input value={value()} onInput={setValue} focused />
+
+// Textarea is not a controlled input. Seed it with initialValue and use a ref
+// plus onContentChange to read textarea.plainText.
+<textarea initialValue={text()} ref={setTextarea} onContentChange={() => setText(textarea.plainText)} />
+
+// select/tab_select still use onChange (navigate) / onSelect (Enter)
+<select options={opts} onChange={(i, opt) => setSelected(opt)} focused />
+
+<scrollbox focused>
+  <For each={items()}>{(item) => <text>{item}</text>}</For>
 </scrollbox>
 ```
 
-### Input Component
-
-```tsx
-<input
-  value={value()}
-  onInput={(newValue) => setValue(newValue)}
-  placeholder="Enter text..."
-  focused
-  width={30}
-/>
-```
-
-### Textarea Component
-
-```tsx
-<textarea
-  value={text()}
-  onInput={(newValue) => setText(newValue)}
-  placeholder="Enter multiple lines..."
-  focused
-  width={40}
-  height={10}
-/>
-```
-
-### Select Component
-
-```tsx
-<select
-  options={[
-    { name: "Option 1", description: "First", value: "1" },
-    { name: "Option 2", description: "Second", value: "2" },
-  ]}
-  onChange={(index, option) => setSelected(option)}
-  selectedIndex={0}
-  focused
-/>
-```
-
-### Tab Select Component (Note: underscore)
-
-```tsx
-<tab_select
-  options={[
-    { name: "Home", description: "Dashboard" },
-    { name: "Settings", description: "Configuration" },
-  ]}
-  onChange={(index, option) => setTab(option)}
-  tabWidth={20}
-  focused
-/>
-```
-
-### ASCII Font Component (Note: underscore)
-
-```tsx
-<ascii_font
-  text="TITLE"
-  font="tiny"               // tiny | block | slick | shade
-  color="#FFFFFF"
-/>
-```
-
-### Code Component
-
-```tsx
-<code
-  code={sourceCode}
-  language="typescript"
-/>
-```
-
-### Line Number Component (Note: underscore)
-
-```tsx
-<line_number
-  code={sourceCode}
-  language="typescript"
-  startLine={1}
-  highlightedLines={[5]}
-/>
-```
-
-### Diff Component
-
-```tsx
-<diff
-  oldCode={originalCode}
-  newCode={modifiedCode}
-  language="typescript"
-  mode="unified"            // unified | split
-/>
-```
+Scrollbox takes the same nested `style` object as React — see
+[containers.md](../components/containers.md).
 
 ## Control Flow
 

@@ -2,37 +2,44 @@
 
 ## Runtime Environment
 
-### Use Bun, Not Node.js
+### Bun (reference runtime) or Node.js 26.4.0+
 
-OpenTUI is built for Bun. Always use Bun commands:
+Bun is the reference runtime and the smoothest path — prefer it for new projects:
 
 ```bash
-# CORRECT
+# Recommended
 bun install @opentui/core
 bun run src/index.ts
 bun test
-
-# WRONG
-npm install @opentui/core
-node src/index.ts
-npx jest
 ```
+
+**Node.js is now also supported**, with caveats:
+
+- Importing `@opentui/core` (and `@opentui/keymap`) works in Node.js **without
+  FFI** as long as you don't create a native renderer.
+- Creating a **native renderer** (`createCliRenderer()`) requires FFI: **Node.js
+  26.4.0 or later** launched with `--experimental-ffi` (and, under Node's permission
+  model, `--allow-ffi` plus filesystem permissions). OpenTUI does not install
+  Node for you.
+- The Node path is lower-level than Bun; the `packages/*/package.json` `engines`
+  fields and root README still list Bun only, but the docs site
+  (getting-started, keymap, solid pages) is the source of truth for Node support.
 
 ### Bun APIs to Use
 
-Prefer Bun's built-in APIs:
+Prefer Bun's built-in APIs for your application code:
 
 ```typescript
 // CORRECT - Bun APIs
-Bun.file("path").text()           // Instead of fs.readFile
 Bun.serve({ ... })                // Instead of express
 Bun.$`ls -la`                     // Instead of execa
 import { Database } from "bun:sqlite"  // Instead of better-sqlite3
 
 // WRONG - Node.js patterns
-import fs from "node:fs"
 import express from "express"
 ```
+
+> **Note**: OpenTUI itself uses `node:fs` internally for file I/O (for broader compatibility), but your application code should still prefer Bun APIs where available.
 
 ### Avoid process.exit()
 
@@ -236,7 +243,7 @@ Yoga layout is calculated lazily. Force a recalculation:
 
 ```typescript
 // After changing layout properties
-box.setWidth(newWidth)
+box.width = newWidth
 renderer.requestRender()
 ```
 
@@ -304,14 +311,14 @@ Box({}, Box({}, Box({}, Text({ content: "Hello" }))))
 Box({}, Text({ content: "Hello" }))
 ```
 
-### Use display: none
+### Toggle visibility
 
 Hide elements instead of removing/re-adding:
 
 ```typescript
 // For toggling visibility
-element.setDisplay("none")   // Hidden
-element.setDisplay("flex")   // Visible
+element.visible = false  // Hidden and removed from layout
+element.visible = true   // Visible
 
 // Instead of
 parent.remove(element)
@@ -349,8 +356,8 @@ bun run test:native
 ### Filter Tests
 
 ```bash
-# Bun test filter
-bun test --filter "component name"
+# Bun test-name filter
+bun test --test-name-pattern "component name"
 
 # Native test filter
 bun run test:native -Dtest-filter="test name"

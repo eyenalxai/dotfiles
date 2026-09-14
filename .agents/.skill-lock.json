@@ -6,19 +6,18 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/vercel-labs/skills.git",
       "skillPath": "skills/find-skills/SKILL.md",
-      "skillFolderHash": "c2f31172b6f256272305a5e6e7228b258446899f",
+      "skillFolderHash": "76a98a285cb0434f3d39e1a873823556330e398b",
       "installedAt": "2026-01-29T17:57:18.553Z",
-      "updatedAt": "2026-01-29T17:57:18.553Z"
+      "updatedAt": "2026-09-14T16:13:31.071Z"
     },
     "better-auth-best-practices": {
       "source": "better-auth/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/better-auth/skills.git",
       "skillPath": "better-auth/best-practices/SKILL.md",
-      "skillFolderHash": "83bdaa60f65da278dc513a64127f4e4db759cd20",
-      "pluginName": "auth-skills",
+      "skillFolderHash": "2ed2719690a27752d6a01014ff217d9e3d120e43",
       "installedAt": "2026-02-03T17:14:20.512Z",
-      "updatedAt": "2026-02-28T11:10:30.495Z"
+      "updatedAt": "2026-09-14T16:13:34.064Z"
     },
     "create-auth-skill": {
       "source": "better-auth/skills",
@@ -34,27 +33,27 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/wshobson/agents.git",
       "skillPath": "plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/SKILL.md",
-      "skillFolderHash": "09b5161a206bf7aaea11df7f4f960f6359680950",
+      "skillFolderHash": "a4c1ad78df67850628ebc3d6b7210f48b846942c",
       "installedAt": "2026-02-04T08:24:57.527Z",
-      "updatedAt": "2026-02-04T08:24:57.527Z"
+      "updatedAt": "2026-09-14T16:13:39.678Z"
     },
     "opentui": {
       "source": "msmps/opentui-skill",
       "sourceType": "github",
       "sourceUrl": "https://github.com/msmps/opentui-skill.git",
       "skillPath": "skill/opentui/SKILL.md",
-      "skillFolderHash": "00be9b06139cfcfc3a4f63469e148b574a31781b",
+      "skillFolderHash": "8e31a7d1f6c41f513bcf0220bebd5d62b88ddac4",
       "installedAt": "2026-02-06T12:33:27.749Z",
-      "updatedAt": "2026-02-26T19:26:33.846Z"
+      "updatedAt": "2026-09-14T16:13:43.128Z"
     },
     "ai-sdk": {
       "source": "vercel/ai",
       "sourceType": "github",
       "sourceUrl": "https://github.com/vercel/ai.git",
       "skillPath": "skills/use-ai-sdk/SKILL.md",
-      "skillFolderHash": "d8e09e2796e2a04a9c7f7cc8c5bbab8da76a77d9",
+      "skillFolderHash": "9c7a408f9821ac144f11d7d60b77a36af3d38671",
       "installedAt": "2026-02-26T19:23:21.202Z",
-      "updatedAt": "2026-02-26T19:31:41.485Z"
+      "updatedAt": "2026-09-14T16:13:46.499Z"
     },
     "effect-best-practices": {
       "source": "makisuo/skills",
@@ -70,18 +69,18 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/deckardger/tanstack-agent-skills.git",
       "skillPath": "skills/tanstack-query/SKILL.md",
-      "skillFolderHash": "b73085898a2015a0f33c98aef0f3f2ff4ee9454f",
+      "skillFolderHash": "f6845cb66840f6a712b62a19ca83102f1b12eba2",
       "installedAt": "2026-02-28T10:02:38.014Z",
-      "updatedAt": "2026-02-28T10:02:38.014Z"
+      "updatedAt": "2026-09-14T16:13:50.957Z"
     },
     "tanstack-start-best-practices": {
       "source": "deckardger/tanstack-agent-skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/deckardger/tanstack-agent-skills.git",
       "skillPath": "skills/tanstack-start/SKILL.md",
-      "skillFolderHash": "d4e415c2c618da237bbab97be0406e0c92efb18f",
+      "skillFolderHash": "4e22c7dfc46301618d9529f9240d32b6d7b2f840",
       "installedAt": "2026-02-28T10:02:56.371Z",
-      "updatedAt": "2026-02-28T10:02:56.371Z"
+      "updatedAt": "2026-09-14T16:13:53.771Z"
     },
     "animate": {
       "source": "emilkowalski/skill",
@@ -196,9 +195,18 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/dmno-dev/varlock.git",
       "skillPath": "skills/varlock/SKILL.md",
-      "skillFolderHash": "3db2cd9981a6679f776071ff9c875bb5b1cba2b8",
+      "skillFolderHash": "81293b3642212934b388a5e9ac6086be251e126d",
       "installedAt": "2026-09-11T00:51:41.625Z",
-      "updatedAt": "2026-09-11T00:51:41.625Z"
+      "updatedAt": "2026-09-14T16:13:58.645Z"
+    },
+    "effect-ts": {
+      "source": "effect-ts/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/effect-ts/skills.git",
+      "skillPath": "skills/effect-ts/SKILL.md",
+      "skillFolderHash": "dbc2a06700d0e901d464edfcf0020ab7f6ec0bbd",
+      "installedAt": "2026-09-14T16:15:01.350Z",
+      "updatedAt": "2026-09-14T16:15:01.350Z"
     }
   },
   "dismissed": {
