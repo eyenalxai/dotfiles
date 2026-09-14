@@ -11,15 +11,23 @@ import "Resources.js" as Resources
 //     "source": "~/.config/omarchy/bar/modules/resources.qml" }
 //   { "id": "ram", "type": "qml", "metric": "ram",
 //     "source": "~/.config/omarchy/bar/modules/resources.qml" }
+//   { "id": "disk", "type": "qml", "metric": "disk", "mount": "/",
+//     "source": "~/.config/omarchy/bar/modules/resources.qml" }
 //
 // The badge is icon-only; the tooltip carries the numbers. One module
-// definition backs both indicators so the sampling and presentation stay in a
+// definition backs every indicator so the sampling and presentation stay in a
 // single place. Left-click opens btop, or focuses it when it is already
 // running.
 //
 // CPU usage is the busy share between two /proc/stat samples; RAM is
-// MemTotal - MemAvailable from /proc/meminfo. Both files are read in-process
-// through FileView — no helper process and no shell.
+// MemTotal - MemAvailable from /proc/meminfo, both read in-process through
+// FileView — no helper process and no shell.
+//
+// Disk usage is btrfs's own "Free (estimated)" for the configured mount,
+// because btrfs has to pay for its chunk profiles up front: statfs/df numbers
+// ignore DUP/RAID ratios and promise space the filesystem cannot actually hand
+// out. The tooltip keeps btrfs's worst-case minimum when the profiles
+// constrain it. Mounts btrfs does not own fall back to df.
 //
 // The RAM instance also guards against memory exhaustion: once free memory
 // has stayed below lowMemoryThresholdPercent for lowMemorySustainMs it posts
@@ -30,18 +38,32 @@ BarWidget {
   id: root
 
   readonly property string metric: String(setting("metric", "cpu"))
+  readonly property bool isCpu: metric === "cpu"
   readonly property bool isRam: metric === "ram"
-  // nf-fa-microchip / nf-md-memory.
-  readonly property string glyph: isRam ? "󰍛" : ""
-  readonly property bool ready: isRam ? ramTotalKib > 0 : cpuReady
-  readonly property real percent: isRam ? ramPercent : cpuPercent
+  readonly property bool isDisk: metric === "disk"
+  readonly property string mount: String(setting("mount", "/"))
+  // nf-fa-microchip / nf-fa-memory / nf-fa-hard-drive. The RAM stick stays
+  // visibly apart from the CPU and the drive at bar size.
+  readonly property string glyph: isDisk ? "" : isRam ? "" : ""
+  readonly property string label: isDisk ? (mount === "/" ? "Disk" : "Disk " + mount) : isRam ? "RAM" : "CPU"
+  readonly property bool ready: isDisk ? diskReady : isRam ? ramTotalKib > 0 : cpuReady
+  readonly property real percent: isDisk ? diskPercent : isRam ? ramPercent : cpuPercent
   readonly property string tooltip: {
     var hint = " · Click for btop"
-    if (!ready) return (isRam ? "RAM" : "CPU") + hint
+    if (!ready) return label + hint
+    if (isDisk) {
+      var free = Resources.formatGib(diskFreeKib) + " GiB free"
+      if (diskEstimated) free += " (est.)"
+      // The min is btrfs's worst case when the remaining profiles constrain
+      // allocation; show it only when it is actually tighter than the estimate.
+      if (diskMinFreeKib >= 0 && diskMinFreeKib < diskFreeKib)
+        free += ", min " + Resources.formatGib(diskMinFreeKib) + " GiB"
+      return label + " " + diskPercent.toFixed(1) + "% · " + free + hint
+    }
     if (isRam)
-      return "RAM " + ramPercent.toFixed(1) + "% · "
+      return label + " " + ramPercent.toFixed(1) + "% · "
         + Resources.formatGib(ramAvailableKib) + " GiB available" + hint
-    return "CPU " + cpuPercent.toFixed(1) + "%" + hint
+    return label + " " + cpuPercent.toFixed(1) + "%" + hint
   }
 
   // Memory guard thresholds: warn under 10% available, ignore blips shorter
@@ -58,6 +80,14 @@ BarWidget {
   // CPU usage needs two samples: the first only establishes a baseline.
   property var previousCpuSample: null
   property bool cpuReady: false
+  // Disk state. The source starts as btrfs and drops to df for a mount btrfs
+  // does not own. minFreeKib is -1 when btrfs reports no minimum.
+  property real diskPercent: 0
+  property real diskFreeKib: 0
+  property real diskMinFreeKib: -1
+  property bool diskReady: false
+  property bool diskEstimated: false
+  property string diskSource: "btrfs"
   // Memory guard state: when the current low streak began, when the toast was
   // last posted, its notification id (so refreshes replace it in place), and
   // whether a toast is currently up.
@@ -86,8 +116,43 @@ BarWidget {
     if (memory.total <= 0 || memory.available <= 0) return
     root.ramTotalKib = memory.total
     root.ramAvailableKib = memory.available
-    root.ramPercent = (memory.total - memory.available) / memory.total * 100
+    root.ramPercent = Resources.usedPercent(memory.total, memory.available)
     root.checkLowMemory()
+  }
+
+  function sampleDisk() {
+    if (root.diskSource === "btrfs") {
+      if (!btrfsProc.running) btrfsProc.running = true
+    } else if (!dfProc.running) {
+      dfProc.running = true
+    }
+  }
+
+  // Returns false when the report did not parse, so callers can fall back.
+  function applyDiskUsage(usage, estimated) {
+    if (!usage) return false
+    root.diskFreeKib = usage.freeKib
+    root.diskMinFreeKib = usage.minFreeKib
+    root.diskPercent = Resources.usedPercent(usage.totalKib, usage.freeKib)
+    root.diskEstimated = estimated
+    root.diskReady = true
+    return true
+  }
+
+  function applyBtrfsUsage(raw) {
+    if (root.applyDiskUsage(Resources.parseBtrfsUsage(raw), true)) return
+    root.useDf()
+  }
+
+  function applyDfUsage(raw) {
+    // A failed df keeps the previous reading; the timer will try again.
+    root.applyDiskUsage(Resources.parseDf(raw), false)
+  }
+
+  function useDf() {
+    if (root.diskSource === "df") return
+    root.diskSource = "df"
+    if (!dfProc.running) dfProc.running = true
   }
 
   function checkLowMemory() {
@@ -148,15 +213,25 @@ BarWidget {
     repeat: true
     triggeredOnStart: true
     onTriggered: {
-      // Sample only the metric this entry paints; the other file is dead work.
-      if (root.isRam) memFile.reload()
-      else statFile.reload()
+      // Sample only the metric this entry paints; the other files are dead
+      // work. Disk has its own slower timer.
+      if (root.isCpu) statFile.reload()
+      else if (root.isRam) memFile.reload()
     }
+  }
+
+  Timer {
+    // Disk fills slowly; a minute is plenty and keeps command spawns rare.
+    interval: 60000
+    running: root.isDisk
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: root.sampleDisk()
   }
 
   FileView {
     id: statFile
-    path: root.isRam ? "" : "/proc/stat"
+    path: root.isCpu ? "/proc/stat" : ""
     onLoaded: root.sampleCpu(statFile.text())
   }
 
@@ -164,6 +239,32 @@ BarWidget {
     id: memFile
     path: root.isRam ? "/proc/meminfo" : ""
     onLoaded: root.sampleRam(memFile.text())
+  }
+
+  Process {
+    id: btrfsProc
+    command: ["btrfs", "filesystem", "usage", "-b", root.mount]
+    // btrfs warns on stderr for unprivileged users; swallow it instead of
+    // letting it fill the shell log once a minute.
+    stderr: StdioCollector {}
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.applyBtrfsUsage(text)
+    }
+    onExited: function(exitCode) {
+      // Not a btrfs mount (or btrfs is missing): df can still report it.
+      if (exitCode !== 0) root.useDf()
+    }
+  }
+
+  Process {
+    id: dfProc
+    command: ["df", "-B1", "--output=size,avail", root.mount]
+    stderr: StdioCollector {}
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.applyDfUsage(text)
+    }
   }
 
   Process {

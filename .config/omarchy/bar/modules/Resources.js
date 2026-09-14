@@ -1,9 +1,9 @@
 // Parsing and policy helpers for the resources bar module.
 //
-// The module samples Linux /proc in-process (Quickshell FileView) and keeps
-// the QML side to presentation, so the sampling math and the low-memory
-// notification policy live here where they can be reasoned about — and
-// exercised — on their own.
+// CPU and RAM are sampled in-process from /proc (Quickshell FileView); disk
+// usage comes from btrfs or df, whichever the mount understands. The QML side
+// stays presentation-only so the parsing, the math and the low-memory
+// notification policy can be reasoned about — and exercised — on their own.
 
 // One sample of the aggregate CPU counters from /proc/stat's `cpu` line:
 //   cpu user nice system idle iowait irq softirq steal [guest guest_nice]
@@ -57,6 +57,56 @@ function isMemoryLow(availableKib, totalKib, thresholdPercent) {
   return percent >= 0 && percent <= thresholdPercent
 }
 
+// Used share (percent) of a total/free pair, clamped to 0..100, or -1 when a
+// sample is unusable.
+function usedPercent(totalKib, freeKib) {
+  if (!(totalKib > 0) || !(freeKib >= 0)) return -1
+  return Math.max(0, Math.min(100, (1 - freeKib / totalKib) * 100))
+}
+
+// btrfs's own numbers from `btrfs filesystem usage -b <mount>`, as KiB:
+//   Device size:                  92381642752
+//   Free (estimated):             45678735360  (min: 24392642560)
+// "Free (estimated)" is the space btrfs can still hand out once the chunk
+// profiles are paid for; the optional min is the worst-case figure when the
+// remaining profiles constrain allocation (DUP/RAID metadata). Returns null
+// when the report is missing or unreadable.
+function parseBtrfsUsage(raw) {
+  var lines = String(raw || "").split("\n")
+  var totalKib = 0
+  var freeKib = -1
+  var minFreeKib = -1
+
+  for (var i = 0; i < lines.length; i++) {
+    var device = lines[i].match(/^\s*Device size:\s*(\d+)/)
+    if (device) {
+      totalKib = Number(device[1]) / 1024
+      continue
+    }
+    var free = lines[i].match(/^\s*Free \(estimated\):\s*(\d+)(?:\s*\(min:\s*(\d+)\))?/)
+    if (free) {
+      freeKib = Number(free[1]) / 1024
+      if (free[2]) minFreeKib = Number(free[2]) / 1024
+    }
+  }
+
+  if (!(totalKib > 0) || freeKib < 0) return null
+  return { totalKib: totalKib, freeKib: freeKib, minFreeKib: minFreeKib }
+}
+
+// `df -B1 --output=size,avail <mount>` fallback for non-btrfs mounts: a header
+// plus one row of bytes. Returns KiB, or null when there is no usable row.
+function parseDf(raw) {
+  var lines = String(raw || "").trim().split("\n")
+  if (lines.length < 2) return null
+  var fields = lines[lines.length - 1].trim().split(/\s+/)
+  if (fields.length < 2) return null
+  var totalKib = Number(fields[0]) / 1024
+  var freeKib = Number(fields[1]) / 1024
+  if (!(totalKib > 0) || !(freeKib >= 0)) return null
+  return { totalKib: totalKib, freeKib: freeKib, minFreeKib: -1 }
+}
+
 // True when a repeat notification is allowed: never within `intervalMs` of the
 // previous one; always when there was none, or the clock jumped backwards.
 function notificationIntervalElapsed(lastNotifyTime, now, intervalMs) {
@@ -87,6 +137,9 @@ if (typeof module !== "undefined") {
     parseMeminfo: parseMeminfo,
     memoryAvailablePercent: memoryAvailablePercent,
     isMemoryLow: isMemoryLow,
+    usedPercent: usedPercent,
+    parseBtrfsUsage: parseBtrfsUsage,
+    parseDf: parseDf,
     notificationIntervalElapsed: notificationIntervalElapsed,
     formatGib: formatGib
   }

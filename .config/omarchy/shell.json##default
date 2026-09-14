@@ -68,6 +68,13 @@
           "metric": "ram"
         },
         {
+          "id": "disk",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/resources.qml",
+          "metric": "disk",
+          "mount": "/"
+        },
+        {
           "id": "omarchy.power"
         }
       ]
