@@ -12,7 +12,19 @@ hl.config({
   input = {
     kb_layout = "us,ru",
     kb_options = "grp:caps_toggle,shift:both_capslock_cancel",
+{% if yadm.hostname == "laptop" %}
+    touchpad = {
+      scroll_factor = 0.2,
+      natural_scroll = true,
+    },
+{% endif %}
   },
+{% if yadm.hostname == "laptop" %}
+  gestures = {
+    workspace_swipe_min_speed_to_force = 10,
+    workspace_swipe_cancel_ratio = 0.3,
+  },
+{% endif %}
 })
 
 -- App-specific touchpad scroll speeds.
@@ -21,7 +33,11 @@ hl.config({
 
 -- Enable touchpad gestures for changing workspaces.
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Gestures/
+{% if yadm.hostname == "laptop" %}
+hl.gesture({ fingers = 3, direction = "horizontal", scale = 0.5, action = "workspace" })
+{% else %}
 -- hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+{% endif %}
 
 -- Enable touchpad gestures for moving focus (helpful on scrolling layout).
 -- hl.gesture({ fingers = 3, direction = "left", action = function() hl.dispatch(hl.dsp.focus({ direction = "l" })) end })

@@ -75,7 +75,11 @@
           "mount": "/"
         },
         {
+{% if yadm.hostname == "laptop" %}
+          "id": "ulsippoi.power"
+{% else %}
           "id": "omarchy.power"
+{% endif %}
         }
       ]
     }

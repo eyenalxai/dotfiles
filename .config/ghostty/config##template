@@ -4,7 +4,11 @@ config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"
 # Font
 font-family = "JetBrainsMono Nerd Font"
 font-style = Regular
+{% if yadm.hostname == "laptop" %}
 font-size = 11
+{% else %}
+font-size = 13
+{% endif %}
 
 # Window
 window-padding-x = 14

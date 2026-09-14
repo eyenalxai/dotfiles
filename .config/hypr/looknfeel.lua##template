@@ -24,6 +24,17 @@ hl.config({
   },
 })
 
+{% if yadm.hostname == "laptop" %}
+-- Enable smooth workspace slide animation for trackpad gestures with inertia (macOS feel)
+hl.animation({
+  leaf = "workspaces",
+  enabled = true,
+  speed = 3.5,
+  bezier = "easeOutQuint",
+  style = "slide",
+})
+
+{% endif %}
 -- https://wiki.hypr.land/Configuring/Basics/Variables/#general
 -- hl.config({
 --   general = {

@@ -133,10 +133,17 @@ o.bind("SUPER + B", "Helium", { launch = "helium-browser" })
 hl.unbind("SUPER + W")
 o.bind("SUPER + Q", "Close window", hl.dsp.window.close())
 
+{% if yadm.hostname == "laptop" %}
+-- Laptop-only: clipboard manager on CTRL + SHIFT + X instead of Super + Ctrl + V
+hl.unbind("SUPER + CTRL + V")
+hl.unbind("SUPER + SHIFT + X")
+o.bind("CTRL + SHIFT + X", "Clipboard manager", "omarchy-shell shell toggle omarchy.clipboard")
+{% else %}
 -- Clipboard manager on Super + Shift + X instead of Super + Ctrl + V
 hl.unbind("SUPER + CTRL + V")
 hl.unbind("SUPER + SHIFT + X")
 o.bind("SUPER + SHIFT + X", "Clipboard manager", "omarchy-shell shell toggle omarchy.clipboard")
+{% endif %}
 
 -- Dictation (push-to-talk, hold to talk) on F1
 hl.unbind("SUPER + SHIFT + D")
@@ -144,3 +151,20 @@ hl.unbind("F9")
 hl.unbind("SUPER + CTRL + X")
 o.bind("F1", "Start dictation (push-to-talk)", "voxtype record start")
 o.bind("F1", "Stop dictation (push-to-talk)", "voxtype record stop", { release = true })
+{% if yadm.hostname == "laptop" %}
+
+-- Laptop-only: open the Omarchy menu with CTRL + SPACE instead of SUPER + SPACE.
+hl.unbind("SUPER + SPACE")
+o.bind("CTRL + SPACE", "Omarchy menu", "omarchy-menu toggle")
+
+-- Volume keys snap to the next multiple of 5 in the pressed direction:
+-- 47 down -> 45, then 40; 47 up -> 50. Omarchy's stock raise/lower moves by 5
+-- from wherever the volume is, which leaves it off-grid (e.g. 47 down -> 42).
+-- The script hands the delta to omarchy-audio-output-volume, so the OSD and
+-- sink handling (DSP sinks, mute-on-change) stay the same.
+hl.unbind("XF86AudioRaiseVolume")
+hl.unbind("XF86AudioLowerVolume")
+local volume_snap = (os.getenv("HOME") or "") .. "/.local/bin/volume-snap"
+o.bind("XF86AudioRaiseVolume", "Volume up", volume_snap .. " up", { locked = true, repeating = true })
+o.bind("XF86AudioLowerVolume", "Volume down", volume_snap .. " down", { locked = true, repeating = true })
+{% endif %}

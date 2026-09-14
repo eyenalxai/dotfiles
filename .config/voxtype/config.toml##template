@@ -45,7 +45,11 @@ pause_media = true
 # .en models are English-only but faster and more accurate for English
 # large-v3-turbo is faster than large-v3 with minimal accuracy loss (recommended for GPU)
 # Or provide absolute path to a custom .bin model file
+{% if yadm.hostname == "laptop" %}
+model = "base.en"
+{% else %}
 model = "large-v3-turbo"
+{% endif %}
 
 # Language for transcription
 # Use "en" for English, "auto" for auto-detection
