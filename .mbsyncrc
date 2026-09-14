@@ -1,0 +1,55 @@
+# Mirror only each account's INBOX into ~/Mail. The [Unified] aerc account
+# (notmuch) reads this tree and exposes combined virtual folders; everything
+# else (archives, sent, trash) stays on the servers and is read through the
+# individual IMAP accounts, so the local store is bounded by your inboxes.
+#
+# Archiving or deleting on the server drops the local copy on the next run
+# (Expunge Both). Credentials come from the same 1Password-backed cache that
+# aerc uses; see ~/.config/aerc/get-cred.nu.
+#
+# Kept out of the dotfiles repo on purpose: unlike the rest of the mail
+# config, it contains the account addresses.
+
+IMAPAccount personal
+Host imap.migadu.com
+User REDACTED
+PassCmd "nu --no-config-file ~/.config/aerc/get-cred.nu op://Private/Migadu/main-mailbox-password"
+TLSType IMAPS
+
+IMAPStore personal-remote
+Account personal
+
+MaildirStore personal-local
+Path /home/ulsippoi/Mail/Personal/
+Inbox /home/ulsippoi/Mail/Personal/INBOX
+SubFolders Verbatim
+
+Channel personal
+Far :personal-remote:
+Near :personal-local:
+Patterns "INBOX"
+Create Both
+Expunge Both
+SyncState *
+
+IMAPAccount gmail
+Host imap.gmail.com
+User REDACTED
+PassCmd "nu --no-config-file ~/.config/aerc/get-cred.nu op://Private/dtulitrcicexylmwntwjup42qe/apppassword"
+TLSType IMAPS
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+Path /home/ulsippoi/Mail/Gmail/
+Inbox /home/ulsippoi/Mail/Gmail/INBOX
+SubFolders Verbatim
+
+Channel gmail
+Far :gmail-remote:
+Near :gmail-local:
+Patterns "INBOX"
+Create Both
+Expunge Both
+SyncState *
