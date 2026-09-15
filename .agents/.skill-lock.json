@@ -207,6 +207,15 @@
       "skillFolderHash": "dbc2a06700d0e901d464edfcf0020ab7f6ec0bbd",
       "installedAt": "2026-09-14T16:15:01.350Z",
       "updatedAt": "2026-09-14T16:15:01.350Z"
+    },
+    "better-ui": {
+      "source": "jakubkrehel/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/jakubkrehel/skills.git",
+      "skillPath": "skills/better-ui/SKILL.md",
+      "skillFolderHash": "710b8e9a1b4086594d24050bbb6768dbc421e9dc",
+      "installedAt": "2026-09-15T10:46:45.365Z",
+      "updatedAt": "2026-09-15T10:46:45.365Z"
     }
   },
   "dismissed": {
