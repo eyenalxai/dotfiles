@@ -44,6 +44,7 @@ $env.PATH = ($env.PATH | prepend $"($env.HOME)/.local/bin" | uniq)
 source completions/git-completions.nu
 source completions/yadm-completions.nu
 use completions/systemctl-completions.nu *
+source completions/bat-completions.nu
 source completions/pacman-completions.nu
 source completions/yay-completions.nu
 source completions/docker-completions.nu

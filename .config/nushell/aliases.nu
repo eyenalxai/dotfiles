@@ -11,7 +11,8 @@ alias ngrok = op plugin run -- ngrok
 
 # Viewers & Navigation
 alias ls = ls -a
-alias cat = bat --plain --paging=never
+# `cat` (a decorated `bat`) is defined in completions/bat-completions.nu so that
+# it can carry completions; aliases cannot.
 
 # Database
 alias psql = psql --pset=pager=off
