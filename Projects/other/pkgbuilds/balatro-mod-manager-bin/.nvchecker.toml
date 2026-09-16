@@ -1,0 +1,12 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+#
+# Note: every GitHub release for this project is flagged as a prerelease,
+# so `use_latest_release` would not find anything. `use_max_tag` does.
+
+[balatro-mod-manager-bin]
+source = "github"
+github = "skyline69/balatro-mod-manager"
+use_max_tag = true
+prefix = "v"

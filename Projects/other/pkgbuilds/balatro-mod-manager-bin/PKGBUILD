@@ -1,0 +1,37 @@
+# Maintainer: ulezot
+
+_pkgname=balatro-mod-manager
+pkgname=$_pkgname-bin
+pkgver=0.4.1
+pkgrel=1
+pkgdesc="A mod manager for Balatro - easily install and manage mods for the popular roguelike deckbuilding game"
+arch=('x86_64')
+url="https://github.com/skyline69/$_pkgname"
+license=('GPL-3.0-or-later')
+depends=('webkit2gtk-4.1' 'gtk3' 'hicolor-icon-theme')
+optdepends=('discord: Discord Rich Presence support')
+provides=("$_pkgname" 'bmm')
+conflicts=("$_pkgname" 'bmm')
+options=('!strip' '!debug')
+
+source=(
+  "$_pkgname-$pkgver.deb::https://github.com/skyline69/$_pkgname/releases/download/v$pkgver/Balatro.Mod.Manager_${pkgver}_amd64.deb"
+  "LICENSE::https://raw.githubusercontent.com/skyline69/$_pkgname/v$pkgver/LICENSE"
+)
+sha256sums=('10949bcea744557af1ff1b46ede8f4323542fc40d7fc460644888b0a593ed541'
+            '3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986')
+
+package() {
+  # makepkg auto-extracts the .deb (an ar archive) into $srcdir,
+  # leaving the payload archive data.tar.gz alongside it.
+  bsdtar -xf data.tar.gz -C "$pkgdir/"
+
+  # FreeDesktop recommends .desktop filenames without spaces
+  mv "$pkgdir/usr/share/applications/Balatro Mod Manager.desktop" \
+     "$pkgdir/usr/share/applications/$_pkgname.desktop"
+
+  # Provide a friendlier command name; BMM remains the primary executable
+  ln -s BMM "$pkgdir/usr/bin/$_pkgname"
+
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
