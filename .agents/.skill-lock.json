@@ -216,6 +216,24 @@
       "skillFolderHash": "710b8e9a1b4086594d24050bbb6768dbc421e9dc",
       "installedAt": "2026-09-15T10:46:45.365Z",
       "updatedAt": "2026-09-15T10:46:45.365Z"
+    },
+    "effect": {
+      "source": "kitlangton/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/kitlangton/skills.git",
+      "skillPath": "skills/effect/SKILL.md",
+      "skillFolderHash": "8bb52487cd2aaf9b851413c8d7c0ce17dedeaf17",
+      "installedAt": "2026-09-18T20:11:50.163Z",
+      "updatedAt": "2026-09-18T20:11:50.163Z"
+    },
+    "code-walkthrough": {
+      "source": "kitlangton/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/kitlangton/skills.git",
+      "skillPath": "skills/code-walkthrough/SKILL.md",
+      "skillFolderHash": "883e4477ab104be602ddba6e1b571503c9fd6e3d",
+      "installedAt": "2026-09-18T20:12:05.043Z",
+      "updatedAt": "2026-09-18T20:12:05.043Z"
     }
   },
   "dismissed": {
