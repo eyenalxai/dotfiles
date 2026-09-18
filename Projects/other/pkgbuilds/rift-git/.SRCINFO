@@ -4,6 +4,7 @@ pkgbase = rift-git
 	pkgrel = 1
 	url = https://github.com/anomalyco/rift
 	arch = x86_64
+	arch = aarch64
 	license = MIT
 	makedepends = cargo
 	makedepends = git

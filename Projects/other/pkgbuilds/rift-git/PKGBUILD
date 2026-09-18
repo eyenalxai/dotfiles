@@ -5,7 +5,7 @@ pkgname=$_pkgname-git
 pkgver=0.0.10.r2.g757a22c
 pkgrel=1
 pkgdesc="Copy-on-write workspaces as a faster alternative to git worktrees"
-arch=('x86_64')
+arch=('x86_64' 'aarch64')
 url="https://github.com/anomalyco/rift"
 license=('MIT')
 
