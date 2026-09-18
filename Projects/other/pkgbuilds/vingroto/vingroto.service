@@ -7,6 +7,8 @@ Type=simple
 ExecStart=/usr/bin/vingroto-server
 Restart=on-failure
 RestartSec=3
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=default.target

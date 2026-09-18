@@ -1,6 +1,6 @@
 pkgbase = vingroto
 	pkgdesc = TUI mail client with a Solid/OpenTUI interface and a background sync daemon
-	pkgver = 0.9.2
+	pkgver = 0.9.3
 	pkgrel = 1
 	url = https://github.com/eyenalxai/vingroto
 	install = vingroto.install
@@ -14,9 +14,9 @@ pkgbase = vingroto
 	depends = libsecret
 	options = !strip
 	options = !debug
-	source = vingroto::git+ssh://git@github.com/eyenalxai/vingroto.git#tag=v0.9.2
+	source = vingroto::git+ssh://git@github.com/eyenalxai/vingroto.git#tag=v0.9.3
 	source = vingroto.service
 	sha256sums = SKIP
-	sha256sums = b070860e38d7345637dc6d48893e7b626ccaf4ec1a1394fd81f9d31480392c22
+	sha256sums = 953d6fa785b4b61f6775ee83c31579119b2a1d4e24d09126001d505513246b27
 
 pkgname = vingroto
