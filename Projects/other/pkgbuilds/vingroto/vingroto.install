@@ -1,0 +1,5 @@
+post_install() {
+  echo ":: The vingroto daemon runs as a systemd user service."
+  echo ":: Enable it for the current user with:"
+  echo "     systemctl --user enable --now vingroto.service"
+}

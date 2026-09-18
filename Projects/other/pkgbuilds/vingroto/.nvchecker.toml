@@ -1,0 +1,11 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+#
+# The repository is private, so the SSH remote is queried instead of the GitHub
+# API. The git source returns every tag and nvchecker picks the highest one.
+
+[vingroto]
+source = "git"
+git = "git@github.com:eyenalxai/vingroto.git"
+prefix = "v"
