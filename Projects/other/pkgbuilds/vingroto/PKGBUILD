@@ -17,7 +17,7 @@ install="$pkgname.install"
 
 source=("$pkgname::git+ssh://git@github.com/eyenalxai/vingroto.git#tag=v$pkgver"
         "vingroto.service")
-sha256sums=('SKIP'
+sha256sums=('9a357264b66683885a56f801e95cb0cfee70872946d9cb071e3cc286dd89a7d4'
             '953d6fa785b4b61f6775ee83c31579119b2a1d4e24d09126001d505513246b27')
 
 build() {
