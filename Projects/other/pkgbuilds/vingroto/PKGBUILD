@@ -1,7 +1,7 @@
 # Maintainer: ulezot
 
 pkgname=vingroto
-pkgver=0.11.0
+pkgver=0.12.0
 pkgrel=1
 pkgdesc="TUI mail client with a Solid/OpenTUI interface and a background sync daemon"
 arch=('x86_64' 'aarch64')
@@ -19,7 +19,7 @@ install="$pkgname.install"
 
 source=("$pkgname::git+ssh://git@github.com/eyenalxai/vingroto.git#tag=v$pkgver"
         "vingroto.service")
-sha256sums=('70f29c9327812c7566dc6b017c6b77c1a817142a4aee7ee11ae949984eedfe46'
+sha256sums=('def3f7811c4a4e8c3e3931c83612c04b61d11a57c225b193e2ab1e0cf9467cb7'
             '953d6fa785b4b61f6775ee83c31579119b2a1d4e24d09126001d505513246b27')
 
 build() {
@@ -32,6 +32,11 @@ package() {
   cd "$srcdir/$pkgname"
   install -Dm755 packages/client/dist/vingroto "$pkgdir/usr/bin/vingroto"
   install -Dm755 packages/server/dist/vingroto-server "$pkgdir/usr/bin/vingroto-server"
+  install -Dm644 packages/client/completions/vingroto.bash \
+    "$pkgdir/usr/share/bash-completion/completions/vingroto"
+  install -Dm644 packages/client/completions/_vingroto "$pkgdir/usr/share/zsh/site-functions/_vingroto"
+  install -Dm644 packages/client/completions/vingroto.nu \
+    "$pkgdir/usr/share/nushell/vendor/autoload/vingroto.nu"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 "$srcdir/vingroto.service" "$pkgdir/usr/lib/systemd/user/vingroto.service"
 }
