@@ -35,14 +35,84 @@ def "nu-complete vingroto api operation" [] {
   ]
 }
 
+def "nu-complete vingroto api path" [] {
+  [
+    "/api/accounts"
+    "/api/accounts/discover"
+    "/api/accounts/{accountId}"
+    "/api/accounts/{accountId}/username"
+    "/api/events"
+    "/api/health"
+    "/api/mailboxes"
+    "/api/mailboxes/{mailboxId}/muted"
+    "/api/messages"
+    "/api/messages/move"
+    "/api/messages/seen"
+    "/api/messages/{messageId}"
+    "/api/messages/{messageId}/body"
+    "/api/search/marks"
+    "/api/search/messages"
+    "/api/search/start"
+    "/api/settings/notifications"
+    "/api/settings/sync"
+    "/api/status"
+    "/api/sync"
+  ]
+}
+
+def "nu-complete vingroto api flag param" [] {
+  [
+    "accountId="
+    "limit="
+    "mailboxId="
+    "messageId="
+    "query="
+    "scope=all"
+    "scope=mailbox"
+    "scope=unread"
+  ]
+}
+
 export extern "vingroto api" [
-  --param: string # OpenAPI path or query parameter
-  --data(-d): string # Request body
+  --param: string@"nu-complete vingroto api flag param" # Path or query parameter for an operation, as name=value
+  --data(-d): string # Request body, @file to read a file, or - to read stdin
   --header(-H): string # Request header in name:value form
   --server: string # Daemon base URL (defaults to VINGROTO_SERVER or the registration file)
   --token: string # Daemon bearer token (defaults to VINGROTO_TOKEN or the token file)
-  ...operation: string@"nu-complete vingroto api operation" # OpenAPI operation ID, or an HTTP method followed by a path
+  operation?: string@"nu-complete vingroto api operation" # OpenAPI operation ID, or an HTTP method followed by a request path
+  path?: string@"nu-complete vingroto api path" # Request path, when the first argument is an HTTP method
 ]
+
+def "nu-complete vingroto api describe operation" [] {
+  [
+    "account.create"
+    "account.discover"
+    "account.update"
+    "account.username"
+    "event.subscribe"
+    "mailbox.setMuted"
+    "mailbox.snapshot"
+    "message.body"
+    "message.get"
+    "message.list"
+    "message.move"
+    "message.setSeen"
+    "search.marks"
+    "search.messages"
+    "search.start"
+    "server.health"
+    "server.status"
+    "settings.saveNotifications"
+    "settings.saveSyncSettings"
+    "sync.run"
+  ]
+}
+
+export extern "vingroto api describe" [
+  operation: string@"nu-complete vingroto api describe operation" # OpenAPI operation ID to describe
+]
+
+export extern "vingroto api list" []
 
 def "nu-complete vingroto completions shell" [] {
   [
