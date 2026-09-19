@@ -53,6 +53,7 @@ source completions/pkill-completions.nu
 source completions/op-completions.nu
 source completions/zoxide-completions.nu
 source completions/gh-completions.nu
+source completions/vingroto-completions.nu
 
 # Aliases and custom commands
 source aliases.nu
