@@ -1,7 +1,7 @@
 # Maintainer: ulezot
 
 pkgname=vingroto
-pkgver=0.14.0
+pkgver=0.15.0
 pkgrel=1
 pkgdesc="TUI mail client with a Solid/OpenTUI interface and a background sync daemon"
 arch=('x86_64' 'aarch64')
@@ -19,7 +19,7 @@ install="$pkgname.install"
 
 source=("$pkgname::git+ssh://git@github.com/eyenalxai/vingroto.git#tag=v$pkgver"
         "vingroto.service")
-sha256sums=('1ee5271e3a20b78a89e5f3fc84ef7a49b6a6fa8a1e57d237570ce45fc2bb5db2'
+sha256sums=('6addd6c0301742b230666c088b3b751184ef3b080a6e61e2b0b1a85b3fde5721'
             '953d6fa785b4b61f6775ee83c31579119b2a1d4e24d09126001d505513246b27')
 
 build() {
