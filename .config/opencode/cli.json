@@ -10,7 +10,9 @@
     "session.last": "ctrl+alt+g,end"
   },
   "attention": {
-    "enabled": false
+    "enabled": true,
+    "notifications": true,
+    "sound": true
   },
   "session": {
     "sidebar": "auto",
@@ -35,5 +37,6 @@
   },
   "terminal": {
     "copy": "manual"
-  }
+  },
+  "animations": true
 }
