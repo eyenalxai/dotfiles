@@ -5,7 +5,7 @@ import type { Plugin } from "@opencode/plugin"
  * the configured budget instead of the provider's native window.
  *
  * The plugin changes `model.limit.context` (and `limit.input` when present)
- * through a catalog transform. OpenCode derives its automatic compaction
+ * through a model transform. OpenCode derives its automatic compaction
  * threshold from those limits, so no compaction logic is duplicated here.
  * OpenCode still compacts before a window is full, reserving room for the
  * model's output and its compaction buffer, exactly as it does for native
@@ -36,18 +36,21 @@ export default {
       return
     }
     console.log(`[max-context] capping context windows with ${rules.length} rule(s)`)
-    await ctx.catalog.transform((catalog) => {
-      for (const provider of catalog.provider.list()) {
-        for (const model of provider.models.values()) {
-          const cap = select(rules, `${model.providerID}/${model.id}`)
-          if (cap === undefined) continue
+    await ctx.model.transform((editor) => {
+      for (const model of editor.list()) {
+        // Branded ID fields on mutable model drafts do not narrow to string.
+        const providerID = String(model.providerID)
+        const modelID = String(model.id)
+        const cap = select(rules, `${providerID}/${modelID}`)
+        if (cap === undefined) continue
+        editor.update(providerID, modelID, (draft) => {
           // A non-positive window means the catalog does not know it. Core skips
           // automatic compaction for those models, so use the configured cap as
           // the assumed window instead of leaving them uncompacted.
-          model.limit.context = model.limit.context > 0 ? Math.min(model.limit.context, cap) : cap
-          if (model.limit.input !== undefined)
-            model.limit.input = model.limit.input > 0 ? Math.min(model.limit.input, cap) : cap
-        }
+          draft.limit.context = draft.limit.context > 0 ? Math.min(draft.limit.context, cap) : cap
+          if (draft.limit.input !== undefined)
+            draft.limit.input = draft.limit.input > 0 ? Math.min(draft.limit.input, cap) : cap
+        })
       }
     })
   },

@@ -8,7 +8,7 @@ at a smaller budget than the provider's native window.
 OpenCode starts automatic compaction when the estimated conversation size
 reaches the selected model's context limit, minus room for the model's output
 and the configured compaction buffer. The plugin lowers `model.limit.context`
-(and `model.limit.input` when present) through a catalog transform, so those
+(and `model.limit.input` when present) through a model transform, so those
 limits drive compaction. No compaction behavior is reimplemented here.
 
 Models whose catalog window is unknown (`0`) adopt the configured cap, because
