@@ -1,6 +1,6 @@
 pkgbase = rift-git
 	pkgdesc = Copy-on-write workspaces as a faster alternative to git worktrees
-	pkgver = 0.0.10.r2.g757a22c
+	pkgver = 0.0.12.r5.g5afb72b
 	pkgrel = 1
 	url = https://github.com/anomalyco/rift
 	arch = x86_64
