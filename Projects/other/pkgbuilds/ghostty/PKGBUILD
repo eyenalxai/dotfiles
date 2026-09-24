@@ -8,7 +8,7 @@ pkgname=(
   "$_pkgbase-terminfo-git"
   "$_pkgbase-nautilus-git"
 )
-pkgver=1.3.1.r2694.g4ae9f1a
+pkgver=1.3.1.r2697.g7c40388
 pkgrel=1
 pkgdesc="Fast, native, feature-rich terminal emulator pushing modern features"
 arch=('aarch64' 'x86_64')
