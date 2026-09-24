@@ -2,7 +2,7 @@
 
 _pkgname=amneziavpn
 pkgname=$_pkgname-git
-pkgver=5.0.3.0.r1.g94b51df
+pkgver=5.0.3.0.r1.g94b51df24
 pkgrel=1
 pkgdesc="Amnezia VPN Client (built from source for aarch64 / x86_64)"
 arch=('aarch64' 'x86_64')
