@@ -8,41 +8,5 @@
         "maxContext": 384000
       }
     }
-  ],
-  "providers": {
-    "openrouter": {
-      "models": {
-        "deepseek/deepseek-v4.1-flash:nitro": {
-          "name": "DeepSeek V4.1 Flash (Nitro)",
-          "family": "deepseek-flash",
-          "api": {
-            "id": "deepseek/deepseek-v4.1-flash:nitro"
-          },
-          "variants": [
-            { "id": "none", "settings": { "reasoning": { "enabled": false } } },
-            { "id": "low", "settings": { "reasoning": { "effort": "low" } } },
-            { "id": "high", "settings": { "reasoning": { "effort": "high" } } },
-            { "id": "max", "settings": { "reasoning": { "effort": "max" } } }
-          ],
-          "capabilities": {
-            "tools": true,
-            "input": ["text", "image"],
-            "output": ["text"]
-          },
-          "limit": {
-            "context": 384000,
-            "output": 384000
-          },
-          "cost": {
-            "input": 0.15,
-            "output": 0.6,
-            "cache": {
-              "read": 0.003,
-              "write": 0
-            }
-          }
-        }
-      }
-    }
-  }
+  ]
 }
