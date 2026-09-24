@@ -5,7 +5,7 @@
     {
       "package": "./max-context",
       "options": {
-        "maxContext": 256000
+        "maxContext": 384000
       }
     }
   ],
@@ -30,7 +30,7 @@
             "output": ["text"]
           },
           "limit": {
-            "context": 256000,
+            "context": 384000,
             "output": 384000
           },
           "cost": {
