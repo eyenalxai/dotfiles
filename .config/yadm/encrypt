@@ -8,3 +8,20 @@
 .local/state/omarchy/clipboard-history.json
 .config/aerc/accounts.conf
 
+# animations.dev skills (paid course content — keep encrypted, never track in plaintext)
+.agents/skills/animate
+.agents/skills/animation-accessibility
+.agents/skills/animation-performance
+.agents/skills/animation-vocabulary
+.agents/skills/css-animations
+.agents/skills/debug-animation
+.agents/skills/find-animation-opportunities
+.agents/skills/gesture-ui
+.agents/skills/improve-animations
+.agents/skills/motion-brief
+.agents/skills/motion-react
+.agents/skills/pick-ui-library
+.agents/skills/prototype
+.agents/skills/review-animations
+.agents/skills/scroll-animations
+
