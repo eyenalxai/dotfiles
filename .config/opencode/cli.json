@@ -18,7 +18,8 @@
     "sidebar": "auto",
     "scrollbar": true,
     "thinking": "hide",
-    "new_location": "launch"
+    "new_location": "launch",
+    "markdown": "rendered"
   },
   "debug": {
     "devtools": false
