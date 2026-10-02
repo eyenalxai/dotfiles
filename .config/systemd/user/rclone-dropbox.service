@@ -1,0 +1,20 @@
+[Unit]
+Description=Dropbox via rclone (on-demand cache; token from keyring)
+After=graphical-session-pre.target
+
+[Service]
+Type=notify
+ExecStartPre=/usr/bin/mkdir -p %h/Dropbox
+ExecStart=%h/.config/rclone/with-dropbox-token.sh /usr/bin/rclone mount dropbox: %h/Dropbox \
+    --cache-dir=%h/.cache/rclone \
+    --vfs-cache-mode full \
+    --vfs-cache-max-age 1w \
+    --vfs-cache-poll-interval 5m \
+    --dir-cache-time 12h \
+    --vfs-read-ahead 128M
+ExecStop=/usr/bin/fusermount3 -u -z %h/Dropbox
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

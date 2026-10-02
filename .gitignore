@@ -5,3 +5,6 @@
 .config/nushell/history.*
 .local/state/mail-watch/
 .local/state/omarchy/clipboard-history.json*
+Dropbox/
+setup-dropbox.sh
+.cache/rclone/
