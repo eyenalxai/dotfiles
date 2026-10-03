@@ -8,6 +8,7 @@
     "position": "top",
     "transparent": false,
     "centerAnchor": "omarchy.clock",
+    "id": "ulezot.bar",
     "layout": {
       "left": [
         {
