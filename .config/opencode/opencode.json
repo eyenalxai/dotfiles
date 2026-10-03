@@ -9,12 +9,11 @@
       }
     },
     {
-      "package": "./rift",
+      "package": "github:anomalyco/rift#v0.0.12::path:plugins/opencode",
       "options": {
         "copyAll": true
       }
     },
-    "github:anomalyco/rift#v0.0.12::path:plugins/opencode",
     "@prevalentware/opencode-goal-plugin"
   ]
 }
