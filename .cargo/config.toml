@@ -1,0 +1,4 @@
+# Use mold as the linker for all Rust projects on Linux.
+# GCC 16 and clang both accept -fuse-ld=mold, so the default `cc` driver is fine.
+[target.'cfg(target_os = "linux")']
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
