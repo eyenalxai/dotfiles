@@ -19,7 +19,8 @@
     "scrollbar": true,
     "thinking": "hide",
     "new_location": "launch",
-    "markdown": "rendered"
+    "markdown": "rendered",
+    "permissions": "autoaccept"
   },
   "debug": {
     "devtools": false
