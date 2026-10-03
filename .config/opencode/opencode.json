@@ -14,6 +14,7 @@
         "copyAll": true
       }
     },
-    "github:anomalyco/rift#v0.0.12::path:plugins/opencode"
+    "github:anomalyco/rift#v0.0.12::path:plugins/opencode",
+    "@prevalentware/opencode-goal-plugin"
   ]
 }
