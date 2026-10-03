@@ -19,15 +19,6 @@
       "installedAt": "2026-02-03T17:14:20.512Z",
       "updatedAt": "2026-09-14T16:13:34.064Z"
     },
-    "create-auth-skill": {
-      "source": "better-auth/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/better-auth/skills.git",
-      "skillPath": "better-auth/create-auth/SKILL.md",
-      "skillFolderHash": "b296a4603f09b8afed34e4bcd421ec5514d70015",
-      "installedAt": "2026-02-03T17:14:20.609Z",
-      "updatedAt": "2026-02-03T17:14:20.609Z"
-    },
     "nextjs-app-router-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
