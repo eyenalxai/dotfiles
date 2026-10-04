@@ -1,0 +1,13 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+#
+# Upstream marks its newer releases as GitHub prereleases (e.g. 4.3.0), so
+# plain `use_latest_release` would pin to the last stable one and
+# `include_prereleases` would require an API token. `use_max_tag` sees them
+# all and is what this package tracks.
+
+[happ-desktop-bin]
+source = "github"
+github = "Happ-proxy/happ-desktop"
+use_max_tag = true
