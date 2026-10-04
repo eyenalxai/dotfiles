@@ -1,0 +1,18 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+#
+# Upstream publishes stable, preview and nightly tags in one repository.
+# Stable tags are non-prereleases, so `use_latest_release` would pin to the
+# last stable and `include_prereleases` needs a GitHub API token. `use_max_tag`
+# plus `include_regex` keeps only the nightly channel.
+# `from_pattern` normalises the tag to the pkgver format ("-" -> "_").
+
+[t3code-nightly-bin]
+source = "github"
+github = "pingdotgg/t3code"
+use_max_tag = true
+include_regex = 'v\d+\.\d+\.\d+-nightly\.\d{8}\.\d+'
+prefix = "v"
+from_pattern = "-nightly\\."
+to_pattern = "_nightly."
