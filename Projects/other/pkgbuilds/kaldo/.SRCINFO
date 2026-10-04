@@ -1,0 +1,16 @@
+pkgbase = kaldo
+	pkgdesc = Generate a solid-color WebP image from the command line
+	pkgver = 0.1.1
+	pkgrel = 1
+	url = https://github.com/eyenalxai/kaldo
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	makedepends = cargo
+	depends = gcc-libs
+	depends = glibc
+	options = !debug
+	source = kaldo-0.1.1.tar.gz::https://github.com/eyenalxai/kaldo/archive/refs/tags/v0.1.1.tar.gz
+	sha256sums = 9f4df355a04d9a3c0b528d5b4ce27b8f4c466c2dc6a6d0b59c565a99582f6848
+
+pkgname = kaldo

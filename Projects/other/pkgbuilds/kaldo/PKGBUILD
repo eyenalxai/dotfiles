@@ -1,0 +1,40 @@
+# Maintainer: ulezot
+
+pkgname=kaldo
+pkgver=0.1.1
+pkgrel=1
+pkgdesc='Generate a solid-color WebP image from the command line'
+arch=('x86_64' 'aarch64')
+url='https://github.com/eyenalxai/kaldo'
+license=('MIT')
+
+depends=('gcc-libs' 'glibc')
+makedepends=('cargo')
+
+# cargo's release profile carries no debug info, so the debug package would be empty
+options=('!debug')
+
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('9f4df355a04d9a3c0b528d5b4ce27b8f4c466c2dc6a6d0b59c565a99582f6848')
+
+build() {
+  cd "$pkgname-$pkgver"
+  cargo build --release --locked
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  cargo test --release --locked
+
+  local out="$srcdir/check.webp"
+  ./target/release/kaldo 64 32 '#1a1b26' -o "$out"
+  # A WebP file is a RIFF container whose form type at offset 8 is "WEBP".
+  [[ $(od -An -tx1 -N4 "$out" | tr -d ' \n') == 52494646 ]]
+  [[ $(od -An -tx1 -j8 -N4 "$out" | tr -d ' \n') == 57454250 ]]
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
