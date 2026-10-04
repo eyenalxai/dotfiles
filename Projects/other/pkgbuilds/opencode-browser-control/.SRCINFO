@@ -1,0 +1,13 @@
+pkgbase = opencode-browser-control
+	pkgdesc = Local browser driver for trusted agents: control your existing Chromium-family browser through an extension and a local relay
+	pkgver = 0.8.3
+	pkgrel = 1
+	url = https://github.com/anomalyco/browser-control
+	arch = any
+	license = MIT
+	makedepends = npm
+	depends = nodejs>=22.19.0
+	source = https://registry.npmjs.org/@opencode-ai/browser-control/-/browser-control-0.8.3.tgz
+	sha256sums = 0fe2d400018dbc2a69ce04c2b072c4eb16e0c15fa5e0fd4ba308627f755d3d97
+
+pkgname = opencode-browser-control

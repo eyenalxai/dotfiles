@@ -1,0 +1,37 @@
+# Maintainer: ulezot
+
+_npmname=@opencode-ai/browser-control
+pkgname=opencode-browser-control
+pkgver=0.8.3
+pkgrel=1
+pkgdesc='Local browser driver for trusted agents: control your existing Chromium-family browser through an extension and a local relay'
+arch=('any')
+url='https://github.com/anomalyco/browser-control'
+license=('MIT')
+depends=('nodejs>=22.19.0')
+makedepends=('npm')
+source=("https://registry.npmjs.org/$_npmname/-/${_npmname##*/}-$pkgver.tgz")
+sha256sums=('0fe2d400018dbc2a69ce04c2b072c4eb16e0c15fa5e0fd4ba308627f755d3d97')
+
+build() {
+  # The published tarball ships prebuilt JS bundles but keeps runtime
+  # dependencies external, so install the production tree for the package.
+  cd "$srcdir/package"
+  npm install --omit=dev --ignore-scripts --no-audit --no-fund
+}
+
+check() {
+  cd "$srcdir/package"
+  node dist/cli.js --version | grep -q "^browser-control v$pkgver$"
+}
+
+package() {
+  cd "$srcdir/package"
+  # dist/cli.js resolves package.json, skills/, and extension/dist relative to
+  # its own location, so keep the published layout intact under /usr/lib.
+  install -dm755 "$pkgdir/usr/lib/$pkgname" "$pkgdir/usr/bin"
+  cp -a dist extension node_modules package.json README.md skills "$pkgdir/usr/lib/$pkgname/"
+  ln -s "../lib/$pkgname/dist/cli.js" "$pkgdir/usr/bin/browser-control"
+  ln -s "../lib/$pkgname/dist/mcp.js" "$pkgdir/usr/bin/browser-control-mcp"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

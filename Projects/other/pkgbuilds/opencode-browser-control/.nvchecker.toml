@@ -1,0 +1,7 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+
+[opencode-browser-control]
+source = "npm"
+npm = "@opencode-ai/browser-control"
