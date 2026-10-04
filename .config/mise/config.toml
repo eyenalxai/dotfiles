@@ -1,7 +1,5 @@
 [tools]
 bun = "latest"
-claude = "latest"
-codex = "latest"
 gh = "latest"
 node = "latest"
 opencode = "latest"
