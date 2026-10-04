@@ -19,7 +19,7 @@
     "sidebar": "auto",
     "scrollbar": true,
     "thinking": "hide",
-    "new_location": "launch",
+    "new_location": "inherit",
     "markdown": "rendered",
     "permissions": "autoaccept",
     "verbosity": "low",
