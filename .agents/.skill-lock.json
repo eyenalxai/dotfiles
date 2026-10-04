@@ -577,6 +577,15 @@
       "pluginName": "auth-skills",
       "installedAt": "2026-10-03T19:47:30.282Z",
       "updatedAt": "2026-10-03T19:47:30.282Z"
+    },
+    "browser-control": {
+      "source": "anomalyco/browser-control",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/anomalyco/browser-control.git",
+      "skillPath": "skills/browser-control/SKILL.md",
+      "skillFolderHash": "d9fbbd462d810660b96a32443a3dee217e549242",
+      "installedAt": "2026-10-04T15:39:38.790Z",
+      "updatedAt": "2026-10-04T15:39:38.790Z"
     }
   },
   "dismissed": {
