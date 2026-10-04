@@ -14,7 +14,6 @@
         "copyAll": true
       }
     },
-    "@prevalentware/opencode-goal-plugin",
-    "./session-rename"
+    "@prevalentware/opencode-goal-plugin"
   ]
 }
