@@ -22,7 +22,7 @@
     "new_location": "launch",
     "markdown": "rendered",
     "permissions": "autoaccept",
-    "verbosity": "high",
+    "verbosity": "low",
     "image_preview": true,
     "grouping": "auto"
   },
