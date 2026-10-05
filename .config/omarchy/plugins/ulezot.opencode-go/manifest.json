@@ -4,12 +4,12 @@
   "name": "OpenCode Go",
   "version": "1.0.0",
   "author": "ulezot",
-  "description": "OpenCode Go usage for every saved account, with usage vs. window-elapsed bars",
+  "description": "OpenCode Go usage for every saved account, with usage vs. window-elapsed meters",
   "kinds": [
     "bar-widget"
   ],
   "entryPoints": {
-    "barWidget": "Widget.qml"
+    "barWidget": "Panel.qml"
   },
   "barWidget": {
     "displayName": "OpenCode Go",
