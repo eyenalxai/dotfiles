@@ -3,7 +3,8 @@
 # Reads all OpenCode Go credentials from the OpenCode credential store and asks
 # the Go usage endpoint for each account's rolling / weekly / monthly usage,
 # then renders the same numbers the OpenCode console shows -- for all accounts
-# at once.
+# at once. Each window gets two bars: one for usage, one for how far the
+# window has elapsed, so you can see whether usage is keeping pace with time.
 #
 # Requires the OpenCode v2 CLI (`opencode2 auth export`); use `--binary` to
 # point at another binary.
@@ -44,6 +45,61 @@ def opencode-go-color [percent: int, status: string] {
   "green"
 }
 
+def opencode-go-pad [value: int] {
+  $value | into string | fill -a r -w 2 -c "0"
+}
+
+# Start of the monthly window that ends at `end`: the same anchor day in the
+# previous calendar month, clamped to that month's last day. Mirrors the
+# console's getMonthlyBounds, where the anchor is the subscription day.
+def opencode-go-month-start [end: datetime] {
+  let utc = ($end | date to-timezone utc)
+  let parts = ($utc | format date "%Y %m %d %H %M %S" | split row " ")
+  let year = ($parts.0 | into int)
+  let month = ($parts.1 | into int)
+  let day = ($parts.2 | into int)
+  let prev_year = (if $month == 1 { $year - 1 } else { $year })
+  let prev_month = (if $month == 1 { 12 } else { $month - 1 })
+  let month_start = ($"($year)-(opencode-go-pad $month)-01T00:00:00Z" | into datetime)
+  let last_day = (($month_start - 1day) | format date "%d" | into int)
+  let start_day = (opencode-go-pad ([$day $last_day] | math min))
+  $"($prev_year)-(opencode-go-pad $prev_month)-($start_day)T($parts.3):($parts.4):($parts.5)Z" | into datetime
+}
+
+def opencode-go-window-start [window: string, end: datetime, rolling: duration] {
+  match $window {
+    "rolling" => ($end - $rolling)
+    "weekly" => ($end - 7day)
+    _ => (opencode-go-month-start $end)
+  }
+}
+
+# Portion of the window that has already elapsed, 0-100.
+def opencode-go-elapsed [start: datetime, end: datetime] {
+  let total = (($end - $start) | into int)
+  if $total <= 0 { return 100 }
+  let passed = (((date now) - $start) | into int)
+  let percent = ($passed * 100 / $total | math round | into int)
+  if $percent < 0 { return 0 }
+  if $percent > 100 { return 100 }
+  $percent
+}
+
+def opencode-go-annotate-window [entry: record, window: string, rolling: duration] {
+  let end = ($entry.resetsAt | into datetime)
+  let start = (opencode-go-window-start $window $end $rolling)
+  $entry | upsert elapsedPercent (opencode-go-elapsed $start $end)
+}
+
+def opencode-go-annotate [row: record, rolling: duration] {
+  if not $row.ok { return $row }
+  let usage = ($row.usage
+    | upsert rolling (opencode-go-annotate-window $row.usage.rolling rolling $rolling)
+    | upsert weekly (opencode-go-annotate-window $row.usage.weekly weekly $rolling)
+    | upsert monthly (opencode-go-annotate-window $row.usage.monthly monthly $rolling))
+  $row | upsert usage $usage
+}
+
 def opencode-go-filled [percent: int, width: int] {
   let clamped = (if $percent > 100 { 100 } else if $percent < 0 { 0 } else { $percent })
   let count = ($clamped * $width / 100 | math round | into int)
@@ -82,7 +138,11 @@ def opencode-go-account [row: record, width: int, tint: bool] {
     let code = (opencode-go-color $usage.percent $usage.status)
     let color = (if $tint { (ansi $code) } else { "" })
     let bar = (opencode-go-bar $usage.percent $width $color)
+    let elapsed = ($usage.elapsedPercent | default 0)
+    let time_color = (if $tint { (ansi cyan) } else { "" })
+    let time_bar = (opencode-go-bar $elapsed $width $time_color)
     let label = ($window.label | fill -a l -w 13 -c " ")
+    let blank = ($"" | fill -w 13 -c " ")
     let percent = ($usage.percent | into string | fill -a r -w 3 -c " ")
     let percent_text = (if $tint { $"($color)($percent)% used(ansi reset)" } else { $"($percent)% used" })
     let resets = (opencode-go-reset ($usage.resetsAt | into datetime))
@@ -91,17 +151,21 @@ def opencode-go-account [row: record, width: int, tint: bool] {
     let limited = (if $usage.status == "rate-limited" {
       if $tint { $"  (ansi red)· limit reached(ansi reset)" } else { "  · limit reached" }
     } else { "" })
+    let elapsed_ratio = ($elapsed | into string | fill -a r -w 3 -c " ")
+    let elapsed_text = (if $tint { $"($time_color)($elapsed_ratio)% elapsed(ansi reset)" } else { $"($elapsed_ratio)% elapsed" })
     print $"  ($label)  ($bar)  ($percent_text)   ($reset_text) ($resets)($limited)"
+    print $"  ($blank)  ($time_bar)  ($elapsed_text)"
   }
 }
 
 # Show rolling / weekly / monthly OpenCode Go usage for all saved accounts.
 def opencode-go-usage [
-  --width (-w): int = 24        # Width of the usage bars
-  --binary (-b): string = ""    # opencode CLI binary (default: $OPENCODE_BIN, opencode2, opencode)
-  --endpoint (-e): string = ""  # Usage endpoint override
-  --json (-j)                   # Print raw usage data as JSON
-  --no-color                    # Disable colored output
+  --width (-w): int = 24                 # Width of the usage bars
+  --rolling-window (-r): duration = 5hr  # Rolling quota window (the 5-hour limit)
+  --binary (-b): string = ""             # opencode CLI binary (default: $OPENCODE_BIN, opencode2, opencode)
+  --endpoint (-e): string = ""           # Usage endpoint override
+  --json (-j)                            # Print raw usage data as JSON
+  --no-color                             # Disable colored output
 ] {
   let setting = (($env.config? | default {} | get use_ansi_coloring? | default "auto") | into string | str lowercase)
   let tint = (not $no_color) and (($env.NO_COLOR? | default "") | is-empty) and (if $setting == "false" {
@@ -125,7 +189,7 @@ def opencode-go-usage [
     return
   }
 
-  let rows = ($accounts | enumerate | par-each {|entry|
+  let fetched = ($accounts | enumerate | par-each {|entry|
     let account = $entry.item
     let result = (try {
       let body = (http get --max-time 20sec --headers { Authorization: $"Bearer ($account.value.key)" } $endpoint)
@@ -146,6 +210,8 @@ def opencode-go-usage [
       usage: $result.usage
     }
   } | sort-by index | reject index)
+
+  let rows = ($fetched | each {|row| opencode-go-annotate $row $rolling_window })
 
   if $json {
     return ($rows | to json --indent 2)
