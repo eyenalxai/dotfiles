@@ -74,22 +74,34 @@ Panel {
     return count > 0 ? total / count : -1
   }
 
-  // Approximate fit for the combined monthly allowance: usage is on pace while
-  // its mean stays at or under the mean elapsed share of the month. Linear and
-  // therefore rough; per-account limits are still handled by the failover plugin.
+  // Fit for the combined monthly allowance with staggered windows: estimate the
+  // burn rate (quota per day) from the accounts with at least a day of elapsed
+  // window, project when the combined remaining allowance runs dry, and call it
+  // a fit when that runway reaches the next account refill (its reset). Linear
+  // and therefore rough; per-account limits are still handled by the failover
+  // plugin.
   readonly property int monthlyFit: {
-    var used = 0
-    var elapsed = 0
-    var count = 0
+    var remaining = 0
+    var rate = 0
+    var refillMs = -1
     for (var i = 0; i < accounts.length; i++) {
       var a = accounts[i]
       if (!a || !a.ok || !a.usage || !a.usage.monthly) continue
-      used += Number(a.usage.monthly.percent) / 100
-      elapsed += Number(a.usage.monthly.elapsedPercent || 0) / 100
-      count++
+      var m = a.usage.monthly
+      var used = Number(m.percent) / 100
+      remaining += Math.max(0, 1 - used)
+      var resetMs = Date.parse(String(m.resetsAt || ""))
+      var leftMs = isFinite(resetMs) ? resetMs - root.nowMs : -1
+      if (leftMs > 0 && (refillMs < 0 || leftMs < refillMs)) refillMs = leftMs
+      var elapsed = Number(m.elapsedPercent || 0) / 100
+      if (elapsed > 0 && elapsed < 1 && leftMs > 0) {
+        var elapsedDays = (elapsed / (1 - elapsed)) * (leftMs / 86400000)
+        if (elapsedDays >= 1 && used > 0) rate = Math.max(rate, used / elapsedDays)
+      }
     }
-    if (count === 0) return 0
-    return used <= elapsed ? 1 : -1
+    if (remaining <= 0) return -1
+    if (rate <= 0 || refillMs <= 0) return 0
+    return remaining / rate >= refillMs / 86400000 ? 1 : -1
   }
   // nf-fa-check when on pace, nf-fa-exclamation-triangle when projected over.
   readonly property string monthlyFitMark: monthlyFit > 0 ? " \uf00c" : monthlyFit < 0 ? " \uf071" : ""
