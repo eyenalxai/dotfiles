@@ -19,3 +19,9 @@
   tool = critique
 [difftool "critique"]
   cmd = critique difftool "$LOCAL" "$REMOTE"
+[credential "https://github.com"]
+	helper = 
+	helper = !/home/ulezot/.local/share/mise/installs/gh/2.102.0/gh_2.102.0_linux_amd64/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/home/ulezot/.local/share/mise/installs/gh/2.102.0/gh_2.102.0_linux_amd64/bin/gh auth git-credential
