@@ -25,7 +25,7 @@
       "options": {
         "copyAll": true
       },
-      "package": "github:anomalyco/rift#v0.0.12::path:plugins/opencode"
+      "package": "github:anomalyco/rift#v0.0.13::path:plugins/opencode"
     },
     "@prevalentware/opencode-goal-plugin",
     "./opencode-go-failover"
