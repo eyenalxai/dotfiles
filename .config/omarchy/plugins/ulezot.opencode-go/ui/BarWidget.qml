@@ -73,6 +73,26 @@ Panel {
     }
     return count > 0 ? total / count : -1
   }
+
+  // Approximate fit for the combined monthly allowance: usage is on pace while
+  // its mean stays at or under the mean elapsed share of the month. Linear and
+  // therefore rough; per-account limits are still handled by the failover plugin.
+  readonly property int monthlyFit: {
+    var used = 0
+    var elapsed = 0
+    var count = 0
+    for (var i = 0; i < accounts.length; i++) {
+      var a = accounts[i]
+      if (!a || !a.ok || !a.usage || !a.usage.monthly) continue
+      used += Number(a.usage.monthly.percent) / 100
+      elapsed += Number(a.usage.monthly.elapsedPercent || 0) / 100
+      count++
+    }
+    if (count === 0) return 0
+    return used <= elapsed ? 1 : -1
+  }
+  // nf-fa-check when on pace, nf-fa-exclamation-triangle when projected over.
+  readonly property string monthlyFitMark: monthlyFit > 0 ? " \uf00c" : monthlyFit < 0 ? " \uf071" : ""
   readonly property var periods: [
     { value: "today", label: "Today", tooltip: "Today, since local midnight" },
     { value: "h24", label: "24h", tooltip: "Rolling last 24 hours" },
@@ -378,7 +398,7 @@ Panel {
             meta: root.activeAccount
               ? root.shortName(root.activeAccount) + " · active"
               : root.accounts.length + " accounts"
-            detail: root.combinedMonthly >= 0 ? Math.round(root.combinedMonthly * 100) + "%" : ""
+            detail: root.combinedMonthly >= 0 ? Math.round(root.combinedMonthly * 100) + "%" + root.monthlyFitMark : ""
             foreground: root.foreground
             fontFamily: root.fontFamily
 
