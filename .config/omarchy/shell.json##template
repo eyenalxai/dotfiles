@@ -75,6 +75,9 @@
           "mount": "/"
         },
         {
+          "id": "ulezot.opencode-go"
+        },
+        {
 {% if yadm.hostname == "laptop" %}
           "id": "ulsippoi.power"
 {% else %}

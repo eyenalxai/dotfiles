@@ -16,7 +16,7 @@ import qs.Ui
 // tokens would have cost, so the money figure is what the same usage would
 // have cost at API rates. The layout keeps four accounts on screen.
 //
-// Data comes from `opencode-go-usage --json --history` through usage.sh.
+// Data comes from `opencode-go-usage --json --history` through usage.nu.
 // Left-click opens the panel, middle-click refreshes, right-click opens the
 // full terminal view. Keys: 1-6 pick a history period, left/right cycle it,
 // up/down scroll, r refreshes. Set `refreshIntervalSec` in shell.json to poll
@@ -82,7 +82,9 @@ Panel {
   }
   readonly property string errorText: error
 
-  visible: accounts.length > 0 || errorText !== "" || loading
+  // Always on the bar: data problems surface in the panel, they must never
+  // make the widget vanish (an empty account list used to hide it).
+  visible: true
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
@@ -206,7 +208,7 @@ Panel {
   }
 
   function openFullView() {
-    if (bar) bar.run("omarchy-launch-floating-terminal-with-presentation " + pluginDir + "/show.sh")
+    if (bar) bar.run("omarchy-launch-floating-terminal-with-presentation nu " + pluginDir + "/show.nu")
   }
 
   function applyUsage(raw) {
@@ -223,7 +225,10 @@ Panel {
       } else {
         throw new Error("unexpected shape")
       }
-      error = ""
+      // An empty list almost always means the CLI could not read the accounts
+      // (service hiccup), not that they are gone. Report it rather than
+      // silently going blank.
+      error = accounts.length === 0 ? "No OpenCode Go accounts found." : ""
       nowMs = Date.now()
     } catch (e) {
       error = "Could not parse `opencode-go-usage --json --history` output."
@@ -255,7 +260,7 @@ Panel {
 
   Process {
     id: usageProc
-    command: ["sh", root.pluginDir + "/usage.sh"]
+    command: ["timeout", "-k", "5", "25", "nu", root.pluginDir + "/usage.nu"]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.applyUsage(text)
@@ -266,9 +271,20 @@ Panel {
     }
     onExited: function(exitCode) {
       root.loading = false
-      if (exitCode !== 0)
+      if (exitCode !== 0) {
         root.error = String(usageErr.text || "").trim() || ("Usage command exited with " + exitCode)
+        retryTimer.restart()
+      }
     }
+  }
+
+  Timer {
+    id: retryTimer
+    // One quick retry after a failure, so a transient hiccup does not leave
+    // the widget stale until the next scheduled refresh.
+    interval: 60000
+    repeat: false
+    onTriggered: root.refresh()
   }
 
   Timer {
