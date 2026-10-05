@@ -63,8 +63,8 @@
 | `--project`    | Project id or name.                                                      |
 | `--parent`     | Parent issue reference.                                                  |
 | `--text`       | Text in the title or the description.                                    |
-| `--unblocked`  | Exclude issues with an open blocker.                                     |
-| `--unassigned` | Exclude issues with an assignee.                                         |
+| `--unblocked`  | Only open issues with no open blocker.                                   |
+| `--unassigned` | Only issues with no assignee.                                            |
 | `--limit`      | Maximum number of issues. Default: 50.                                   |
 
 ### `issue create` flags

@@ -35,7 +35,8 @@
   "tabs": {
     "scope": "global",
     "layout": "vertical",
-    "indicators": "status"
+    "indicators": "status",
+    "mode": "auto"
   },
   "prompt": {
     "paste": "full",
@@ -44,5 +45,9 @@
   "terminal": {
     "copy": "manual"
   },
-  "animations": true
+  "animations": true,
+  "scroll": {
+    "acceleration": true,
+    "speed": 6
+  }
 }
