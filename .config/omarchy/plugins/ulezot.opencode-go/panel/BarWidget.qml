@@ -59,7 +59,20 @@ Panel {
       if (accounts[i] && accounts[i].active) return accounts[i]
     return null
   }
-  readonly property var activeBinding: bindingWindow(activeAccount)
+  // Combined monthly usage across every account that reports a monthly window:
+  // the mean of the per-account monthly percentages, so with equal quotas it is
+  // the share of the combined monthly allowance that is used.
+  readonly property real combinedMonthly: {
+    var total = 0
+    var count = 0
+    for (var i = 0; i < accounts.length; i++) {
+      var a = accounts[i]
+      if (!a || !a.ok || !a.usage || !a.usage.monthly) continue
+      total += Number(a.usage.monthly.percent) / 100
+      count++
+    }
+    return count > 0 ? total / count : -1
+  }
   readonly property var periods: [
     { value: "today", label: "Today", tooltip: "Today, since local midnight" },
     { value: "h24", label: "24h", tooltip: "Rolling last 24 hours" },
@@ -126,14 +139,6 @@ Panel {
     for (var i = 0; i < list.length; i++)
       if (list[i].limited) return true
     return false
-  }
-
-  function bindingWindow(a) {
-    var best = null
-    var list = windowRows(a)
-    for (var i = 0; i < list.length; i++)
-      if (!best || list[i].percent > best.percent) best = list[i]
-    return best
   }
 
   function resetMsFor(w) {
@@ -373,7 +378,7 @@ Panel {
             meta: root.activeAccount
               ? root.shortName(root.activeAccount) + " · active"
               : root.accounts.length + " accounts"
-            detail: root.activeBinding ? Math.round(root.activeBinding.percent * 100) + "%" : ""
+            detail: root.combinedMonthly >= 0 ? Math.round(root.combinedMonthly * 100) + "%" : ""
             foreground: root.foreground
             fontFamily: root.fontFamily
 
