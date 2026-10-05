@@ -1,0 +1,41 @@
+# Maintainer: ulezot
+
+pkgname=rata
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Linear issue tracking for agent workflows: triage, tickets and wayfinding from the terminal'
+arch=('x86_64' 'aarch64')
+url='https://github.com/eyenalxai/rata'
+license=('MIT')
+depends=('glibc')
+makedepends=('bun')
+# A compiled Bun binary carries an appended payload that `strip` breaks, and
+# the build produces no debug info to split out.
+options=('!strip' '!debug')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/eyenalxai/rata/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('75dac0a4c7b4fbdc8d716aaf35743a582246902bd0339e398e88bf2f5d40d2c8')
+
+build() {
+  cd "$srcdir/$pkgname-$pkgver"
+  # The prepare script only patches the local dev toolchain (tsgo, oxlint), so
+  # skip it and the dev dependencies; the compile needs the runtime tree only.
+  bun install --frozen-lockfile --production --ignore-scripts
+  bun build --compile --minify --outfile rata src/main.ts
+}
+
+check() {
+  cd "$srcdir/$pkgname-$pkgver"
+  ./rata --version | grep -q "^rata v$pkgver$"
+}
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+  install -Dm755 rata "$pkgdir/usr/bin/$pkgname"
+  ./rata --completions bash > bash-completion
+  ./rata --completions zsh > _rata
+  ./rata --completions fish > rata.fish
+  install -Dm644 bash-completion "$pkgdir/usr/share/bash-completion/completions/$pkgname"
+  install -Dm644 _rata "$pkgdir/usr/share/zsh/site-functions/_$pkgname"
+  install -Dm644 rata.fish "$pkgdir/usr/share/fish/vendor_completions.d/$pkgname.fish"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

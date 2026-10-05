@@ -1,0 +1,9 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+
+[rata]
+source = "github"
+github = "eyenalxai/rata"
+use_max_tag = true
+prefix = "v"
