@@ -17,13 +17,16 @@ account, picks the next available one, and retries the failed request with it.
   Anthropic-style models) to the selected account.
 - The `retry` session hook watches for quota failures (`provider.quota`,
   HTTP 429/402, or matching messages). It parks the failed account, selects the
-  next available account, and retries the request immediately.
+  next available account, makes it the globally active account, and retries the
+  request immediately.
 - Parked accounts are retried after a cooldown. Each consecutive failure for
   the same account doubles the cooldown, up to a cap, so weekly or monthly
   limits are not hammered.
-- The globally active account is never changed, so a manual `/connect` or
-  `opencode auth switch` still wins: the plugin follows the active account and
-  clears its parked state.
+- The selected account is activated through the local server's credential API,
+  so `/connect` and the TUI show the account actually in use. Set
+  `switchGlobalAccount: false` to leave the global account alone.
+- A manual `/connect` or `opencode auth switch` still wins: the plugin follows
+  the active account and clears its parked state.
 
 State is stored in the plugin's durable storage, so a service restart keeps the
 current selection and parked accounts.
@@ -66,6 +69,7 @@ Options can be passed with the object form:
 | `switchOnTypes`  | `["provider.quota"]`    | OpenCode error types treated as a usage limit.                          |
 | `patterns`       | usage-limit phrases     | Case-insensitive message patterns treated as a usage limit.             |
 | `injectAuth`     | `true`                  | Set to `false` to disable auth rewriting and only retry with a switch.  |
+| `switchGlobalAccount` | `true`             | Activate the selected account globally so the TUI reflects the switch.  |
 | `debug`          | `false`                 | Log account selection and refresh details to the OpenCode server log.   |
 
 ## Notes

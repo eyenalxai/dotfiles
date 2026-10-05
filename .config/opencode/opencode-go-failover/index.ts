@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises"
 import type { Plugin } from "@opencode/plugin"
 
 /**
@@ -9,15 +10,16 @@ import type { Plugin } from "@opencode/plugin"
  * headroom.
  *
  * This plugin keeps using one saved OpenCode Go account until it reports a
- * usage limit, then selects the next available account, authenticates the
- * retried request with it, and lets the request continue. Accounts that hit a
- * limit are parked for a cooldown; repeated limits back off exponentially up
- * to a cap.
+ * usage limit, then selects the next available account, makes it the globally
+ * active account, authenticates the retried request with it, and lets the
+ * request continue. Accounts that hit a limit are parked for a cooldown;
+ * repeated limits back off exponentially up to a cap.
  *
- * The plugin authenticates requests through the `http.request` session hook
- * instead of changing the globally active account, so it works per request and
- * does not fight a manual `/connect` account switch. When the active account
- * changes in the TUI, the plugin follows it.
+ * The plugin authenticates requests through the `http.request` session hook so
+ * failover applies per request, and it activates the selected account through
+ * the local server's credential API so `/connect` and the TUI reflect the
+ * switch. Switching the global account can be disabled with
+ * `switchGlobalAccount: false`.
  *
  * Local plugins cannot import the runtime `@opencode/plugin` package, so the
  * default export is the plain definition object the loader accepts; the
@@ -64,6 +66,7 @@ type Options = {
   switchOnTypes: string[]
   patterns: RegExp[]
   injectAuth: boolean
+  switchGlobalAccount: boolean
   debug: boolean
 }
 
@@ -171,13 +174,30 @@ export default {
       for (const id of ids) if (!order.includes(id)) order.push(id)
       state.order = order
 
+      pruneExhausted()
       const activeID = await readActive()
       if (state.selected && !ids.includes(state.selected)) state.selected = undefined
       if (!state.selected && ids.length > 0) {
         state.selected = activeID !== undefined && ids.includes(activeID) ? activeID : order[0]
       }
-      if (activeID !== undefined) state.activeKnown = activeID
-      pruneExhausted()
+
+      if (activeID === undefined || state.selected === undefined || activeID === state.selected) {
+        if (activeID !== undefined) state.activeKnown = activeID
+      } else if (isExhausted(activeID) && !isExhausted(state.selected)) {
+        // The globally active account is parked and the selection is healthy:
+        // resume the failover and make the selection global.
+        const activated = await activateGlobal(state.selected)
+        if (!activated) state.activeKnown = activeID
+      } else if (ids.includes(activeID)) {
+        // The active account changed while the plugin was not running; follow.
+        state.selected = activeID
+        delete state.exhausted?.[activeID]
+        state.activeKnown = activeID
+        debug(`following the globally active account ${labelOf(activeID)}`)
+      } else {
+        state.activeKnown = activeID
+      }
+
       await persist()
     }
 
@@ -185,8 +205,8 @@ export default {
      * Detect an account switch made outside the plugin (TUI `/connect` or
      * `auth switch`). The public event stream does not carry credential events,
      * so compare the globally active credential with the last observed one.
-     * Failover selections never change the global account, so they are not
-     * mistaken for manual switches.
+     * Changes to the plugin's own selection are recognized and only update the
+     * known value.
      */
     const syncManualSwitch = async () => {
       const activeID = await readActive()
@@ -194,15 +214,20 @@ export default {
       if (!accounts.some((account) => account.id === activeID)) await refreshAccounts(true)
 
       const known = state.activeKnown
-      if (known !== undefined && known !== activeID && accounts.some((account) => account.id === activeID)) {
+      if (known === activeID) return
+      if (activeID === state.selected) {
+        // Our own activation, or a manual switch to the selected account.
+        state.activeKnown = activeID
+        await persist()
+        return
+      }
+      if (accounts.some((account) => account.id === activeID)) {
         state.selected = activeID
         delete state.exhausted?.[activeID]
         debug(`following manual switch to ${labelOf(activeID)}`)
       }
-      if (known !== activeID) {
-        state.activeKnown = activeID
-        await persist()
-      }
+      state.activeKnown = activeID
+      await persist()
     }
 
     const refreshAccounts = async (force = false): Promise<Account[]> => {
@@ -264,6 +289,59 @@ export default {
       if (!hadAuthorization && !hadApiKey) headers.set("authorization", `Bearer ${key}`)
     }
 
+    type ServiceInfo = { url?: string; password?: string }
+    let serviceInfo: ServiceInfo | undefined
+    let serviceInfoAt = 0
+
+    const readServiceInfo = async (): Promise<ServiceInfo | undefined> => {
+      if (serviceInfo !== undefined && Date.now() - serviceInfoAt < 60_000) return serviceInfo
+      try {
+        const stateHome = process.env.XDG_STATE_HOME ?? `${process.env.HOME ?? ""}/.local/state`
+        const text = await readFile(`${stateHome}/opencode/service.json`, "utf8")
+        const parsed = JSON.parse(text) as ServiceInfo
+        if (typeof parsed.url === "string" && typeof parsed.password === "string") {
+          serviceInfo = parsed
+          serviceInfoAt = Date.now()
+          return serviceInfo
+        }
+      } catch (error) {
+        debug("could not read the service registry:", String(error))
+      }
+      serviceInfo = undefined
+      return undefined
+    }
+
+    /**
+     * Make `credentialID` the globally active account through the local
+     * server's credential API, so the TUI and `/connect` show the account the
+     * plugin is actually using. Best effort: when the registry or the request
+     * is unavailable, per-request auth injection still keeps requests working.
+     */
+    const activateGlobal = async (credentialID: string): Promise<boolean> => {
+      if (!options.switchGlobalAccount) return false
+      try {
+        const info = await readServiceInfo()
+        if (info?.url === undefined || info.password === undefined) return false
+        const response = await fetch(
+          new URL(`/api/credential/${encodeURIComponent(credentialID)}/activate`, info.url),
+          {
+            method: "POST",
+            headers: { authorization: `Basic ${Buffer.from(`opencode:${info.password}`).toString("base64")}` },
+          },
+        )
+        if (!response.ok) {
+          debug(`could not activate ${credentialID}: HTTP ${response.status}`)
+          return false
+        }
+        state.activeKnown = credentialID
+        await persist()
+        return true
+      } catch (error) {
+        debug(`could not activate ${credentialID}:`, String(error))
+        return false
+      }
+    }
+
     // Resolve the first account list before registering hooks so the first
     // request does not depend on a lazy refresh.
     await refreshAccounts(true)
@@ -283,6 +361,7 @@ export default {
             state.selected = account.id
             await persist()
             debug(`selected ${account.label} for request in session ${event.sessionID}`)
+            await activateGlobal(account.id)
           }
           usedBySession.set(event.sessionID, account.id)
           if (usedBySession.size > 64) {
@@ -319,6 +398,7 @@ export default {
           state.selected = next.id
           await persist()
           log(`usage limit on ${labelOf(failedID)}; switching to ${next.label} and retrying`)
+          await activateGlobal(next.id)
           event.decision = { retry: true, delay: options.retryDelayMs }
         } catch (error) {
           debug("retry hook failed:", String(error))
@@ -357,6 +437,7 @@ function normalize(raw: Plugin.Context["options"]): Options {
     switchOnTypes: stringList(options.switchOnTypes, ["provider.quota"]),
     patterns: patterns.map((pattern) => new RegExp(pattern, "i")),
     injectAuth: options.injectAuth !== false,
+    switchGlobalAccount: options.switchGlobalAccount !== false,
     debug: options.debug === true,
   }
 }
