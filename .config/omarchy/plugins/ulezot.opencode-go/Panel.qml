@@ -21,6 +21,10 @@ import qs.Ui
 // full terminal view. Keys: 1-6 pick a history period, left/right cycle it,
 // up/down scroll, r refreshes. Set `refreshIntervalSec` in shell.json to poll
 // slower or faster (default 300, minimum 30).
+//
+// The bar icon only turns urgent when every saved account is out of quota:
+// the `opencode-go-failover` OpenCode plugin parks a limited account and
+// switches to another one, so a single limited account is not a warning.
 Panel {
   id: root
   moduleName: "ulezot.opencode-go"
@@ -66,10 +70,15 @@ Panel {
   ]
   readonly property var historyRow: history ? history[period] : null
   readonly property var historyTotals: totalsFor(historyRow)
+
+  // Warning state: every saved account is out of quota, so the failover
+  // plugin has nowhere to switch and requests will start failing. Anything
+  // less than that is handled by the plugin, so it is not a warning.
   readonly property bool alarming: {
+    if (accounts.length === 0) return false
     for (var i = 0; i < accounts.length; i++)
-      if (accountAlarming(accounts[i])) return true
-    return false
+      if (!accountLimited(accounts[i])) return false
+    return true
   }
   readonly property string errorText: error
 
@@ -108,14 +117,12 @@ Panel {
     return out
   }
 
-  function windowAlarming(w) {
-    return !!w && (w.limited || w.percent >= 0.8)
-  }
-
-  function accountAlarming(a) {
+  // An account is out of quota when any of its windows reports a limit. The
+  // failover plugin parks such an account and keeps working on another one.
+  function accountLimited(a) {
     var list = windowRows(a)
     for (var i = 0; i < list.length; i++)
-      if (windowAlarming(list[i])) return true
+      if (list[i].limited) return true
     return false
   }
 
@@ -561,7 +568,9 @@ Panel {
     property var item: null
 
     readonly property var windows: root.windowRows(accountBlock.item)
-    readonly property bool hot: root.accountAlarming(accountBlock.item)
+    readonly property bool limited: root.accountLimited(accountBlock.item)
+    // Only paint an account as alarming when nothing can take over from it.
+    readonly property bool hot: accountBlock.limited && root.alarming
 
     spacing: Style.space(4)
 
@@ -636,7 +645,10 @@ Panel {
     id: windowRow
     property var window: null
 
-    readonly property bool alarming: root.windowAlarming(windowRow.window)
+    readonly property bool limited: !!windowRow.window && windowRow.window.limited
+    // Red only once every account is out; while failover has somewhere to go,
+    // a limited window is information, not a warning.
+    readonly property bool alarming: windowRow.limited && root.alarming
 
     spacing: Style.space(2)
 
@@ -667,7 +679,7 @@ Panel {
         Layout.preferredWidth: Style.space(74)
         Layout.alignment: Qt.AlignVCenter
         text: windowRow.window ? Math.round(windowRow.window.percent * 100) + "% used" : ""
-        color: windowRow.alarming ? root.urgent : root.foreground
+        color: windowRow.alarming ? root.urgent : (windowRow.limited ? root.dim : root.foreground)
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
         horizontalAlignment: Text.AlignRight
@@ -683,7 +695,7 @@ Panel {
           var ms = root.resetMsFor(windowRow.window)
           return ms > 0 ? "resets " + root.formatDuration(ms) : ""
         }
-        color: windowRow.window && windowRow.window.limited ? root.urgent : root.dim
+        color: windowRow.alarming ? root.urgent : root.dim
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
         horizontalAlignment: Text.AlignRight
