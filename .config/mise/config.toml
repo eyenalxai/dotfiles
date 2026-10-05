@@ -1,6 +1,7 @@
 [tools]
 bun = "latest"
 gh = "latest"
+git-lfs = "3.8.0"
 node = "latest"
 opencode = "latest"
 railway = "latest"
