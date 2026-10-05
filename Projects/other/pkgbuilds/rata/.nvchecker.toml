@@ -1,9 +1,11 @@
 # nvchecker configuration file.
 # Run from this directory: nvchecker -c .nvchecker.toml
 # Docs: https://nvchecker.readthedocs.io/
+#
+# The git source reads the tags with `git ls-remote`, so it needs no GitHub
+# API token. The github source now requires one and returns 403 without it.
 
 [rata]
-source = "github"
-github = "eyenalxai/rata"
-use_max_tag = true
+source = "git"
+git = "https://github.com/eyenalxai/rata.git"
 prefix = "v"
