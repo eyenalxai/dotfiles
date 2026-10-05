@@ -11,6 +11,9 @@ and the configured compaction buffer. The plugin lowers `model.limit.context`
 (and `model.limit.input` when present) through a model transform, so those
 limits drive compaction. No compaction behavior is reimplemented here.
 
+A model whose catalog window is lower than the cap keeps its own window; the
+cap only lowers larger windows.
+
 Models whose catalog window is unknown (`0`) adopt the configured cap, because
 OpenCode otherwise never auto-compacts them. Some catalog snapshots, such as
 `openrouter/anthropic/*`, report an unknown window.

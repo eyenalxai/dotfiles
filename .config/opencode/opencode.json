@@ -14,7 +14,7 @@
   "plugins": [
     {
       "options": {
-        "maxContext": 384000
+        "maxContext": 512000
       },
       "package": "./max-context"
     },
