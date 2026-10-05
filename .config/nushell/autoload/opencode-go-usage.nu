@@ -123,27 +123,36 @@ def opencode-go-samples [] {
   } catch { [] }
 }
 
-# Burn rate in percent per day for one account's monthly window: the recent
-# slope when the store holds at least six hours of samples from the same
-# window, otherwise the window-average slope once a day has elapsed. Null when
-# neither is available.
+# Burn rate for one account's monthly window: the change across the last day of
+# samples from the same window (a full daily cycle, so the projection follows
+# the recent pace instead of the whole-window average), otherwise the
+# window-average slope once a day has elapsed. Returns { rate, source } with a
+# null rate when neither is available.
 def opencode-go-monthly-rate [samples: list, label: string, usage: record, now: int] {
   let reset = ($usage.resetsAt? | default "")
   let mine = ($samples | where {|s|
     (($s.label? | default "") == $label) and (($s.reset? | default "") == $reset) and (($s.monthly? | default (-1)) >= 0)
   })
-  let recent = ($mine | where {|s| ($now - $s.t) <= 86400000 })
-  let span_days = (if ($recent | length) >= 2 { (($recent | last | get t) - ($recent | first | get t)) / 86400000 } else { 0 })
+  let older = ($mine | where {|s| $s.t <= ($now - 86400000) })
+  let anchor = (if ($mine | is-empty) {
+    null
+  } else if ($older | is-empty) {
+    $mine | first
+  } else {
+    $older | last
+  })
+  let span_days = (if $anchor == null { 0 } else { ($now - $anchor.t) / 86400000 })
   let elapsed = (($usage.elapsedPercent? | default 0) / 100)
   let resets_at = ($usage.resetsAt? | default "")
   let left_days = (if (not ($resets_at | is-empty)) { (($resets_at | into datetime) - (date now)) / 1day } else { -1 })
   let elapsed_days = (if $elapsed > 0 and $elapsed < 1 and $left_days > 0 { ($elapsed / (1 - $elapsed)) * $left_days } else { 0 })
-  if ($recent | length) >= 2 and $span_days >= 0.25 {
-    (($recent | last | get monthly) - ($recent | first | get monthly)) / $span_days
+  if $anchor != null and $span_days >= 0.25 {
+    let delta = (($usage.percent? | default 0) - $anchor.monthly)
+    { rate: ([($delta / $span_days) 0.0] | math max), source: "recent" }
   } else if $elapsed_days >= 1 and (($usage.percent? | default 0) > 0) {
-    $usage.percent / $elapsed_days
+    { rate: ($usage.percent / $elapsed_days), source: "average" }
   } else {
-    null
+    { rate: null, source: "none" }
   }
 }
 
@@ -383,9 +392,14 @@ def opencode-go-account [row: record, width: int, tint: bool] {
     let limited = (if $usage.status == "rate-limited" {
       if $tint { $"  (ansi red)· limit reached(ansi reset)" } else { "  · limit reached" }
     } else { "" })
+    let rate = ($usage.ratePerDay? | default null)
+    let rate_text = (if $window.id == "monthly" and $rate != null {
+      let rate_value = ($rate | math round --precision 1)
+      if $tint { $"  (ansi dark_gray)· ~($rate_value)%/day(ansi reset)" } else { $"  · ~($rate_value)%/day" }
+    } else { "" })
     let elapsed_ratio = ($elapsed | into string | fill -a r -w 3 -c " ")
     let elapsed_text = (if $tint { $"($time_color)($elapsed_ratio)% elapsed(ansi reset)" } else { $"($elapsed_ratio)% elapsed" })
-    print $"  ($label)  ($bar)  ($percent_text)   ($reset_text) ($resets)($limited)"
+    print $"  ($label)  ($bar)  ($percent_text)   ($reset_text) ($resets)($limited)($rate_text)"
     print $"  ($blank)  ($time_bar)  ($elapsed_text)"
   }
 }
@@ -450,7 +464,7 @@ def opencode-go-usage [
     let annotated = (opencode-go-annotate $row $rolling_window)
     if $annotated.ok {
       let rate = (opencode-go-monthly-rate $samples $annotated.label $annotated.usage.monthly $now_ms)
-      $annotated | upsert usage.monthly.ratePerDay $rate
+      $annotated | upsert usage.monthly.ratePerDay $rate.rate | upsert usage.monthly.rateSource $rate.source
     } else {
       $annotated
     }
@@ -470,6 +484,20 @@ def opencode-go-usage [
     if $item.index > 0 { print "" }
     opencode-go-account $item.item $width $tint
   } | ignore
+
+  if $fit != null {
+    let runway = (if $fit.runwayDays == null { "no burn recorded" } else { $"dries in ~($fit.runwayDays | math round) d" })
+    let refill = (if $fit.refillDays == null { "" } else { $" · next refill in ~($fit.refillDays | math round) d" })
+    let verdict = (if $fit.ok {
+      if $tint { (ansi green) + "on pace" + (ansi reset) } else { "on pace" }
+    } else {
+      if $tint { (ansi red) + "over pace" + (ansi reset) } else { "over pace" }
+    })
+    let dim = (if $tint { (ansi dark_gray) } else { "" })
+    let reset = (if $tint { (ansi reset) } else { "" })
+    print ""
+    print $"Projection  ($dim)($runway)($refill)($reset)  ·  ($verdict)"
+  }
 
   if $history {
     if $history_data == null {
