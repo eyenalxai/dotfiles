@@ -6,18 +6,21 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
-// OpenCode Go usage for every saved account.
+// OpenCode Go usage for every saved account, plus API-equivalent usage history.
 //
 // Clicking the bar icon opens a panel in the same shape as the Wi-Fi and
-// Bluetooth panels: a hero, then every saved account with one row per quota
-// window. Each window shows two bars -- usage over window elapsed -- like the
-// `opencode-go-usage` terminal view, so usage can be read against the clock at
-// a glance. The layout is compact enough to keep four accounts on screen.
+// Bluetooth panels: a hero, every saved account with one row per quota window
+// (usage bar over window-elapsed bar, like the `opencode-go-usage` terminal
+// view), and a usage-history section with period buttons. History comes from
+// the local OpenCode database: every completed step stores the API price its
+// tokens would have cost, so the money figure is what the same usage would
+// have cost at API rates. The layout keeps four accounts on screen.
 //
-// Data comes from the `opencode-go-usage` Nushell command through usage.sh.
+// Data comes from `opencode-go-usage --json --history` through usage.sh.
 // Left-click opens the panel, middle-click refreshes, right-click opens the
-// full terminal view. Set `refreshIntervalSec` in shell.json to poll slower or
-// faster (default 300, minimum 30).
+// full terminal view. Keys: 1-6 pick a history period, left/right cycle it,
+// up/down scroll, r refreshes. Set `refreshIntervalSec` in shell.json to poll
+// slower or faster (default 300, minimum 30).
 Panel {
   id: root
   moduleName: "ulezot.opencode-go"
@@ -35,8 +38,13 @@ Panel {
   readonly property string pluginDir: (Quickshell.env("HOME") || "") + "/.config/omarchy/plugins/ulezot.opencode-go"
 
   property var accounts: []
+  property var history: null
   property bool loading: false
   property string error: ""
+
+  // Selected usage-history window ("today", "h24", ...); driven by the chips
+  // in the USAGE HISTORY section.
+  property string period: "today"
 
   // Countdowns read this instead of Date.now() so an open panel keeps telling
   // the truth while it sits there.
@@ -48,6 +56,16 @@ Panel {
     return null
   }
   readonly property var activeBinding: bindingWindow(activeAccount)
+  readonly property var periods: [
+    { value: "today", label: "Today", tooltip: "Today, since local midnight" },
+    { value: "h24", label: "24h", tooltip: "Rolling last 24 hours" },
+    { value: "d3", label: "3d", tooltip: "Rolling last 3 days" },
+    { value: "week", label: "Week", tooltip: "Rolling last 7 days" },
+    { value: "month", label: "Month", tooltip: "Rolling last 30 days" },
+    { value: "all", label: "All", tooltip: "All time" }
+  ]
+  readonly property var historyRow: history ? history[period] : null
+  readonly property var historyTotals: totalsFor(historyRow)
   readonly property bool alarming: {
     for (var i = 0; i < accounts.length; i++)
       if (accountAlarming(accounts[i])) return true
@@ -125,6 +143,55 @@ Panel {
     return Math.max(1, minutes) + "m"
   }
 
+  function cyclePeriod(dx) {
+    var idx = 0
+    for (var i = 0; i < periods.length; i++)
+      if (periods[i].value === period) idx = i
+    period = periods[(idx + dx + periods.length) % periods.length].value
+  }
+
+  function selectPeriod(index) {
+    if (index >= 0 && index < periods.length) period = periods[index].value
+  }
+
+  // 17600000 -> "17.6M", 9700000000 -> "9.7B", 790 -> "790".
+  function formatTokens(value) {
+    var n = Number(value) || 0
+    if (n >= 1000000000) return trimZero((n / 1000000000).toFixed(1)) + "B"
+    if (n >= 1000000) return trimZero((n / 1000000).toFixed(1)) + "M"
+    if (n >= 1000) return trimZero((n / 1000).toFixed(1)) + "K"
+    return String(Math.round(n))
+  }
+
+  function trimZero(text) {
+    return text.endsWith(".0") ? text.substring(0, text.length - 2) : text
+  }
+
+  // 8.4217 -> "$8.42", 1234.5 -> "$1,234.50".
+  function formatMoney(value) {
+    var n = Number(value) || 0
+    var whole = Math.floor(Math.abs(n))
+    var cents = Math.round((Math.abs(n) - whole) * 100)
+    if (cents === 100) { whole += 1; cents = 0 }
+    var text = String(whole).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    return (n < 0 ? "-$" : "$") + text + "." + (cents < 10 ? "0" : "") + cents
+  }
+
+  // Token totals for a history window: fresh input, generated output
+  // (reasoning included), and cache traffic.
+  function totalsFor(row) {
+    var input = row ? Number(row.input) || 0 : 0
+    var output = row ? (Number(row.output) || 0) + (Number(row.reasoning) || 0) : 0
+    var cached = row ? (Number(row.cacheRead) || 0) + (Number(row.cacheWrite) || 0) : 0
+    return { tokens: input + output + cached, input: input, output: output, cached: cached }
+  }
+
+  function historyDetail(row) {
+    var t = totalsFor(row)
+    return "in " + formatTokens(t.input) + " · out " + formatTokens(t.output)
+      + " · cached " + formatTokens(t.cached)
+  }
+
   function refresh() {
     if (usageProc.running) return
     loading = true
@@ -141,18 +208,25 @@ Panel {
     if (trimmed === "") return
     try {
       var data = JSON.parse(trimmed)
-      if (!Array.isArray(data)) throw new Error("expected a list")
-      accounts = data
+      if (Array.isArray(data)) {
+        accounts = data
+      } else if (data && Array.isArray(data.accounts)) {
+        accounts = data.accounts
+        history = data.history || null
+      } else {
+        throw new Error("unexpected shape")
+      }
       error = ""
       nowMs = Date.now()
     } catch (e) {
-      error = "Could not parse `opencode-go-usage --json` output."
+      error = "Could not parse `opencode-go-usage --json --history` output."
     }
   }
 
   function footerText() {
-    var hints = ["r refresh", "right-click terminal view"]
-    return hints.join(" · ")
+    if (history === null)
+      return "r refresh · right-click terminal view"
+    return "1-6/←→ period · r refresh · right-click full view"
   }
 
   onOpenedChanged: if (opened) {
@@ -234,15 +308,20 @@ Panel {
       anchors.fill: parent
 
       onMoveRequested: function(dx, dy) {
-        if (dy !== 0)
+        if (dx !== 0) {
+          root.cyclePeriod(dx)
+        } else if (dy !== 0) {
           panelFlick.contentY = root.clamp(panelFlick.contentY + dy * Style.space(56), 0,
                                            Math.max(0, panelFlick.contentHeight - panelFlick.height))
+        }
       }
       onActivateRequested: root.refresh()
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onTextKey: function(t) {
-        if (t === "r" || t === "R") {
+        if (t.length === 1 && t >= "1" && t <= "6") {
+          root.selectPeriod(Number(t) - 1)
+        } else if (t === "r" || t === "R") {
           root.refresh()
           root.nowMs = Date.now()
         }
@@ -356,6 +435,105 @@ Panel {
                   width: parent.width
                   item: modelData
                 }
+              }
+            }
+          }
+
+          // ---------- Usage history ----------
+          PanelSeparator {
+            visible: historySection.visible
+            foreground: root.foreground
+          }
+
+          Column {
+            id: historySection
+            visible: root.history !== null
+            width: parent.width
+            spacing: Style.space(8)
+
+            PanelSectionHeader {
+              width: parent.width
+              text: "USAGE HISTORY"
+              foreground: root.foreground
+              fontFamily: root.fontFamily
+            }
+
+            ButtonGroup {
+              id: periodGroup
+              options: root.periods
+              value: root.period
+              focusable: false
+              foreground: root.foreground
+              fontFamily: root.fontFamily
+              fontSize: Style.font.caption
+              onChanged: function(v) { root.period = v }
+            }
+
+            RowLayout {
+              width: parent.width
+              spacing: Style.space(6)
+
+              Text {
+                textFormat: Text.PlainText
+                text: root.formatTokens(root.historyTotals.tokens)
+                color: root.foreground
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.body
+                font.bold: true
+                Layout.alignment: Qt.AlignBaseline
+              }
+
+              Text {
+                textFormat: Text.PlainText
+                text: "tokens"
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                Layout.alignment: Qt.AlignBaseline
+              }
+
+              Item { Layout.fillWidth: true }
+
+              Text {
+                textFormat: Text.PlainText
+                text: root.formatMoney(root.historyRow ? root.historyRow.cost : 0)
+                color: root.foreground
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.body
+                font.bold: true
+                Layout.alignment: Qt.AlignBaseline
+              }
+
+              Text {
+                textFormat: Text.PlainText
+                text: "saved"
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                Layout.alignment: Qt.AlignBaseline
+              }
+            }
+
+            RowLayout {
+              width: parent.width
+              spacing: Style.space(6)
+
+              Text {
+                textFormat: Text.PlainText
+                Layout.fillWidth: true
+                text: root.historyDetail(root.historyRow)
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                elide: Text.ElideRight
+              }
+
+              Text {
+                textFormat: Text.PlainText
+                text: "vs API prices"
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
               }
             }
           }

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "ulezot.opencode-go",
   "name": "OpenCode Go",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "ulezot",
-  "description": "OpenCode Go usage for every saved account, with usage vs. window-elapsed meters",
+  "description": "OpenCode Go usage for every saved account, with usage vs. window-elapsed meters and API-equivalent usage history",
   "kinds": [
     "bar-widget"
   ],
@@ -13,7 +13,7 @@
   },
   "barWidget": {
     "displayName": "OpenCode Go",
-    "description": "Rolling, weekly, and monthly OpenCode Go usage for all saved accounts",
+    "description": "Rolling, weekly, and monthly usage for all saved accounts, plus token history and API-price savings",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"
