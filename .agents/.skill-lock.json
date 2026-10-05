@@ -243,10 +243,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/engineering/ask-matt/SKILL.md",
-      "skillFolderHash": "8ab83b2d681b3a343b869e0840535ecf832a17b5",
-      "pluginName": "mattpocock-skills",
+      "skillFolderHash": "da068f2392e1144469cbc602ffff96ef47881a88",
       "installedAt": "2026-10-03T19:42:56.662Z",
-      "updatedAt": "2026-10-03T19:42:56.662Z"
+      "updatedAt": "2026-10-05T12:01:23.185Z"
     },
     "code-review": {
       "source": "mattpocock/skills",
@@ -586,6 +585,15 @@
       "skillFolderHash": "d9fbbd462d810660b96a32443a3dee217e549242",
       "installedAt": "2026-10-04T15:39:38.790Z",
       "updatedAt": "2026-10-04T15:39:38.790Z"
+    },
+    "rata": {
+      "source": "eyenalxai/rata",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/eyenalxai/rata.git",
+      "skillPath": "skills/rata/SKILL.md",
+      "skillFolderHash": "d0defdf843a2fa3df2475344cd4d62fb9ea18bcf",
+      "installedAt": "2026-10-05T11:45:07.275Z",
+      "updatedAt": "2026-10-05T11:45:07.275Z"
     }
   },
   "dismissed": {
