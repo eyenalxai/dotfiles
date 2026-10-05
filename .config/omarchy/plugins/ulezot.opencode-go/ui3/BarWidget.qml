@@ -43,6 +43,7 @@ Panel {
 
   property var accounts: []
   property var history: null
+  property var fit: null
   property bool loading: false
   property string error: ""
 
@@ -74,37 +75,14 @@ Panel {
     return count > 0 ? total / count : -1
   }
 
-  // Fit for the combined monthly allowance with staggered windows: estimate the
-  // burn rate (quota per day) from the accounts with at least a day of elapsed
-  // window, project when the combined remaining allowance runs dry, and call it
-  // a fit when that runway reaches the next account refill (its reset). Linear
-  // and therefore rough; per-account limits are still handled by the failover
-  // plugin.
-  readonly property int monthlyFit: {
-    var remaining = 0
-    var rate = 0
-    var refillMs = -1
-    for (var i = 0; i < accounts.length; i++) {
-      var a = accounts[i]
-      if (!a || !a.ok || !a.usage || !a.usage.monthly) continue
-      var m = a.usage.monthly
-      var used = Number(m.percent) / 100
-      remaining += Math.max(0, 1 - used)
-      var resetMs = Date.parse(String(m.resetsAt || ""))
-      var leftMs = isFinite(resetMs) ? resetMs - root.nowMs : -1
-      if (leftMs > 0 && (refillMs < 0 || leftMs < refillMs)) refillMs = leftMs
-      var elapsed = Number(m.elapsedPercent || 0) / 100
-      if (elapsed > 0 && elapsed < 1 && leftMs > 0) {
-        var elapsedDays = (elapsed / (1 - elapsed)) * (leftMs / 86400000)
-        if (elapsedDays >= 1 && used > 0) rate = Math.max(rate, used / elapsedDays)
-      }
-    }
-    if (remaining <= 0) return -1
-    if (rate <= 0 || refillMs <= 0) return 0
-    return remaining / rate >= refillMs / 86400000 ? 1 : -1
+  // Fit mark for the combined monthly allowance: nf-fa-check when the CLI's
+  // projection says the allowance lasts until the next account refill,
+  // nf-fa-exclamation-triangle when it would run dry first, and nothing when
+  // the CLI has no samples to project from (see opencode-go-usage.nu).
+  readonly property string monthlyFitMark: {
+    if (!fit || !fit.monthly) return ""
+    return fit.monthly.ok ? " \uf00c" : " \uf071"
   }
-  // nf-fa-check when on pace, nf-fa-exclamation-triangle when projected over.
-  readonly property string monthlyFitMark: monthlyFit > 0 ? " \uf00c" : monthlyFit < 0 ? " \uf071" : ""
   readonly property var periods: [
     { value: "today", label: "Today", tooltip: "Today, since local midnight" },
     { value: "h24", label: "24h", tooltip: "Rolling last 24 hours" },
@@ -256,9 +234,11 @@ Panel {
       var data = JSON.parse(trimmed)
       if (Array.isArray(data)) {
         accounts = data
+        fit = null
       } else if (data && Array.isArray(data.accounts)) {
         accounts = data.accounts
         history = data.history || null
+        fit = data.fit || null
       } else {
         throw new Error("unexpected shape")
       }

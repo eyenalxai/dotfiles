@@ -10,6 +10,13 @@
 # database: tokens used and what the same usage would have cost at API prices,
 # for today, the last 24 hours, 3 days, week, month, and all time.
 #
+# Every run also records a small local sample of each account's quota
+# percentages (~/.local/state/opencode-go-usage/samples.ndjson, override with
+# $OPENCODE_GO_STORE) so the bar widget can project from the recent burn rate
+# instead of the whole-window average. Samples older than two weeks are
+# dropped; monthly windows carry `ratePerDay` (percent per day) and the JSON
+# object form carries the combined `fit`.
+#
 # Requires the OpenCode v2 CLI (`opencode2 auth export`); use `--binary` to
 # point at another binary.
 #
@@ -96,6 +103,103 @@ def opencode-go-db [] {
   let override = ($env.OPENCODE_GO_DB? | default "")
   if ($override | is-not-empty) { return $override }
   ($env.HOME? | default "") + "/.local/share/opencode/opencode.db"
+}
+
+# Local sample store: one NDJSON line per account per poll. The monthly burn
+# rate and the combined fit are derived from it.
+def opencode-go-store [] {
+  let override = ($env.OPENCODE_GO_STORE? | default "")
+  if ($override | is-not-empty) { return $override }
+  let state = ($env.XDG_STATE_HOME? | default (($env.HOME? | default "") + "/.local/state"))
+  $state + "/opencode-go-usage/samples.ndjson"
+}
+
+# Every recorded sample, oldest first; a missing or unreadable store is [].
+def opencode-go-samples [] {
+  let store = (opencode-go-store)
+  if not ($store | path exists) { return [] }
+  try {
+    open --raw $store | lines | where {|line| ($line | str trim) | is-not-empty } | each {|line| $line | from json }
+  } catch { [] }
+}
+
+# Burn rate in percent per day for one account's monthly window: the recent
+# slope when the store holds at least six hours of samples from the same
+# window, otherwise the window-average slope once a day has elapsed. Null when
+# neither is available.
+def opencode-go-monthly-rate [samples: list, label: string, usage: record, now: int] {
+  let reset = ($usage.resetsAt? | default "")
+  let mine = ($samples | where {|s|
+    (($s.label? | default "") == $label) and (($s.reset? | default "") == $reset) and (($s.monthly? | default (-1)) >= 0)
+  })
+  let recent = ($mine | where {|s| ($now - $s.t) <= 86400000 })
+  let span_days = (if ($recent | length) >= 2 { (($recent | last | get t) - ($recent | first | get t)) / 86400000 } else { 0 })
+  let elapsed = (($usage.elapsedPercent? | default 0) / 100)
+  let resets_at = ($usage.resetsAt? | default "")
+  let left_days = (if (not ($resets_at | is-empty)) { (($resets_at | into datetime) - (date now)) / 1day } else { -1 })
+  let elapsed_days = (if $elapsed > 0 and $elapsed < 1 and $left_days > 0 { ($elapsed / (1 - $elapsed)) * $left_days } else { 0 })
+  if ($recent | length) >= 2 and $span_days >= 0.25 {
+    (($recent | last | get monthly) - ($recent | first | get monthly)) / $span_days
+  } else if $elapsed_days >= 1 and (($usage.percent? | default 0) > 0) {
+    $usage.percent / $elapsed_days
+  } else {
+    null
+  }
+}
+
+# Append this run's samples unless the newest one is younger than two minutes,
+# and drop everything older than two weeks once the store crosses that age.
+def opencode-go-record [rows: list, samples: list] {
+  let store = (opencode-go-store)
+  let now = (((date now | into int) / 1000000) | math floor)
+  let newest = (if ($samples | is-empty) { -1 } else { $samples | last | get t })
+  if ($now - $newest) >= 120000 {
+    let fresh = ($rows | where {|r| $r.ok } | each {|r|
+      {
+        t: $now
+        label: $r.label
+        reset: ($r.usage.monthly.resetsAt? | default "")
+        monthly: ($r.usage.monthly.percent? | default (-1))
+        elapsed: ($r.usage.monthly.elapsedPercent? | default (-1))
+        rolling: ($r.usage.rolling.percent? | default (-1))
+        weekly: ($r.usage.weekly.percent? | default (-1))
+      }
+    })
+    if ($fresh | is-not-empty) {
+      mkdir ($store | path dirname)
+      for line in $fresh {
+        ($line | to json --raw) + "\n" | save --append $store
+      }
+    }
+  }
+  if (not ($samples | is-empty)) and (($samples | first | get t) < ($now - 1296000000)) {
+    let keep = ($samples | where {|s| $s.t >= ($now - 1209600000) })
+    ((($keep | each {|s| $s | to json --raw }) | str join "\n") + "\n") | save --force $store
+  }
+}
+
+# Verdict for the combined monthly allowance: null when there is nothing to
+# project from, otherwise ok = the combined remaining allowance lasts until
+# the next account refill (the earliest reset).
+def opencode-go-monthly-fit [rows: list] {
+  let usable = ($rows | where {|r| $r.ok and ($r.usage.monthly? | is-not-empty) })
+  let remaining = ($usable | reduce --fold 0.0 {|r, acc| $acc + ([(1 - ($r.usage.monthly.percent / 100)) 0] | math max) })
+  let rates = ($usable | each {|r| $r.usage.monthly.ratePerDay? } | where {|x| $x != null })
+  let resets = ($usable | each {|r| (($r.usage.monthly.resetsAt | into datetime) - (date now)) / 1day } | where {|d| $d > 0 })
+  let rate = ($rates | reduce --fold 0.0 {|x, acc| $acc + ([$x 0] | math max) })
+  let refill = (if ($resets | is-empty) { null } else { $resets | math min })
+  if ($usable | is-empty) {
+    null
+  } else if $remaining <= 0 {
+    { ok: false, remaining: 0.0, ratePerDay: 0.0, runwayDays: null, refillDays: null }
+  } else if ($rates | is-empty) or ($refill == null) {
+    null
+  } else if $rate <= 0 {
+    { ok: true, remaining: $remaining, ratePerDay: 0.0, runwayDays: null, refillDays: $refill }
+  } else {
+    let runway = ($remaining / ($rate / 100))
+    { ok: ($runway >= $refill), remaining: $remaining, ratePerDay: $rate, runwayDays: $runway, refillDays: $refill }
+  }
 }
 
 # Compact token count: 1234 -> "1.2K", 17600000 -> "17.6M", 9.7e9 -> "9.7B".
@@ -340,12 +444,24 @@ def opencode-go-usage [
     }
   } | sort-by index | reject index)
 
-  let rows = ($fetched | each {|row| opencode-go-annotate $row $rolling_window })
+  let now_ms = (((date now | into int) / 1000000) | math floor)
+  let samples = (opencode-go-samples)
+  let rows = ($fetched | each {|row|
+    let annotated = (opencode-go-annotate $row $rolling_window)
+    if $annotated.ok {
+      let rate = (opencode-go-monthly-rate $samples $annotated.label $annotated.usage.monthly $now_ms)
+      $annotated | upsert usage.monthly.ratePerDay $rate
+    } else {
+      $annotated
+    }
+  })
+  let fit = (opencode-go-monthly-fit $rows)
+  opencode-go-record $rows $samples
   let history_data = (if $history { opencode-go-history } else { null })
 
   if $json {
     if $history {
-      return ({ accounts: $rows, history: $history_data } | to json --indent 2)
+      return ({ accounts: $rows, history: $history_data, fit: $fit } | to json --indent 2)
     }
     return ($rows | to json --indent 2)
   }

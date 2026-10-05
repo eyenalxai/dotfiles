@@ -9,7 +9,7 @@
     "bar-widget"
   ],
   "entryPoints": {
-    "barWidget": "ui2/BarWidget.qml"
+    "barWidget": "ui3/BarWidget.qml"
   },
   "barWidget": {
     "displayName": "OpenCode Go",
