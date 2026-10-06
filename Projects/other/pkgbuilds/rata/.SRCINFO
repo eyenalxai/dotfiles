@@ -1,6 +1,6 @@
 pkgbase = rata
 	pkgdesc = Linear issue tracking for agent workflows: triage, tickets and wayfinding from the terminal
-	pkgver = 0.2.1
+	pkgver = 0.3.0
 	pkgrel = 1
 	url = https://github.com/eyenalxai/rata
 	arch = x86_64
@@ -10,7 +10,7 @@ pkgbase = rata
 	depends = glibc
 	options = !strip
 	options = !debug
-	source = rata-0.2.1.tar.gz::https://github.com/eyenalxai/rata/archive/refs/tags/v0.2.1.tar.gz
-	sha256sums = 25054ed46aeddbb72fd670401bc02f45e8a0825bc1d0f9b01c256bf7ea827ce3
+	source = rata-0.3.0.tar.gz::https://github.com/eyenalxai/rata/archive/refs/tags/v0.3.0.tar.gz
+	sha256sums = bb9e29ce72c4f094de11ac82ae00f7fbe00a89796100ee810e2e91c59b8ffda8
 
 pkgname = rata

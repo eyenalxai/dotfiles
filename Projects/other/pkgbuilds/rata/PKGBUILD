@@ -1,7 +1,7 @@
 # Maintainer: ulezot
 
 pkgname=rata
-pkgver=0.2.1
+pkgver=0.3.0
 pkgrel=1
 pkgdesc='Linear issue tracking for agent workflows: triage, tickets and wayfinding from the terminal'
 arch=('x86_64' 'aarch64')
@@ -13,7 +13,7 @@ makedepends=('bun')
 # the build produces no debug info to split out.
 options=('!strip' '!debug')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/eyenalxai/rata/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('25054ed46aeddbb72fd670401bc02f45e8a0825bc1d0f9b01c256bf7ea827ce3')
+sha256sums=('bb9e29ce72c4f094de11ac82ae00f7fbe00a89796100ee810e2e91c59b8ffda8')
 
 build() {
   cd "$srcdir/$pkgname-$pkgver"
