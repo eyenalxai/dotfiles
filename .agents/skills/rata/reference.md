@@ -2,35 +2,42 @@
 
 ## Conventions
 
-- `<ref>` is an identifier (`PER-42`), a UUID, or a `linear.app` URL.
+- `<ref>` is an identifier (`ABC-42`), a UUID, or a `linear.app` URL.
 - `--json` works on every command and prints one stable JSON document.
 - `--body-file -` reads the value from stdin; `--body-file <path>` reads a file.
-- The default team and project come from `.rata.json`, written by `rata init`.
+- The default team and project come from `.rata.json`, written by `rata link`.
 - Exit code 0 on success, 1 on failure. Failures print one line to stderr.
 
 ## Setup
 
-| Command                        | Description                                                                               |
-| ------------------------------ | ----------------------------------------------------------------------------------------- |
-| `rata auth login --with-token` | Read a Linear API key from stdin and save it.                                             |
-| `rata auth status`             | Show the authenticated viewer and the key source.                                         |
-| `rata auth logout`             | Remove the saved key.                                                                     |
-| `rata whoami`                  | Show the authenticated viewer.                                                            |
-| `rata init --team <key>`       | Write `.rata.json`, install `docs/agents/issue-tracker.md`, update the `AGENTS.md` block. |
-| `rata init --print`            | Print the tracker document. Write nothing.                                                |
-| `rata init --force`            | Overwrite existing files.                                                                 |
-| `rata init --ensure-labels`    | Create the canonical labels in the team.                                                  |
+| Command                                             | Description                                                                            |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `rata auth login --with-token [--workspace <name>]` | Read a Linear API key from stdin and save it as a profile. `default` without the flag. |
+| `rata auth status [--workspace <name>]`             | Show the selected profile, viewer and organization.                                    |
+| `rata auth logout [--workspace <name>]`             | Remove one profile. `default` without the flag.                                        |
+| `rata workspace list`                               | List the stored profiles with their viewer and organization.                           |
+| `rata workspace use <name>`                         | Set the default profile.                                                               |
+| `rata whoami`                                       | Show the authenticated viewer.                                                         |
+| `rata link`                                         | Link this repository; asks for the workspace, then the team.                           |
+| `rata link --team <key>`                            | Link to a team. Searches every stored workspace. `--create --name <name>` creates it.  |
+| `rata link --project <name>`                        | Record the default project for this repository.                                        |
+| `rata link --workspace <name>`                      | Link in one workspace profile. Skips the workspace prompt.                             |
 
-`LINEAR_API_KEY` takes precedence over the saved key.
+The API key is resolved in order: `LINEAR_API_KEY`, the repository `workspace`
+from `.rata.json`, the `default` profile. `rata link --workspace <name>` selects
+that profile directly, also when `LINEAR_API_KEY` is set. With `LINEAR_API_KEY`
+set, `rata link` ignores the stored profiles but keeps the recorded `workspace`.
 
 ## Teams, projects, labels
 
-| Command                          | Description                                       |
-| -------------------------------- | ------------------------------------------------- |
-| `rata team list`                 | List teams.                                       |
-| `rata project list`              | List projects.                                    |
-| `rata label list --team <key>`   | List the labels of a team.                        |
-| `rata label ensure --team <key>` | Create the canonical labels that the team misses. |
+| Command                                            | Description                                                                  |
+| -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `rata team list`                                   | List teams.                                                                  |
+| `rata team create --name <name> [--key <key>]`     | Create a team.                                                               |
+| `rata team delete <key> [--yes]`                   | Delete a team (Linear keeps it recoverable). `--yes` skips the confirmation. |
+| `rata project list`                                | List projects: name, state, progress, id.                                    |
+| `rata project create --name <name> [--team <key>]` | Create a project. `--team` is repeatable.                                    |
+| `rata label list --team <key>`                     | List the labels of a team.                                                   |
 
 ## Issues
 

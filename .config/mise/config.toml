@@ -2,6 +2,7 @@
 bun = "latest"
 gh = "latest"
 node = "latest"
+opencode = "latest"
 railway = "latest"
 uv = "latest"
 
