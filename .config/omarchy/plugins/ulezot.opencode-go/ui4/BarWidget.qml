@@ -79,20 +79,31 @@ Panel {
   // nested shape too so the widget keeps working either way.
   readonly property var monthlyFit: fit ? (fit.monthly || fit) : null
 
-  // Fit mark for the combined monthly allowance: nf-fa-check when the CLI's
-  // projection says the allowance lasts until the next account refill,
+  // Fit for the combined monthly allowance. The hero shows one hoverable
+  // glyph: nf-fa-check when the allowance lasts until the next account refill,
   // nf-fa-exclamation-triangle when it would run dry first, and nothing when
   // the CLI has no samples to project from (see opencode-go-usage.nu).
-  readonly property string monthlyFitMark: {
+  readonly property string monthlyFitGlyph: {
     if (!monthlyFit) return ""
-    return monthlyFit.ok ? " \uf00c" : " \uf071"
+    return monthlyFit.ok ? "\uf00c" : "\uf071"
   }
+  readonly property color monthlyFitTint: (monthlyFit && !monthlyFit.ok) ? urgent : foreground
 
-  // Burn rate next to the combined monthly percentage, e.g. " · ~9.2%/day".
-  readonly property string heroRateText: {
-    if (!monthlyFit || monthlyFit.ratePerDay === null || monthlyFit.ratePerDay === undefined) return ""
-    var r = Number(monthlyFit.ratePerDay)
-    return r > 0 ? " · ~" + (Math.round(r * 10) / 10) + "%/day" : ""
+  // Hover text for the monthly fit glyph. An over-pace projection names how
+  // many extra OpenCode Go Plus subscriptions the month needs: the burn over
+  // the refill window minus the allowance that is left, in units of one
+  // subscription's monthly quota, rounded to the nearest half.
+  readonly property string monthlyFitTip: {
+    if (!monthlyFit) return ""
+    var remaining = Number(monthlyFit.remaining)
+    if (isFinite(remaining) && remaining <= 0) return "Monthly limit reached"
+    if (monthlyFit.ok) return "On pace — no more OpenCode Go Plus subscriptions needed"
+    var rate = Number(monthlyFit.ratePerDay)
+    var refill = (monthlyFit.refillDays === null || monthlyFit.refillDays === undefined) ? NaN : Number(monthlyFit.refillDays)
+    if (!isFinite(rate) || rate <= 0 || !isFinite(refill)) return "Projected to run out this month"
+    var extra = Math.round(Math.max(0, (rate / 100) * refill - remaining) * 2) / 2
+    if (!(extra > 0)) return "On pace — no more OpenCode Go Plus subscriptions needed"
+    return "Need ~" + root.trimZero(extra.toFixed(1)) + " more OpenCode Go Plus subscriptions"
   }
   readonly property var periods: [
     { value: "today", label: "Today", tooltip: "Today, since local midnight" },
@@ -148,7 +159,9 @@ Panel {
         elapsed: Number(entry.elapsedPercent || 0) / 100,
         resetAt: String(entry.resetsAt || ""),
         limited: entry.status === "rate-limited",
-        ratePerDay: (entry.ratePerDay === null || entry.ratePerDay === undefined) ? null : Number(entry.ratePerDay)
+        // The combined monthly figure lives in the hero, so the monthly row
+        // shows no percentage text.
+        hideUsed: defs[i] === "monthly"
       })
     }
     return out
@@ -268,20 +281,6 @@ Panel {
     if (history === null)
       return "r refresh · right-click terminal view"
     return "1-6/←→ period · r refresh · right-click full view"
-  }
-
-  // One dim line under the accounts, mirroring the terminal projection.
-  function projectionText() {
-    if (!monthlyFit) return ""
-    var parts = []
-    if (monthlyFit.runwayDays !== null && monthlyFit.runwayDays !== undefined)
-      parts.push("dries in ~" + Math.round(Number(monthlyFit.runwayDays)) + " d")
-    else
-      parts.push("no burn recorded")
-    if (monthlyFit.refillDays !== null && monthlyFit.refillDays !== undefined)
-      parts.push("next refill in ~" + Math.round(Number(monthlyFit.refillDays)) + " d")
-    parts.push(monthlyFit.ok ? "on pace" : "over pace")
-    return "Projection  " + parts.join(" · ")
   }
 
   onOpenedChanged: if (opened) {
@@ -416,9 +415,17 @@ Panel {
             meta: root.activeAccount
               ? root.shortName(root.activeAccount) + " · active"
               : root.accounts.length + " accounts"
-            detail: root.combinedMonthly >= 0 ? Math.round(root.combinedMonthly * 100) + "%" + root.heroRateText + root.monthlyFitMark : ""
+            detail: root.combinedMonthly >= 0 ? Math.round(root.combinedMonthly * 100) + "%" : ""
             foreground: root.foreground
             fontFamily: root.fontFamily
+
+            trailingControl: Component {
+              FitIcon {
+                glyph: root.monthlyFitGlyph
+                tint: root.monthlyFitTint
+                tip: root.monthlyFitTip
+              }
+            }
 
             iconComponent: Component {
               Item {
@@ -503,18 +510,6 @@ Panel {
                 }
               }
             }
-          }
-
-          // ---------- Projection ----------
-          Text {
-            textFormat: Text.PlainText
-            visible: text !== ""
-            width: parent.width
-            text: root.projectionText()
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            elide: Text.ElideRight
           }
 
           // ---------- Usage history ----------
@@ -720,12 +715,6 @@ Panel {
     // Red only once every account is out; while failover has somewhere to go,
     // a limited window is information, not a warning.
     readonly property bool alarming: windowRow.limited && root.alarming
-    // Monthly-only burn rate, shown after the percentage like the terminal.
-    readonly property string rateText: {
-      if (!windowRow.window || windowRow.window.ratePerDay === null || windowRow.window.ratePerDay === undefined) return ""
-      var r = Number(windowRow.window.ratePerDay)
-      return r > 0 ? " · ~" + (Math.round(r * 10) / 10) + "%/day" : ""
-    }
 
     spacing: Style.space(2)
 
@@ -755,7 +744,7 @@ Panel {
         textFormat: Text.PlainText
         Layout.preferredWidth: Style.space(132)
         Layout.alignment: Qt.AlignVCenter
-        text: windowRow.window ? Math.round(windowRow.window.percent * 100) + "% used" + windowRow.rateText : ""
+        text: windowRow.window && !windowRow.window.hideUsed ? Math.round(windowRow.window.percent * 100) + "% used" : ""
         color: windowRow.alarming ? root.urgent : (windowRow.limited ? root.dim : root.foreground)
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
@@ -836,6 +825,42 @@ Panel {
       Behavior on width {
         NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
       }
+    }
+  }
+
+  // A small monthly status glyph in the hero. Hover reveals the fit tooltip.
+  component FitIcon: Item {
+    id: fitIcon
+    property string glyph: ""
+    property color tint: root.foreground
+    property string tip: ""
+
+    visible: glyph !== ""
+    implicitWidth: glyphText.implicitWidth
+    implicitHeight: glyphText.implicitHeight
+
+    Text {
+      id: glyphText
+      textFormat: Text.PlainText
+      anchors.centerIn: parent
+      text: fitIcon.glyph
+      color: fitIcon.tint
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.body
+    }
+
+    MouseArea {
+      id: hoverArea
+      anchors.fill: parent
+      anchors.margins: -Style.space(6)
+      hoverEnabled: true
+      acceptedButtons: Qt.NoButton
+    }
+
+    PanelToolTip {
+      visible: fitIcon.tip !== "" && hoverArea.containsMouse
+      text: fitIcon.tip
+      fontFamily: root.fontFamily
     }
   }
 }
