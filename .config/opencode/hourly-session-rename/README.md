@@ -2,25 +2,19 @@
 
 OpenCode plugin that refreshes session titles as conversations evolve. Every
 hour it finds the sessions in its location that have new activity since it last
-titled them, generates a title, and writes it back. It also adds a `/rename`
-command that renames the current session on demand.
+titled them, generates a title, and writes it back.
 
 ## Uses OpenCode's built-in title generator
 
 Titles are generated with OpenCode's own title generator prompt — the same
-prompt the built-in automatic titling and the `/rename` action use — so the
-result matches what OpenCode would produce itself.
+prompt the built-in automatic titling uses — so the result matches what
+OpenCode would produce itself.
 
-A note on the built-in `/rename`: it is a TUI dialog (bound to `ctrl+r`) that
-only calls `session.update({ title })`. There is no server endpoint that
-regenerates a title, so a plugin cannot invoke it directly. This plugin reuses
-the built-in prompt instead and registers its own `/rename` command that skips
-the dialog:
-
-- `/rename` — generate a title for the current session automatically.
-- `/rename some words` — set the title to `some words` verbatim.
-
-Set `command: false` to disable the command.
+A note on the built-in `/rename`: it is a TUI slash command (also bound to
+`ctrl+r`) that opens a dialog and only calls `session.update({ title })`. There
+is no server endpoint that regenerates a title, so a plugin cannot invoke it.
+This plugin does not touch `/rename`; it reuses the built-in prompt for the
+hourly automatic rename instead.
 
 ## How it works
 
@@ -97,8 +91,6 @@ Options can be passed with the object form:
 | `scope`              | `"location"`        | `"location"` limits each instance to its own directory; `"all"` processes every session (may duplicate work across loaded locations). |
 | `model`              | session's model     | `{ "providerID": "…", "id": "…" }` used for title generation. Defaults to the session's model, then the global default model. |
 | `instructions`       | built-in prompt     | System instruction used when asking the model for a title. Defaults to OpenCode's built-in title generator prompt. |
-| `command`            | `"rename"`          | Name of the on-demand rename command, or `false` to disable it.                            |
-| `commandDescription` | built-in            | Description shown for the rename command.                                                   |
 | `dryRun`             | `false`             | Log the titles it would write without changing anything.                                    |
 | `debug`              | `false`             | Log skipped sessions and failures to the OpenCode server log.                               |
 

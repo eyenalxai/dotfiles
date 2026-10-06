@@ -10,13 +10,11 @@ import type { Plugin } from "@opencode/plugin"
  * with `ctx.session.update`.
  *
  * Titles use OpenCode's own title generator prompt (the one the built-in
- * automatic titling and the `/rename` action feed the model), so the result
- * matches what OpenCode would produce itself. OpenCode's `/rename` is a TUI
- * dialog that only calls `session.update`; there is no server endpoint a plugin
- * can call to trigger it, so the prompt is reused directly here. The plugin
- * also registers a `/rename` command that renames the current session on
- * demand: `/rename` generates a title automatically, and `/rename some words`
- * sets that title verbatim.
+ * automatic titling feeds the model), so the result matches what OpenCode
+ * would produce itself. OpenCode's `/rename` is a TUI dialog that only calls
+ * `session.update`; there is no server endpoint a plugin can call to trigger
+ * it, so the prompt is reused directly here. No command is registered, so the
+ * built-in `/rename` keeps working untouched.
  *
  * Why the HTTP API for listing: the plugin context exposes a curated subset of
  * the session client (`create`, `get`, `update`, `context`, ...) but no
@@ -81,8 +79,6 @@ type Options = {
   scope: "location" | "all"
   model?: ModelRef
   instructions: string
-  command: string | false
-  commandDescription: string
   dryRun: boolean
   debug: boolean
 }
@@ -210,15 +206,10 @@ export default {
       state.sessions![session.id] = { renamedAt: Date.now(), title }
     }
 
-    /**
-     * Generate and apply a title for one session. `force` is set by the
-     * on-demand `/rename` command so a session is titled even with little
-     * conversation and outside the active window.
-     */
-    const renameOne = async (session: SessionInfo, force: boolean, source: string) => {
+    /** Generate and apply a title for one session. */
+    const renameOne = async (session: SessionInfo, source: string) => {
       const messages = (await ctx.session.context({ sessionID: session.id })) as unknown as RawMessage[]
-      const minMessages = force ? 1 : options.minMessages
-      const transcript = buildTranscript(messages, minMessages, options.maxTranscriptChars)
+      const transcript = buildTranscript(messages, options.minMessages, options.maxTranscriptChars)
       if (transcript === undefined) {
         debug(`${session.id}: not enough conversation to title yet`)
         return
@@ -279,7 +270,7 @@ export default {
       log(`reviewing ${selected.length} active session${selected.length === 1 ? "" : "s"}`)
       for (const session of selected) {
         try {
-          await renameOne(session, false, "hourly")
+          await renameOne(session, "hourly")
         } catch (error) {
           debug(`${session.id}: rename failed:`, String(error))
         }
@@ -309,34 +300,6 @@ export default {
       timer.unref?.()
     }
 
-    // An on-demand rename. The built-in `/rename` opens a dialog and only calls
-    // `session.update`; this command skips the dialog and generates the title,
-    // so `/rename` names the thread for you. `/rename some words` sets that
-    // title verbatim.
-    if (options.command !== false) {
-      await ctx.command.transform((editor) => {
-        editor.add({
-          name: options.command as string,
-          description: options.commandDescription,
-          execute: async ({ sessionID, prompt }) => {
-            try {
-              const explicit = (prompt?.text ?? "").trim()
-              const session = (await ctx.session.get({ sessionID })) as unknown as SessionInfo
-              if (explicit.length > 0) {
-                const title = cleanTitle(explicit, options.maxTitleChars)
-                if (title) await applyTitle(session, title, "command")
-                return
-              }
-              await renameOne(session, true, "command")
-              await persist()
-            } catch (error) {
-              debug(`rename command failed for ${sessionID}:`, String(error))
-            }
-          },
-        })
-      })
-    }
-
     const firstDelay = options.runOnStart ? options.startDelayMs : options.intervalMs
     timer = setTimeout(() => void tick(), firstDelay + Math.floor(Math.random() * Math.max(0, options.jitterMs)))
     timer.unref?.()
@@ -344,7 +307,6 @@ export default {
     log(
       `active; interval ${Math.round(options.intervalMs / 60_000)}m, scope ${options.scope}` +
         `, window ${Math.round(options.activeWindowMs / 60_000)}m` +
-        (options.command === false ? "" : `, /${options.command}`) +
         (options.dryRun ? ", dry run" : "") +
         (options.debug ? ", debug" : ""),
     )
@@ -503,12 +465,6 @@ function normalize(raw: Plugin.Context["options"]): Options {
   }
 
   const intervalMs = Math.max(10_000, positive(options.intervalMs, 60 * 60 * 1_000, 10_000))
-  const command =
-    options.command === false
-      ? false
-      : typeof options.command === "string" && options.command.trim().length > 0
-        ? options.command.trim()
-        : "rename"
 
   return {
     intervalMs,
@@ -530,11 +486,6 @@ function normalize(raw: Plugin.Context["options"]): Options {
       typeof options.instructions === "string" && options.instructions.trim().length > 0
         ? options.instructions
         : BUILT_IN_TITLE_PROMPT,
-    command,
-    commandDescription:
-      typeof options.commandDescription === "string" && options.commandDescription.trim().length > 0
-        ? options.commandDescription
-        : "Rename this session: generate a title, or set the given title",
     dryRun: bool(options.dryRun, false),
     debug: bool(options.debug, false),
   }
