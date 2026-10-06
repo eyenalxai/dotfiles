@@ -6,9 +6,17 @@ import type { Plugin } from "@opencode/plugin"
  *
  * Keeps session titles current as a conversation evolves. Every interval (one
  * hour by default) the plugin looks at the sessions in its location that have
- * new activity since it last titled them, asks a model for a short title based
- * on the recent conversation, and writes the title back with
- * `ctx.session.update`.
+ * new activity since it last titled them, generates a title, and writes it back
+ * with `ctx.session.update`.
+ *
+ * Titles use OpenCode's own title generator prompt (the one the built-in
+ * automatic titling and the `/rename` action feed the model), so the result
+ * matches what OpenCode would produce itself. OpenCode's `/rename` is a TUI
+ * dialog that only calls `session.update`; there is no server endpoint a plugin
+ * can call to trigger it, so the prompt is reused directly here. The plugin
+ * also registers a `/rename` command that renames the current session on
+ * demand: `/rename` generates a title automatically, and `/rename some words`
+ * sets that title verbatim.
  *
  * Why the HTTP API for listing: the plugin context exposes a curated subset of
  * the session client (`create`, `get`, `update`, `context`, ...) but no
@@ -73,18 +81,62 @@ type Options = {
   scope: "location" | "all"
   model?: ModelRef
   instructions: string
+  command: string | false
+  commandDescription: string
   dryRun: boolean
   debug: boolean
 }
 
 type Service = { url: string; password: string }
 
-const DEFAULT_INSTRUCTIONS =
-  "You title a coding session from a conversation excerpt. " +
-  "Reply with the title only: 3 to 8 words, at most 60 characters. " +
-  "Describe the concrete task or topic, not the process. " +
-  "No quotes, no markdown, no trailing period, and no \"Title:\" prefix. " +
-  "Match the language of the conversation."
+/**
+ * OpenCode's built-in title generator prompt, copied verbatim so plugin titles
+ * match the ones OpenCode produces for new sessions and `/rename`.
+ */
+const BUILT_IN_TITLE_PROMPT = `You are a title generator. You output ONLY a thread title. Nothing else.
+
+<task>
+Generate a brief title that would help the user find this conversation later.
+
+Follow all rules in <rules>
+Use the <examples> so you know what a good title looks like.
+Your output must be:
+- A single line
+- <=50 characters
+- No explanations
+</task>
+
+<rules>
+- you MUST use the same language as the user message you are summarizing
+- Title must be grammatically correct and read naturally - no word salad
+- Never include tool names in the title (e.g. "read tool", "bash tool", "edit tool")
+- Focus on the main topic or question the user needs to retrieve
+- Vary your phrasing - avoid repetitive patterns like always starting with "Analyzing"
+- When a file is mentioned, focus on WHAT the user wants to do WITH the file, not just that they shared it
+- Keep exact: technical terms, numbers, filenames, HTTP codes
+- Remove: the, this, my, a, an
+- Never assume tech stack
+- Never use tools
+- NEVER respond to questions, just generate a title for the conversation
+- The title should NEVER include "summarizing" or "generating" when generating a title
+- DO NOT SAY YOU CANNOT GENERATE A TITLE OR COMPLAIN ABOUT THE INPUT
+- Always output something meaningful, even if the input is minimal.
+- If the user message is short or conversational (e.g. "hello", "lol", "what's up", "hey"):
+  -> create a title that reflects the user's tone or intent (such as Greeting, Quick check-in, Light chat, Intro message, etc.)
+</rules>
+
+<examples>
+"debug 500 errors in production" -> Debugging production 500 errors
+"refactor user service" -> Refactoring user service
+"why is app.js failing" -> app.js failure investigation
+"implement rate limiting" -> Rate limiting implementation
+"how do I connect postgres to my API" -> Postgres API connection
+"best practices for React hooks" -> React hooks best practices
+"@src/credential.ts can you add refresh token support" -> Credential refresh token support
+"@utils/parser.ts this is broken" -> Parser bug fix
+"look at @config.json" -> Config review
+"@App.tsx add dark mode toggle" -> Dark mode toggle in App
+</examples>`
 
 export default {
   id: "hourly-session-rename",
@@ -141,9 +193,32 @@ export default {
       return undefined
     }
 
-    const renameOne = async (session: SessionInfo) => {
+    const applyTitle = async (session: SessionInfo, title: string, source: string) => {
+      if (options.dryRun) {
+        log(`[dry-run] ${session.id}: ${quote(session.title)} -> ${quote(title)}`)
+        return
+      }
+      if (title !== (session.title ?? "")) {
+        await ctx.session.update({ sessionID: session.id, title })
+        log(`renamed ${session.id} (${source}): ${quote(session.title)} -> ${quote(title)}`)
+      } else {
+        debug(`${session.id}: title already up to date`)
+      }
+      // Record the revision we just titled. A title write bumps `time.updated`,
+      // and this timestamp lands after it, so the session is skipped until new
+      // activity pushes `time.updated` past it.
+      state.sessions![session.id] = { renamedAt: Date.now(), title }
+    }
+
+    /**
+     * Generate and apply a title for one session. `force` is set by the
+     * on-demand `/rename` command so a session is titled even with little
+     * conversation and outside the active window.
+     */
+    const renameOne = async (session: SessionInfo, force: boolean, source: string) => {
       const messages = (await ctx.session.context({ sessionID: session.id })) as unknown as RawMessage[]
-      const transcript = buildTranscript(messages, options)
+      const minMessages = force ? 1 : options.minMessages
+      const transcript = buildTranscript(messages, minMessages, options.maxTranscriptChars)
       if (transcript === undefined) {
         debug(`${session.id}: not enough conversation to title yet`)
         return
@@ -162,22 +237,7 @@ export default {
         return
       }
 
-      if (options.dryRun) {
-        log(`[dry-run] ${session.id}: ${quote(session.title)} -> ${quote(title)}`)
-        return
-      }
-
-      if (title !== (session.title ?? "")) {
-        await ctx.session.update({ sessionID: session.id, title })
-        log(`renamed ${session.id}: ${quote(session.title)} -> ${quote(title)}`)
-      } else {
-        debug(`${session.id}: title already up to date`)
-      }
-
-      // Record the revision we just titled. A title write bumps `time.updated`,
-      // and this timestamp lands after it, so the session is skipped until new
-      // activity pushes `time.updated` past it.
-      state.sessions![session.id] = { renamedAt: Date.now(), title }
+      await applyTitle(session, title, source)
     }
 
     const runOnce = async () => {
@@ -219,7 +279,7 @@ export default {
       log(`reviewing ${selected.length} active session${selected.length === 1 ? "" : "s"}`)
       for (const session of selected) {
         try {
-          await renameOne(session)
+          await renameOne(session, false, "hourly")
         } catch (error) {
           debug(`${session.id}: rename failed:`, String(error))
         }
@@ -249,6 +309,34 @@ export default {
       timer.unref?.()
     }
 
+    // An on-demand rename. The built-in `/rename` opens a dialog and only calls
+    // `session.update`; this command skips the dialog and generates the title,
+    // so `/rename` names the thread for you. `/rename some words` sets that
+    // title verbatim.
+    if (options.command !== false) {
+      await ctx.command.transform((editor) => {
+        editor.add({
+          name: options.command as string,
+          description: options.commandDescription,
+          execute: async ({ sessionID, prompt }) => {
+            try {
+              const explicit = (prompt?.text ?? "").trim()
+              const session = (await ctx.session.get({ sessionID })) as unknown as SessionInfo
+              if (explicit.length > 0) {
+                const title = cleanTitle(explicit, options.maxTitleChars)
+                if (title) await applyTitle(session, title, "command")
+                return
+              }
+              await renameOne(session, true, "command")
+              await persist()
+            } catch (error) {
+              debug(`rename command failed for ${sessionID}:`, String(error))
+            }
+          },
+        })
+      })
+    }
+
     const firstDelay = options.runOnStart ? options.startDelayMs : options.intervalMs
     timer = setTimeout(() => void tick(), firstDelay + Math.floor(Math.random() * Math.max(0, options.jitterMs)))
     timer.unref?.()
@@ -256,6 +344,7 @@ export default {
     log(
       `active; interval ${Math.round(options.intervalMs / 60_000)}m, scope ${options.scope}` +
         `, window ${Math.round(options.activeWindowMs / 60_000)}m` +
+        (options.command === false ? "" : `, /${options.command}`) +
         (options.dryRun ? ", dry run" : "") +
         (options.debug ? ", debug" : ""),
     )
@@ -310,14 +399,14 @@ async function listSessions(service: Service, directory: string | undefined, lim
  * when the session does not have enough conversation to title yet, so a session
  * with a single stray message is left alone.
  */
-function buildTranscript(messages: RawMessage[], options: Options): string | undefined {
-  const entries: Array<{ index: number; role: string; text: string }> = []
-  messages.forEach((message, index) => {
+function buildTranscript(messages: RawMessage[], minMessages: number, maxChars: number): string | undefined {
+  const entries: Array<{ role: string; text: string }> = []
+  for (const message of messages) {
     const text = textOf(message)
-    if (text && text.trim().length > 0) entries.push({ index, role: roleOf(message), text: text.trim() })
-  })
+    if (text && text.trim().length > 0) entries.push({ role: roleOf(message), text: text.trim() })
+  }
 
-  if (entries.length < options.minMessages) return undefined
+  if (entries.length < minMessages) return undefined
 
   // Always include the first message (it usually states the task) plus the
   // most recent messages (they show where the work landed).
@@ -330,7 +419,7 @@ function buildTranscript(messages: RawMessage[], options: Options): string | und
   for (const position of [...keep].sort((a, b) => a - b)) {
     const entry = entries[position]
     const line = `[${entry.role}] ${clip(entry.text, 700)}`
-    if (total + line.length > options.maxTranscriptChars && chunks.length > 0) break
+    if (total + line.length > maxChars && chunks.length > 0) break
     chunks.push(line)
     total += line.length + 1
   }
@@ -339,7 +428,7 @@ function buildTranscript(messages: RawMessage[], options: Options): string | und
 }
 
 function buildPrompt(transcript: string, options: Options): string {
-  return `${options.instructions}\n\n--- Conversation excerpt ---\n${transcript}\n--- End of excerpt ---\nTitle:`
+  return `${options.instructions}\n\n<conversation>\n${transcript}\n</conversation>`
 }
 
 function textOf(message: RawMessage): string | undefined {
@@ -414,6 +503,12 @@ function normalize(raw: Plugin.Context["options"]): Options {
   }
 
   const intervalMs = Math.max(10_000, positive(options.intervalMs, 60 * 60 * 1_000, 10_000))
+  const command =
+    options.command === false
+      ? false
+      : typeof options.command === "string" && options.command.trim().length > 0
+        ? options.command.trim()
+        : "rename"
 
   return {
     intervalMs,
@@ -424,14 +519,22 @@ function normalize(raw: Plugin.Context["options"]): Options {
     maxPerRun: positive(options.maxPerRun, 5),
     scanLimit: positive(options.scanLimit, 100),
     minMessages: positive(options.minMessages, 2),
-    maxTitleChars: positive(options.maxTitleChars, 60, 8),
+    maxTitleChars: positive(options.maxTitleChars, 50, 8),
     maxTranscriptChars: positive(options.maxTranscriptChars, 4_000, 500),
     stateTtlMs: positive(options.stateTtlMs, 7 * 24 * 60 * 60 * 1_000),
     includeChildren: bool(options.includeChildren, false),
     includeArchived: bool(options.includeArchived, false),
     scope: options.scope === "all" ? "all" : "location",
     model: model(options.model),
-    instructions: typeof options.instructions === "string" && options.instructions.trim() ? options.instructions : DEFAULT_INSTRUCTIONS,
+    instructions:
+      typeof options.instructions === "string" && options.instructions.trim().length > 0
+        ? options.instructions
+        : BUILT_IN_TITLE_PROMPT,
+    command,
+    commandDescription:
+      typeof options.commandDescription === "string" && options.commandDescription.trim().length > 0
+        ? options.commandDescription
+        : "Rename this session: generate a title, or set the given title",
     dryRun: bool(options.dryRun, false),
     debug: bool(options.debug, false),
   }
