@@ -28,6 +28,7 @@
       "package": "github:anomalyco/rift#v0.0.13::path:plugins/opencode"
     },
     "@prevalentware/opencode-goal-plugin",
-    "./opencode-go-failover"
+    "./opencode-go-failover",
+    "./hourly-session-rename"
   ]
 }
