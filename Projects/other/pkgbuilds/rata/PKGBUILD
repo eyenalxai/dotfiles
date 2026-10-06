@@ -1,7 +1,7 @@
 # Maintainer: ulezot
 
 pkgname=rata
-pkgver=0.3.0
+pkgver=0.4.1
 pkgrel=1
 pkgdesc='Linear issue tracking for agent workflows: triage, tickets and wayfinding from the terminal'
 arch=('x86_64' 'aarch64')
@@ -13,7 +13,7 @@ makedepends=('bun')
 # the build produces no debug info to split out.
 options=('!strip' '!debug')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/eyenalxai/rata/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('bb9e29ce72c4f094de11ac82ae00f7fbe00a89796100ee810e2e91c59b8ffda8')
+sha256sums=('c79be5e0dfb0782595bc747aee8c8cb706a9b577965ba5349e18ecced3b0a982')
 
 build() {
   cd "$srcdir/$pkgname-$pkgver"
@@ -31,6 +31,8 @@ check() {
 package() {
   cd "$srcdir/$pkgname-$pkgver"
   install -Dm755 rata "$pkgdir/usr/bin/$pkgname"
+  install -dm755 "$pkgdir/usr/share/rata/drizzle"
+  cp -r drizzle/. "$pkgdir/usr/share/rata/drizzle/"
   ./rata --completions bash > bash-completion
   ./rata --completions zsh > _rata
   ./rata --completions fish > rata.fish
