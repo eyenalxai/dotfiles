@@ -10,17 +10,16 @@ import qs.Ui
 //
 // Clicking the bar icon opens a panel in the same shape as the Wi-Fi and
 // Bluetooth panels: a hero, every saved account with one row per quota window
-// (usage bar over window-elapsed bar, like the `opencode-go-usage` terminal
-// view), and a usage-history section with period buttons. History comes from
-// the local OpenCode database: every completed step stores the API price its
-// tokens would have cost, so the money figure is what the same usage would
-// have cost at API rates. The layout keeps four accounts on screen.
+// (usage bar over window-elapsed bar), and a usage-history section with period
+// buttons. History comes from the local OpenCode database: every completed step
+// stores the API price its tokens would have cost, so the money figure is what
+// the same usage would have cost at API rates. The layout keeps four accounts
+// on screen.
 //
-// Data comes from `opencode-go-usage --json --history` through usage.nu.
-// Left-click opens the panel, middle-click refreshes, right-click opens the
-// full terminal view. Keys: 1-6 pick a history period, left/right cycle it,
-// up/down scroll, r refreshes. Set `refreshIntervalSec` in shell.json to poll
-// slower or faster (default 300, minimum 30).
+// Data comes from usage.nu. Left-click opens the panel, middle-click refreshes.
+// Keys: 1-6 pick a history period, left/right cycle it, up/down scroll, r
+// refreshes. Set `refreshIntervalSec` in shell.json to poll slower or faster
+// (default 300, minimum 30).
 //
 // The bar icon only turns urgent when every saved account is out of quota:
 // the `opencode-go-failover` OpenCode plugin parks a limited account and
@@ -75,14 +74,14 @@ Panel {
     return count > 0 ? total / count : -1
   }
 
-  // The CLI's combined monthly projection. The CLI emits it flat; accept a
-  // nested shape too so the widget keeps working either way.
+  // The combined monthly projection. It arrives flat; accept a nested shape too
+  // so the widget keeps working either way.
   readonly property var monthlyFit: fit ? (fit.monthly || fit) : null
 
-  // Fit for the combined monthly allowance. The hero shows one hoverable
+  // Fit for the combined monthly allowance. The hero badge shows one hoverable
   // glyph: nf-fa-check when the allowance lasts until the next account refill,
   // nf-fa-exclamation-triangle when it would run dry first, and nothing when
-  // the CLI has no samples to project from (see opencode-go-usage.nu).
+  // there are no samples to project from.
   readonly property string monthlyFitGlyph: {
     if (!monthlyFit) return ""
     return monthlyFit.ok ? "\uf00c" : "\uf071"
@@ -247,10 +246,6 @@ Panel {
     usageProc.running = true
   }
 
-  function openFullView() {
-    if (bar) bar.run("omarchy-launch-floating-terminal-with-presentation nu " + pluginDir + "/show.nu")
-  }
-
   function applyUsage(raw) {
     loading = false
     var trimmed = String(raw || "").trim()
@@ -267,20 +262,20 @@ Panel {
       } else {
         throw new Error("unexpected shape")
       }
-      // An empty list almost always means the CLI could not read the accounts
-      // (service hiccup), not that they are gone. Report it rather than
-      // silently going blank.
+      // An empty list almost always means the data source could not read the
+      // accounts (service hiccup), not that they are gone. Report it rather
+      // than silently going blank.
       error = accounts.length === 0 ? "No OpenCode Go accounts found." : ""
       nowMs = Date.now()
     } catch (e) {
-      error = "Could not parse `opencode-go-usage --json --history` output."
+      error = "Could not read OpenCode Go usage."
     }
   }
 
   function footerText() {
     if (history === null)
-      return "r refresh · right-click terminal view"
-    return "1-6/←→ period · r refresh · right-click full view"
+      return "r refresh"
+    return "1-6/←→ period · r refresh"
   }
 
   onOpenedChanged: if (opened) {
@@ -352,8 +347,8 @@ Panel {
     text: root.mark
     active: root.alarming
     onPressed: function(buttonCode) {
-      if (buttonCode === Qt.RightButton) root.openFullView()
-      else if (buttonCode === Qt.MiddleButton) root.refresh()
+      if (buttonCode === Qt.RightButton) return
+      if (buttonCode === Qt.MiddleButton) root.refresh()
       else root.toggle()
     }
   }
@@ -415,16 +410,11 @@ Panel {
             meta: root.activeAccount
               ? root.shortName(root.activeAccount) + " · active"
               : root.accounts.length + " accounts"
-            detail: root.combinedMonthly >= 0 ? Math.round(root.combinedMonthly * 100) + "%" : ""
             foreground: root.foreground
             fontFamily: root.fontFamily
 
             trailingControl: Component {
-              FitIcon {
-                glyph: root.monthlyFitGlyph
-                tint: root.monthlyFitTint
-                tip: root.monthlyFitTip
-              }
+              MonthlyBadge {}
             }
 
             iconComponent: Component {
@@ -705,8 +695,7 @@ Panel {
     }
   }
 
-  // Two stacked bars per window: usage on top, window elapsed underneath,
-  // matching the terminal view.
+  // Two stacked bars per window: usage on top, window elapsed underneath.
   component WindowRow: Column {
     id: windowRow
     property var window: null
@@ -824,6 +813,42 @@ Panel {
 
       Behavior on width {
         NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+      }
+    }
+  }
+
+  // The combined monthly percentage and its on-pace/over-pace glyph, together
+  // in the hero's trailing slot so the number and the indicator never drift
+  // apart.
+  component MonthlyBadge: BorderSurface {
+    id: monthlyBadge
+    visible: root.combinedMonthly >= 0
+    implicitWidth: monthlyBadgeRow.implicitWidth + Style.space(10)
+    implicitHeight: monthlyBadgeRow.implicitHeight + Style.space(4)
+    color: "transparent"
+    borderSpec: Border.controlSpec("normal", root.foreground, Color.accent)
+    radius: Style.cornerRadius
+
+    RowLayout {
+      id: monthlyBadgeRow
+      anchors.centerIn: parent
+      spacing: Style.space(4)
+
+      Text {
+        textFormat: Text.PlainText
+        Layout.alignment: Qt.AlignVCenter
+        text: Math.round(root.combinedMonthly * 100) + "%"
+        color: Qt.darker(root.foreground, 1.4)
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.body
+        font.bold: true
+      }
+
+      FitIcon {
+        Layout.alignment: Qt.AlignVCenter
+        glyph: root.monthlyFitGlyph
+        tint: root.monthlyFitTint
+        tip: root.monthlyFitTip
       }
     }
   }
