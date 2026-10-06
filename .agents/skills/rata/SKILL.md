@@ -20,7 +20,8 @@ Link the repository to its team once:
 rata link --team ABC
 ```
 
-`link` writes `.rata.json`, so every later command knows the team. Use
+`link` stores the repository config in rata's local database, so every later
+command knows the team from any subdirectory, and every worktree shares it. Use
 `--create --name "<name>"` when the team does not exist yet. Without `--team`,
 `link` asks for the workspace first, then the team. When the key exists in more
 than one stored workspace, pass `--workspace <name>` to choose one.
@@ -28,13 +29,34 @@ than one stored workspace, pass `--workspace <name>` to choose one.
 ## Read before you write
 
 ```bash
-rata issue list --json                    # the default team's open issues
+rata issue list --json                    # list issues; returns one page
+rata issue list --after <cursor> --json   # read the next page
 rata issue show ABC-42 --comments --json  # one issue with its comments
 rata search "flaky test" --json
 ```
 
 An issue reference is an identifier (`ABC-42`), a UUID, or a `linear.app` URL.
-Every command supports `--json`; parse that, not the human output.
+Every command supports `--json`; parse that, not the human output. List
+commands return one page with `pageInfo`: see **Paging lists**.
+
+## Paging lists
+
+`issue list`, `search`, `team list`, `project list` and `label list` return one
+page per call. `--limit` is the page size: 50 by default, 250 at most.
+`--after <cursor>` reads the next page. JSON is `{ <plural>, pageInfo }`:
+
+```json
+{
+  "issues": [],
+  "pageInfo": { "hasNextPage": true, "endCursor": "b2c3..." }
+}
+```
+
+Continue with `--after b2c3...` while `pageInfo.hasNextPage` is true. Keep the
+filters and the order fixed across pages: a cursor is bound to its query. Lists
+are ordered by creation time; `search` keeps Linear's relevance ranking, so its
+paging is best effort. The human output prints a next-page hint when more
+results exist. Internal reads drain every page, so `issue show` is complete.
 
 ## Triage
 
@@ -47,6 +69,22 @@ rata issue label remove ABC-42 needs-triage
 
 States: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`,
 `wontfix`. Categories: `bug`, `enhancement`.
+
+Set a priority on every actionable issue (`ready-for-agent` or
+`ready-for-human`):
+
+| Priority | When                                             |
+| -------- | ------------------------------------------------ |
+| `urgent` | The issue breaks production or blocks a release. |
+| `high`   | The issue blocks other work.                     |
+| `medium` | The fallback when no other value applies.        |
+| `low`    | Nice-to-have.                                    |
+
+```bash
+rata issue update ABC-42 --priority high
+```
+
+`needs-info` and `wontfix` issues may stay `none`.
 
 Post the reasoning as a comment. `--body-file -` reads markdown from stdin, so
 long bodies never touch the command line:
@@ -71,8 +109,8 @@ rata issue create --title "Fix the flaky test" --label ready-for-agent --label b
 EOF
 ```
 
-`create` resolves the team and project from `.rata.json`, which `rata link`
-writes. Override them with `--team` and `--project`.
+`create` resolves the team and project from the repository config, which
+`rata link` writes. Override them with `--team` and `--project`.
 
 Wire blocking edges as you publish. Linear has one `blocks` relation, so
 `--blocked-by` records it in the direction you mean:
@@ -90,7 +128,8 @@ project first, then put the spec issue and its tickets in it:
 rata project create --name "Spec: switch billing to Stripe"
 rata issue create --title "Spec: switch billing to Stripe" --project "Spec: switch billing to Stripe" --body-file -
 rata issue create --title "Add the Stripe client" --project "Spec: switch billing to Stripe" --label ready-for-agent --body-file -
-rata issue list --project "Spec: switch billing to Stripe" --json
+rata issue list --project "Spec: switch billing to Stripe" --limit 250 --json
+# continue with --after <pageInfo.endCursor> while pageInfo.hasNextPage is true
 ```
 
 The project rolls up the progress of the set. Wayfinding maps stay issues with
@@ -120,11 +159,15 @@ rata issue close ABC-51
 ```
 
 The frontier is the set of tickets under a map that are unblocked and
-unassigned:
+unassigned. Read the first ready ticket with:
 
 ```bash
-rata issue list --parent ABC-50 --unblocked --unassigned --json
+rata issue list --parent ABC-50 --unblocked --unassigned --sort priority --limit 1 --json
 ```
+
+The JSON is `{ issues, pageInfo }`. The first result is the most urgent
+ticket; ties keep the previous order. The sort reads every matching page
+before it applies the limit, so one call returns the top ticket.
 
 ## Reference
 
