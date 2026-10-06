@@ -722,7 +722,7 @@ Panel {
 
     Column {
       Layout.fillWidth: true
-      spacing: Style.space(2)
+      spacing: Style.space(1)
 
       RowLayout {
         width: parent.width
