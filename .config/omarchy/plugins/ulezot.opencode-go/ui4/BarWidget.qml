@@ -695,8 +695,10 @@ Panel {
     }
   }
 
-  // Two stacked bars per window: usage on top, window elapsed underneath.
-  component WindowRow: Column {
+  // Two stacked bars per window: usage on top, window elapsed underneath. The
+  // window label sits in the outer row so it centers against both bars instead
+  // of the usage bar alone.
+  component WindowRow: RowLayout {
     id: windowRow
     property var window: null
 
@@ -705,83 +707,86 @@ Panel {
     // a limited window is information, not a warning.
     readonly property bool alarming: windowRow.limited && root.alarming
 
-    spacing: Style.space(2)
+    spacing: Style.space(6)
 
-    RowLayout {
-      width: parent.width
-      spacing: Style.space(6)
-
-      Text {
-        textFormat: Text.PlainText
-        Layout.preferredWidth: Style.space(48)
-        Layout.alignment: Qt.AlignVCenter
-        text: windowRow.window ? windowRow.window.title : ""
-        color: root.foreground
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        elide: Text.ElideRight
-      }
-
-      Meter {
-        Layout.fillWidth: true
-        Layout.alignment: Qt.AlignVCenter
-        value: windowRow.window ? windowRow.window.percent : 0
-        alarming: windowRow.alarming
-      }
-
-      Text {
-        textFormat: Text.PlainText
-        Layout.preferredWidth: Style.space(132)
-        Layout.alignment: Qt.AlignVCenter
-        text: windowRow.window && !windowRow.window.hideUsed ? Math.round(windowRow.window.percent * 100) + "% used" : ""
-        color: windowRow.alarming ? root.urgent : (windowRow.limited ? root.dim : root.foreground)
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        horizontalAlignment: Text.AlignRight
-      }
-
-      Text {
-        textFormat: Text.PlainText
-        Layout.preferredWidth: Style.space(88)
-        Layout.alignment: Qt.AlignVCenter
-        text: {
-          if (!windowRow.window) return ""
-          if (windowRow.window.limited) return "limit reached"
-          var ms = root.resetMsFor(windowRow.window)
-          return ms > 0 ? "resets " + root.formatDuration(ms) : ""
-        }
-        color: windowRow.alarming ? root.urgent : root.dim
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        horizontalAlignment: Text.AlignRight
-      }
+    Text {
+      textFormat: Text.PlainText
+      Layout.preferredWidth: Style.space(48)
+      Layout.alignment: Qt.AlignVCenter
+      text: windowRow.window ? windowRow.window.title : ""
+      color: root.foreground
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.caption
+      elide: Text.ElideRight
     }
 
-    RowLayout {
-      width: parent.width
-      spacing: Style.space(6)
+    Column {
+      Layout.fillWidth: true
+      spacing: Style.space(2)
 
-      Item { Layout.preferredWidth: Style.space(48) }
+      RowLayout {
+        width: parent.width
+        spacing: Style.space(6)
 
-      Meter {
-        Layout.fillWidth: true
-        Layout.alignment: Qt.AlignVCenter
-        value: windowRow.window ? windowRow.window.elapsed : 0
-        fillColor: root.alpha(root.foreground, 0.45)
+        Meter {
+          Layout.fillWidth: true
+          Layout.alignment: Qt.AlignVCenter
+          value: windowRow.window ? windowRow.window.percent : 0
+          alarming: windowRow.alarming
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          Layout.preferredWidth: Style.space(132)
+          Layout.alignment: Qt.AlignVCenter
+          text: windowRow.window && !windowRow.window.hideUsed ? Math.round(windowRow.window.percent * 100) + "% used" : ""
+          color: windowRow.alarming ? root.urgent : (windowRow.limited ? root.dim : root.foreground)
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignRight
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          Layout.preferredWidth: Style.space(88)
+          Layout.alignment: Qt.AlignVCenter
+          text: {
+            if (!windowRow.window) return ""
+            if (windowRow.window.limited) return "limit reached"
+            var ms = root.resetMsFor(windowRow.window)
+            return ms > 0 ? "resets " + root.formatDuration(ms) : ""
+          }
+          color: windowRow.alarming ? root.urgent : root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignRight
+        }
       }
 
-      Text {
-        textFormat: Text.PlainText
-        Layout.preferredWidth: Style.space(132)
-        Layout.alignment: Qt.AlignVCenter
-        text: windowRow.window ? Math.round(windowRow.window.elapsed * 100) + "% elapsed" : ""
-        color: root.dim
-        font.family: root.fontFamily
-        font.pixelSize: Style.font.caption
-        horizontalAlignment: Text.AlignRight
-      }
+      RowLayout {
+        width: parent.width
+        spacing: Style.space(6)
 
-      Item { Layout.preferredWidth: Style.space(88) }
+        Meter {
+          Layout.fillWidth: true
+          Layout.alignment: Qt.AlignVCenter
+          value: windowRow.window ? windowRow.window.elapsed : 0
+          fillColor: root.alpha(root.foreground, 0.45)
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          Layout.preferredWidth: Style.space(132)
+          Layout.alignment: Qt.AlignVCenter
+          text: windowRow.window ? Math.round(windowRow.window.elapsed * 100) + "% elapsed" : ""
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignRight
+        }
+
+        Item { Layout.preferredWidth: Style.space(88) }
+      }
     }
   }
 
