@@ -17,12 +17,6 @@
   "plugins": [
     {
       "options": {
-        "maxContext": 512000
-      },
-      "package": "./max-context"
-    },
-    {
-      "options": {
         "copyAll": true
       },
       "package": "github:anomalyco/rift#v0.0.13::path:plugins/opencode"
