@@ -157,10 +157,7 @@ Panel {
         percent: Number(entry.percent) / 100,
         elapsed: Number(entry.elapsedPercent || 0) / 100,
         resetAt: String(entry.resetsAt || ""),
-        limited: entry.status === "rate-limited",
-        // The combined monthly figure lives in the hero, so the monthly row
-        // shows no percentage text.
-        hideUsed: defs[i] === "monthly"
+        limited: entry.status === "rate-limited"
       })
     }
     return out
@@ -696,8 +693,8 @@ Panel {
   }
 
   // Two stacked bars per window: usage on top, window elapsed underneath. The
-  // window label sits in the outer row so it centers against both bars instead
-  // of the usage bar alone.
+  // window label and the reset countdown sit in the outer row so both center
+  // against the two bars instead of the usage bar alone.
   component WindowRow: RowLayout {
     id: windowRow
     property var window: null
@@ -739,24 +736,8 @@ Panel {
           textFormat: Text.PlainText
           Layout.preferredWidth: Style.space(132)
           Layout.alignment: Qt.AlignVCenter
-          text: windowRow.window && !windowRow.window.hideUsed ? Math.round(windowRow.window.percent * 100) + "% used" : ""
+          text: windowRow.window ? Math.round(windowRow.window.percent * 100) + "% used" : ""
           color: windowRow.alarming ? root.urgent : (windowRow.limited ? root.dim : root.foreground)
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          horizontalAlignment: Text.AlignRight
-        }
-
-        Text {
-          textFormat: Text.PlainText
-          Layout.preferredWidth: Style.space(88)
-          Layout.alignment: Qt.AlignVCenter
-          text: {
-            if (!windowRow.window) return ""
-            if (windowRow.window.limited) return "limit reached"
-            var ms = root.resetMsFor(windowRow.window)
-            return ms > 0 ? "resets " + root.formatDuration(ms) : ""
-          }
-          color: windowRow.alarming ? root.urgent : root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption
           horizontalAlignment: Text.AlignRight
@@ -784,9 +765,23 @@ Panel {
           font.pixelSize: Style.font.caption
           horizontalAlignment: Text.AlignRight
         }
-
-        Item { Layout.preferredWidth: Style.space(88) }
       }
+    }
+
+    Text {
+      textFormat: Text.PlainText
+      Layout.preferredWidth: Style.space(88)
+      Layout.alignment: Qt.AlignVCenter
+      text: {
+        if (!windowRow.window) return ""
+        if (windowRow.window.limited) return "limit reached"
+        var ms = root.resetMsFor(windowRow.window)
+        return ms > 0 ? "resets " + root.formatDuration(ms) : ""
+      }
+      color: windowRow.alarming ? root.urgent : root.dim
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.caption
+      horizontalAlignment: Text.AlignRight
     }
   }
 
