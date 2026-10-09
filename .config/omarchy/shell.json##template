@@ -90,12 +90,17 @@
   "plugins": [
     {
       "id": "ulsippoi.notifications"
+    },
+    {
+      "id": "ulezot.clipboard"
     }
   ],
   "disabledPlugins": [
-    "omarchy.notifications"
+    "omarchy.notifications",
+    "omarchy.clipboard"
   ],
   "cloneSourceRestores": [
-    "ulsippoi.notifications"
+    "ulsippoi.notifications",
+    "ulezot.clipboard"
   ]
 }
