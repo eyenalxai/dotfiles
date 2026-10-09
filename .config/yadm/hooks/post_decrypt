@@ -236,6 +236,11 @@ clip_file = os.path.expanduser("~/.local/state/omarchy/clipboard-history.json")
 clip_local_pre = os.path.expanduser("~/.local/state/omarchy/clipboard-history.json.local_pre_decrypt")
 image_dir = os.path.expanduser("~/.local/state/omarchy/clipboard-images")
 
+# Keep in step with historyLimit in
+# .config/omarchy/plugins/ulezot.clipboard/Clipboard.qml. A lower cap here
+# would silently truncate a merge between two large histories.
+HISTORY_LIMIT = 10000
+
 def load_history(path):
     if not os.path.exists(path):
         return []
@@ -304,7 +309,7 @@ for e in local_unique + incoming_norm + local_norm:
         seen.add(k)
         merged.append(e)
 
-merged = merged[:500]
+merged = merged[:HISTORY_LIMIT]
 
 dir_name = os.path.dirname(clip_file)
 os.makedirs(dir_name, exist_ok=True)
@@ -319,13 +324,23 @@ os.replace(temp_path, clip_file)
 if os.path.exists(clip_local_pre):
     os.remove(clip_local_pre)
 
-new_from_local = len(merged) - len(incoming_norm)
-print(f"✓ Clipboard history merged (text): {len(incoming_norm)} from archive + {max(0, new_from_local)} local unique = {len(merged)} total.")
+kept_incoming = sum(1 for e in merged if entry_key(e) in incoming_keys)
+kept_local = len(merged) - kept_incoming
+print(f"✓ Clipboard history merged (text): {kept_incoming} from archive + {kept_local} local = {len(merged)} total.")
+union_size = len(local_unique) + len(incoming_norm)
+if union_size > HISTORY_LIMIT:
+    print(f"Warning: the merge union holds {union_size} entries. The oldest {union_size - HISTORY_LIMIT} entries were dropped at the {HISTORY_LIMIT} limit.")
 EOF
 fi
 
-# Clean up local backups if still present
-rm -f "$HIST_LOCAL_PRE" "$ZO_LOCAL_PRE" "$CLIP_LOCAL_PRE" "$HIST_DB-wal" "$HIST_DB-shm"
+# A successful merge removes its own backup. A failed decrypt restores it.
+# A backup that is still here means its merge did not run. Keep the backup.
+for pre in "$HIST_LOCAL_PRE" "$ZO_LOCAL_PRE" "$CLIP_LOCAL_PRE"; do
+    if [ -f "$pre" ]; then
+        echo "Warning: no merge ran for $pre; the pre-decrypt backup was preserved." >&2
+    fi
+done
+rm -f "$HIST_DB-wal" "$HIST_DB-shm"
 
 # Ensure proper private file permissions
 if [ -f "$HIST_DB" ]; then
