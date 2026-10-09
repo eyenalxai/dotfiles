@@ -592,9 +592,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/rata.git",
       "skillPath": "skills/rata/SKILL.md",
-      "skillFolderHash": "73fab60853d1a06db20de51ceebaa6b721a47028",
+      "skillFolderHash": "3fee8675a59e151e6a98c13e9ab371bf3c080d5c",
       "installedAt": "2026-10-05T11:45:07.275Z",
-      "updatedAt": "2026-10-06T22:01:10.589Z"
+      "updatedAt": "2026-10-07T08:59:48.844Z"
     },
     "chief-of-staff": {
       "source": "mattpocock/skills",
@@ -604,6 +604,34 @@
       "skillFolderHash": "4086bbb5127e616878fad9a9fe1db9e78b04c28c",
       "installedAt": "2026-10-05T12:02:38.255Z",
       "updatedAt": "2026-10-05T12:02:38.255Z"
+    },
+    "improve": {
+      "source": "shadcn/improve",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/shadcn/improve.git",
+      "skillPath": "skills/improve/SKILL.md",
+      "skillFolderHash": "7d77d76815e6deb704427f17f6e393f55e3cb6da",
+      "installedAt": "2026-10-09T12:41:54.380Z",
+      "updatedAt": "2026-10-09T12:41:54.380Z"
+    },
+    "simple-english": {
+      "source": "AminBlg/SimpleEnglish",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/AminBlg/SimpleEnglish.git",
+      "skillPath": "skills/simple-english/SKILL.md",
+      "skillFolderHash": "dc4493623b0648588e02a0062bed8bcaa535b1de",
+      "installedAt": "2026-10-09T12:43:59.543Z",
+      "updatedAt": "2026-10-09T12:43:59.543Z"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/anthropics/skills.git",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "skillFolderHash": "d79e2a5bb4df4a386c2adcdd9ab8709bba28c3f6",
+      "pluginName": "example-skills",
+      "installedAt": "2026-10-09T12:45:08.225Z",
+      "updatedAt": "2026-10-09T12:45:08.225Z"
     }
   },
   "dismissed": {
@@ -620,6 +648,7 @@
     "kilo",
     "kimi-code-cli",
     "opencode",
+    "pi",
     "warp",
     "zed"
   ]
