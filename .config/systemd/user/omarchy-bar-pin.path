@@ -1,0 +1,10 @@
+[Unit]
+Description=Watch the Omarchy shell config for a drifted workspace widget
+PartOf=graphical-session.target
+
+[Path]
+PathChanged=%h/.config/omarchy/shell.json
+Unit=omarchy-bar-pin.service
+
+[Install]
+WantedBy=graphical-session.target

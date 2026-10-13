@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Keep the workspace indicators in the first slot of the bar's left section.
+#
+# Why this exists: the stock Omarchy bar starts a reorder drag as soon as the
+# pointer drifts 4px while the left button is down (Bar.qml ModuleSlot.dragThreshold),
+# and resolves the drop to the nearest insertion edge anywhere on the bar
+# (BarModel.nearestDropTarget). The workspace widget sits leftmost, so a click
+# on a workspace number that drifts a few pixels drops it into the centre
+# section, next to the clock. There is no shell.json knob to make a widget
+# undraggable (`canReorder` is hard-wired to "the shell can write the config"),
+# so this guard watches the config and puts the widget back.
+#
+# Driven by omarchy-bar-pin.path on every write to shell.json, and run once at
+# session start by omarchy-bar-pin.service.
+#
+#   omarchy-bar-pin-workspaces            put the widget back if it drifted
+#   omarchy-bar-pin-workspaces --status   report the current placement, exit 1 when drifted
+
+set -uo pipefail
+
+WIDGET="ulezot.workspaces"
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
+LOCK="${XDG_RUNTIME_DIR:-/tmp}/omarchy-bar-pin-workspaces.lock"
+
+# An entry is either a bare id string or an object with an id.
+JQ_ID='def wid: if type == "object" then (.id // "" | tostring) else tostring end;'
+
+pin_filter="$JQ_ID
+  .bar.layout as \$l
+  | if ((\$l.left[0]? | wid) == \$w) and ([\$l.center[], \$l.right[]] | map(wid) | index(\$w) == null)
+    then empty
+    else
+      .bar.layout.left = ([{ id: \$w }] + [\$l.left[]? | select(wid != \$w)])
+      | .bar.layout.center = [\$l.center[]? | select(wid != \$w)]
+      | .bar.layout.right = [\$l.right[]? | select(wid != \$w)]
+    end"
+
+status_filter="$JQ_ID
+  def sections: [{ name: \"left\", entries: .bar.layout.left },
+                 { name: \"center\", entries: .bar.layout.center },
+                 { name: \"right\", entries: .bar.layout.right }];
+  if ((.bar.layout.left[0]? | wid) == \$w) and ([.bar.layout.center[], .bar.layout.right[]] | map(wid) | index(\$w) == null)
+  then \"left[0]\"
+  else (sections
+        | map(select([.entries[]? | wid] | index(\$w)) | \"\(.name)[\([.entries[]? | wid] | index(\$w))]\")
+        | if length == 0 then \"no section\" else join(\", \") end)
+  end"
+
+placement() {
+  jq -r --arg w "$WIDGET" "$status_filter" "$CONFIG" 2>/dev/null
+}
+
+pinned() {
+  jq -e --arg w "$WIDGET" "$JQ_ID
+    ((.bar.layout.left[0]? | wid) == \$w) and ([.bar.layout.center[], .bar.layout.right[]] | map(wid) | index(\$w) == null)" \
+    "$CONFIG" >/dev/null 2>&1
+}
+
+# Rewrite the config only when the widget is not already in the right place.
+# Writes through a temporary file so the shell's file watcher never sees a
+# half-written config, and hands the result to the running shell so the bar
+# reloads even if the watcher missed the change.
+apply_pin() {
+  local next tmp dir was
+  was=$(placement)
+  next=$(jq --arg w "$WIDGET" "$pin_filter" "$CONFIG") || {
+    echo "omarchy-bar-pin: cannot read $CONFIG" >&2
+    return 1
+  }
+  [ -n "$next" ] || return 0
+
+  dir=$(dirname "$CONFIG")
+  tmp=$(mktemp "$dir/.shell.json.XXXXXX") || return 1
+  printf '%s\n' "$next" >"$tmp" || {
+    rm -f "$tmp"
+    return 1
+  }
+  chmod --reference="$CONFIG" "$tmp" 2>/dev/null || chmod 644 "$tmp"
+  mv -f "$tmp" "$CONFIG" || {
+    rm -f "$tmp"
+    return 1
+  }
+
+  echo "omarchy-bar-pin: $WIDGET was in ${was:-no section}, moved back to left[0]"
+  omarchy-shell -q shell reloadConfig >/dev/null 2>&1 || true
+  return 0
+}
+
+if [ "${1:-}" = "--status" ]; then
+  echo "$WIDGET is in $(placement)"
+  pinned && exit 0 || exit 1
+fi
+
+# One run at a time: a burst of shell.json writes must not race itself.
+exec 9>"$LOCK" || exit 0
+flock -n 9 || exit 0
+
+# A write can land while the shell is still rewriting the same file, so after a
+# fix confirm the placement held and try again when it did not.
+for attempt in 1 2 3 4; do
+  apply_pin || exit 1
+  sleep 0.3
+  if pinned; then
+    exit 0
+  fi
+done
+
+echo "omarchy-bar-pin: $WIDGET is still in $(placement) after four attempts" >&2
+exit 1

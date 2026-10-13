@@ -12,6 +12,10 @@
       "left": [
         {
           "id": "ulezot.workspaces"
+        },
+        {
+          "id": "omarchy.spacer",
+          "size": "12"
         }
       ],
       "center": [

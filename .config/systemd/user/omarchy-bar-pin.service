@@ -1,0 +1,15 @@
+[Unit]
+Description=Put the workspace indicators back when the bar layout drifts
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/omarchy-bar-pin-workspaces
+# Only the guard's own lines belong in the journal; keep systemd's per-run
+# start and finish lines out of it.
+LogLevelMax=notice
+SyslogIdentifier=omarchy-bar-pin
+
+[Install]
+WantedBy=graphical-session.target
