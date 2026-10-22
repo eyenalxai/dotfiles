@@ -1,6 +1,6 @@
 # zoxide-completions.nu
 # Custom completions for zoxide's z and zi commands in Nushell
-# nu-version: 0.115.1
+# nu-version: 0.116.1
 
 use ./completion-helpers.nu *
 
@@ -47,8 +47,11 @@ def "nu-complete zoxide dirs" [token: string] {
 # the zoxide database in frecency order. The engine's own narrowing is disabled
 # because both sources already decide what matches, and zoxide's order must be
 # preserved rather than re-sorted.
-def "nu-complete zoxide path" [context: string] {
-  let line = (nu-complete words $context)
+def "nu-complete zoxide path" [place: record] {
+  # `place.command` holds the words of the command being completed, even after
+  # a pipe or through an alias. Join them back into a line for
+  # `nu-complete words`, which drops quoting and finds the word at the cursor.
+  let line = (nu-complete words ($place.command | str join ' '))
   let words = ($line.words | skip 1)
   # While the cursor is still in the command name there is no word to complete.
   let token = (if ($words | is-empty) { '' } else { $line.token })
