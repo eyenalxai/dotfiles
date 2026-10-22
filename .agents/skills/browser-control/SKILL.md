@@ -9,6 +9,11 @@ Browser Control is a **driver**, not an agent. The calling agent decides what to
 do; Browser Control runs deterministic Playwright code in the user's visible
 browser.
 
+When Browser Control is installed as an OpenCode plugin, the plugin already
+registers this MCP server and exposes the packaged workflow as the `@browser`
+skill. Do not ask the user to install this skill separately or add an MCP
+configuration. Browser extension approval remains a separate user step.
+
 Use one loop throughout: **inspect, act, verify**. Inspect the real page before
 choosing locators, act through the narrowest stable control, then verify the
 result through a URL or fresh page read. Never treat a successful click or human
@@ -52,20 +57,25 @@ Completion: one execute returns a page result and a readable session id, or
 
 ### 2. Choose The Page Deliberately
 
-The bundled shim 0.0.25 verifies debugger ownership during reconnection. Reload
+The bundled shim 0.0.26 preserves tab ownership during reconnection. Reload
 the unpacked extension after installing this shim update. DevTools-attached tabs
 are excluded from Browser Control's inventory. `page.title()` reads time out
 after five seconds if the page execution context remains unavailable; the read
 timeout does not close or replace the tab.
 
-A bare CLI execute creates a fresh session-owned page and prints the exact
-`--session <id>` continuation command. Every later CLI call must pass that id or
-set `BROWSER_CONTROL_SESSION`; bare execute never guesses from human-shell
-current state.
+A bare CLI execute inside OpenCode reuses `oc-$OPENCODE_SESSION_ID` (lowercased), so calls
+from the same agent share one default tab. `--session` or
+`BROWSER_CONTROL_SESSION` takes precedence. Outside OpenCode, bare execute
+creates a fresh readable session and prints its continuation command.
+Use `execute --rm` for one-shot scripts: the relay closes all tabs that session
+opened after success or failure, even if the calling CLI disconnects. It cannot
+be combined with an explicit session.
 
 ```bash
+browser-control session new "🎙️ elevenlabs"
+browser-control execute --session "🎙️ elevenlabs" 'return page.url()'
 browser-control execute 'return page.url()'
-browser-control execute --session cosmic-otter-866 'return page.url()'
+browser-control execute --rm 'await page.goto("https://example.com"); return page.title()'
 ```
 
 MCP keeps one implicit process session. Omit `session` for that normal path, or
@@ -74,11 +84,13 @@ sessions.
 
 To control a tab already open in the user's browser, ask the user to click the
 Browser Control toolbar button on that tab. Select it for one execute or adopt
-it for sticky reuse:
+it for sticky reuse (omit `--target-url` / `targetUrl` when only one user tab is
+attached):
 
 ```bash
-browser-control execute --target-url github.com 'return page.url()'
+browser-control session adopt --session github
 browser-control session adopt --target-url github.com --session github
+browser-control execute --target-url github.com 'return page.url()'
 ```
 
 `execute --target-url` selects a page for that call only. Continuing with just
@@ -136,8 +148,10 @@ Use normal Playwright first. Keep dependent interactions in one execute when
 they rely on transient UI such as an open menu, selected rows, hover state, or
 an in-progress form.
 
-If native `locator.fill()` hangs because a browser extension interferes with
-focus, use the explicit input, textarea, or contenteditable fallback:
+If native `locator.fill()` hangs, inspect the failure before using the explicit
+input, textarea, or contenteditable fallback. A `target/cross-extension-page`
+diagnostic requires human dismissal or completion first; `fillInput` is not a
+way around protected extension UI:
 
 ```js
 await fillInput(page.getByPlaceholder("Username"), "standard_user")
@@ -145,6 +159,36 @@ await fillInput(page.getByPlaceholder("Username"), "standard_user")
 
 Completion: the final return value contains evidence of the requested outcome,
 not merely evidence that an action was attempted.
+
+#### Forms and outward mutations
+
+A click returning, HTTP 200, a redirect, or cleared fields do not prove delivery.
+Register any expected navigation before clicking once, then read the destination
+and assert the workflow's specific receipt or confirmation. Coordinate rejection
+and confirmation checks with the actual page you inspected; the driver cannot
+infer business success from generic page text.
+
+```ts
+await Promise.all([
+  page.waitForURL(expectedDestination, { waitUntil: "domcontentloaded", timeout: 15_000 }),
+  ref(sendRef).click({ timeout: 15_000 }),
+])
+const observed = await snapshot()
+await expectedReceipt.waitFor({ state: "visible", timeout: 5_000 })
+return { url: page.url(), observed, receipt: await expectedReceipt.innerText() }
+```
+
+`expectedDestination`, `sendRef`, and `expectedReceipt` come from the inspected
+workflow, not guessed selectors. For same-URL navigation, register a main-frame
+navigation or response wait instead. A mouse coordinate click need not wait for
+navigation; an immediate snapshot can still be the old document.
+
+If submission timed out or the destination cannot be read, report **unverified**
+and inspect once without clicking again. Re-read only after the exact tab/context
+settles. Never replay an uncertain send, booking, purchase, or payment. An explicit
+site rejection means **rejected**, not delivered; protection requiring human
+interaction means hand off the ordinary page to the user. Do not modify protection
+tokens, spoof human signals, or dispatch DOM clicks to evade a security boundary.
 
 ### 4. Continue Or Finish Cleanly
 
@@ -161,6 +205,12 @@ browser-control session delete github
 
 Deletion is idempotent for an explicit session id, so cleanup can be safely
 retried when that session is already absent.
+
+Reset, delete, and idle cleanup close every tab the session opened, including
+popups. After 15 idle minutes, all session names release their tabs, JavaScript
+state, and CDP connection; explicit names remain available for the next execute.
+User-owned tabs stay open and their debugger detaches after 15 idle minutes.
+Reattach through the toolbar before adopting them again.
 
 Every execute is journaled under
 `~/.browser-control/sessions/<id>/journal.jsonl`. The journal records code,
@@ -258,6 +308,10 @@ already prevents attachment, give the user the required action directly rather
 than assuming an in-page handoff can be displayed. Verify the intended webpage
 state after the prompt is completed.
 
+A page's leftover password-manager status text is not evidence that its menu is
+still open. Use current relay diagnostics and a fresh ordinary-page read after
+human dismissal, without inspecting the extension's private frame contents.
+
 ## Inspection Tools
 
 Use the least expensive view that answers the question:
@@ -285,8 +339,8 @@ Use the least expensive view that answers the question:
   values, custom ARIA range values, and editable content are omitted so they do
   not enter tool output. Await it separately; do not run other operations on
   the same page concurrently.
-- `screenshotWithLabels({ page, path? })` adds visual labels and metadata when
-  layout matters.
+- `screenshotWithLabels({ page?, path? })` adds visual labels and metadata when
+  layout matters, and registers its `e1..eN` labels for `ref()`.
 - `screenshotDiff({ baseline, path?, threshold?, fullPage? })` compares a saved
   PNG (absolute path or Buffer) with the current session page at CSS-pixel scale.
   It returns `matches`, `changedPixels`, `changedRatio` (0..1), dimensions, and a
@@ -323,7 +377,9 @@ diffs include visible page content: inspect for private information before shari
 
 Execute code can use `page`, `context`, `browser`, persistent `state`, selected
 Node modules through `modules` and aliases such as `fs` and `path`, plus the
-Browser Control helpers documented here. Single expressions auto-return;
+Browser Control helpers documented here. Execute code runs in Node. Use
+`page.evaluate` for `window`, `document`, storage, and same-origin `fetch`
+with page cookies. Single expressions auto-return;
 multi-statement scripts need `return`. Use `--file` for longer scripts:
 
 ```bash
@@ -338,10 +394,18 @@ when another command needs to branch on `ok`, `value`, `error`, `warnings`, or
 browser-control execute --json --session github '({ url: page.url() })' | jq .value.url
 ```
 
-Playwright downloads are unavailable through extension-backed tabs because
-Chromium blocks download artifact control through `chrome.debugger`. If the
-page exposes the payload through fetch or an API response, read the bytes in the
-page and write them with `fs`. Do not retry `page.waitForEvent("download")`.
+`page.waitForEvent("download")` intercepts both `Content-Disposition: attachment`
+responses (via CDP `Fetch`) and `<a download>` / `blob:` / `data:` links without
+opening Chrome's native Save confirmation dialog, returning a `Download` with
+`suggestedFilename()`, `await dl.path()`, and `await dl.saveAs(targetPath)`:
+
+```ts
+const dl = page.waitForEvent("download", { timeout: 30_000 })
+await page.getByRole("button", { name: /Generate a private key/i }).click()
+const download = await dl
+await download.saveAs("/tmp/private-key.pem")
+return { filename: download.suggestedFilename(), savedPath: await download.path() }
+```
 
 Pages with WebMCP enabled can expose structured page tools. Discover and call
 them through the execute helper; names, descriptions, schemas, and results come
@@ -389,11 +453,29 @@ before accepting it.
 
 ## TypeScript Client
 
-Applications can import `BrowserControlClient` for schema-decoded,
-same-origin requests authenticated by a session page. Use `sensitive: true`
-for token-bearing responses and reveal them through Browser Control's API, not
-the application's own Effect `Redacted` import; package-manager layouts may
-resolve separate Effect runtimes.
+Applications and CLI tools can use `BrowserControlClient.origin()` for direct
+same-origin JSON requests authenticated by a session page (with optional default
+headers and automatic in-page `handoff` recovery when a session expires or
+redirects to login):
+
+```ts
+import { BrowserControlClient } from "@opencode-ai/browser-control"
+
+const ubereats = BrowserControlClient.origin("https://www.ubereats.com", {
+  session: "🥤 karma-cafe",
+  startUrl: "/feed",
+  headers: { "x-csrf-token": "x" },
+  handoffOnAuthFailure: true,
+})
+
+const store = await ubereats.post("/_p/api/getStoreV1", {
+  storeUuid: "78cb1602-9f58-57bb-ad08-f6b8f80bb788",
+  diningMode: "DELIVERY",
+})
+```
+
+For Effect-native applications with schema decoding or `sensitive: true`
+`Redacted` responses, use `BrowserControlClient.Service`:
 
 ```ts
 import { BrowserControlClient } from "@opencode-ai/browser-control"
@@ -495,6 +577,21 @@ values fail instead of silently clamping. The start result reports the chosen ra
 Tab capture can include audio; CDP requires `ffmpeg` and has no audio. Use the
 command's `--help` for format and cursor options.
 
+Playwright mouse actions automatically reveal the on-page Ghost Cursor
+(`distance-glide` motion + `tactile-bloom` click shockwave). When recording a
+user-facing proof or PR walkthrough video, opt into the `ghostCursor` helpers
+inside `execute` to focus attention on key steps and verified postconditions:
+
+```ts
+await showGhostCursor()
+await ghostCursor.caption("Verify cluster & promote release", { step: "01", tone: "neutral" })
+await ghostCursor.zoom("#release-card", { scale: 1.45 })
+await page.locator("#promote-btn").click()
+await ghostCursor.keys("⌘+⇧+P", "Promote Release")
+await ghostCursor.resetZoom()
+await ghostCursor.spotlight("#status-badge", { label: "Verified", detail: "200 OK", tone: "success" })
+```
+
 CDP recordings preserve the starting CSS viewport (not a fixed 720p canvas),
 use high-quality source frames, and default to 60 fps. Use `--frame-rate 30`
 for smaller files. Actual motion still depends on Chrome delivering new frames;
@@ -543,8 +640,9 @@ Common diagnoses:
   `page.url()` read can still work; retry the page read after the page settles.
   Ordinary missing-locator timeouts do not receive this diagnostic.
 - `connected:false`: run a relay-backed command and allow the extension startup
-  or alarm wake-up to reconnect. Reload the unpacked extension only if that loop
-  does not recover.
+  or alarm wake-up to reconnect. A sleeping extension wakes on a 30-second
+  alarm, so the command waits up to 35 seconds. Reload the unpacked extension
+  only if that loop does not recover.
 - Incompatible extension protocol: update either the extension or npm package;
   exact extension and relay release versions do not need to match.
 - Competing browser/profile connections: the active browser is preserved and
@@ -573,9 +671,11 @@ Common diagnoses:
 - Repeated execution-context errors: run one short follow-up so Browser Control
   can health-check the page. A live page is kept: Browser Control reconnects and
   re-resolves the same tab once, then fails with a `session-page/*-unresponsive`
-  diagnosis if the page still does not answer. Only a crashed, `about:blank`, or
+  diagnosis if the page still does not answer. Blank or unknown URLs are preserved:
+  they can contain unsaved content. Only a crashed or
   `chrome-error://` relay-owned page is closed and recreated. It never replaces
-  an adopted user tab. When a page stays unresponsive (bot-protected sites can
+  an adopted user tab. Main-frame navigation clears an earlier crash diagnosis;
+  child-frame navigation does not. When a page stays unresponsive (bot-protected sites can
   stall the main world for automation while rendering normally for the human),
   open a fresh tab with `context.newPage()` or hand the tab to the user.
 - Handoff ends with "page execution context did not become available": the user
