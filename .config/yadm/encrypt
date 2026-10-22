@@ -25,3 +25,33 @@
 .agents/skills/review-animations
 .agents/skills/scroll-animations
 
+
+# emil / aiforui.dev skills (paid course content — keep encrypted, never track in plaintext)
+.config/opencode/skills/emil-animations
+.config/opencode/skills/emil-ask-emil
+.config/opencode/skills/emil-ask-lapse
+.config/opencode/skills/emil-borrow-a-brain
+.config/opencode/skills/emil-build-a-tool
+.config/opencode/skills/emil-color
+.config/opencode/skills/emil-component-design
+.config/opencode/skills/emil-design-foundations
+.config/opencode/skills/emil-design-system-docs
+.config/opencode/skills/emil-design-vocabulary
+.config/opencode/skills/emil-engineering-vocabulary
+.config/opencode/skills/emil-forms-and-inputs
+.config/opencode/skills/emil-get-creative
+.config/opencode/skills/emil-marketing-pages
+.config/opencode/skills/emil-mobile-native
+.config/opencode/skills/emil-performance
+.config/opencode/skills/emil-prep-for-prod
+.config/opencode/skills/emil-product-thinking
+.config/opencode/skills/emil-prototype
+.config/opencode/skills/emil-surfaces
+.config/opencode/skills/emil-touch-and-accessibility
+.config/opencode/skills/emil-typography
+.config/opencode/skills/emil-ui-polish
+.config/opencode/skills/emil-ui-review
+.config/opencode/skills/emil-unslop-code
+.config/opencode/skills/emil-unslop-design
+.config/opencode/skills/emil-unslop-writing
+.config/opencode/skills/emil-writing-skills
