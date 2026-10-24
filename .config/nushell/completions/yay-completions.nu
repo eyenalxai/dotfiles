@@ -103,10 +103,12 @@ def yay-operations [] {
     ]
 }
 
-# Positional targets completer for yay (exported for use in aliases like yaas)
-export def complete-yay-targets [context: string] {
-    let words = ($context | split row -r '\s+' | drop 1)
-    let current = ($context | split row -r '\s+' | last)
+# Positional targets completer for yay (exported for use in aliases like yaas).
+# `place` is the record Nushell hands to a parameter completer; `place.command`
+# holds the command being completed as a list of words.
+export def complete-yay-targets [place: record] {
+    let words = ($place.command | drop 1)
+    let current = ($place.command | last | default "")
     let prev_pkgs = ($words | where { |it| not ($it starts-with "-") and ($it != "yay") and ($it != "yaas") and ($it != "sudo") })
 
     # Check operations
