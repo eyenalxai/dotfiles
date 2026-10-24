@@ -27,6 +27,27 @@ $env.config.completions = {
     }
 }
 
+# One completion per line. The default completion menu packs four columns,
+# which turns long paths (zoxide, files) into a hard-to-scan grid.
+$env.config.menus ++= [{
+    name: completion_menu
+    input_mode: cursor_prefix
+    marker: '| '
+    type: {
+        layout: columnar
+        columns: 1
+        col_padding: 2
+        tab_traversal: vertical
+    }
+    style: {
+        text: green
+        selected_text: green_reverse
+        description_text: yellow
+        match_text: { attr: u }
+        selected_match_text: { attr: ur }
+    }
+}]
+
 $env.config.edit_mode = "emacs"
 
 # Load integrations

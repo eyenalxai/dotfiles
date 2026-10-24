@@ -39,14 +39,63 @@ def "nu-complete zoxide dirs" [token: string] {
   | where type == 'dir'
   | where {|entry| ($entry.name | path basename) | str starts-with --ignore-case $parts.prefix }
   | get name
-  | each {|name| nu-complete escape ($name | path expand) }
+  | each {|name| $name | path expand }
   | sort
+}
+
+# Menu text for each candidate: the shortest run of trailing path parts that no
+# other candidate shares. `phaephe` stands alone, and two directories both named
+# `oof` become `woof/oof` and `boof/oof`. A path whose tails all collide shows
+# its full path as the last resort.
+def "nu-complete zoxide labels" [paths: list<string>] {
+  if ($paths | is-empty) { return [] }
+
+  let parts = ($paths | each {|path|
+    $path | path split | where {|part| $part != '/' and ($part | is-not-empty) }
+  })
+  let widest = ($parts | each {|path| $path | length } | math max)
+  let max_depth = (if $widest < 1 { 1 } else { $widest })
+
+  # tails: for every depth, the trailing parts of every path at that depth.
+  # `each` drops null results, so a path with no tail at this depth yields an
+  # empty string, which no real path tail can be.
+  let tails = (1..$max_depth | each {|depth|
+    $parts | each {|path|
+      if ($path | is-empty) or ($depth > ($path | length)) {
+        ''
+      } else {
+        $path | last $depth | path join
+      }
+    }
+  })
+
+  $paths | enumerate | each {|row|
+    mut depth = 1
+    mut label = ''
+    while $depth <= $max_depth and ($label | is-empty) {
+      let candidate = ($tails | get ($depth - 1) | get $row.index)
+      let shared = (
+        $tails
+        | get ($depth - 1)
+        | enumerate
+        | where {|other| $other.index != $row.index and $other.item == $candidate}
+        | is-not-empty
+      )
+      if ($candidate | is-not-empty) and not $shared {
+        $label = $candidate
+      }
+      $depth += 1
+    }
+    if ($label | is-empty) { $label = ($paths | get $row.index) }
+    $label
+  }
 }
 
 # Arguments of z and zi: directories the current word names plus entries from
 # the zoxide database in frecency order. The engine's own narrowing is disabled
 # because both sources already decide what matches, and zoxide's order must be
-# preserved rather than re-sorted.
+# preserved rather than re-sorted. The menu shows only the distinguishing tail
+# of each path, but the full path is inserted so `z` can jump straight to it.
 def "nu-complete zoxide path" [place: record] {
   # `place.command` holds the words of the command being completed, even after
   # a pipe or through an alias. Join them back into a line for
@@ -62,7 +111,6 @@ def "nu-complete zoxide path" [place: record] {
       | lines
       | where {|dir| $dir | is-not-empty }
       | first 100
-      | each {|dir| nu-complete escape $dir }
     } catch {
       []
     }
@@ -77,14 +125,20 @@ def "nu-complete zoxide path" [place: record] {
     }
   )
 
-  let completions = (
+  let candidates = (
     $from_disk
     | append ($from_db | where {|dir| $dir not-in $from_disk })
     | first 100
   )
+  let labels = (nu-complete zoxide labels $candidates)
 
   {
-    completions: $completions
+    completions: ($candidates | enumerate | each {|row|
+      {
+        value: (nu-complete escape $row.item)
+        display_override: ($labels | get $row.index)
+      }
+    })
     options: {
       filter: false
       sort: false
