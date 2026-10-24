@@ -29,9 +29,6 @@
           "verticalFormat": "HH\n—\nmm",
           "birthYear": 1996,
           "lifeExpectancy": 70
-        },
-        {
-          "id": "omarchy.system-update"
         }
       ],
       "right": [
@@ -40,6 +37,9 @@
         },
         {
           "id": "omarchy.keyboard-layout"
+        },
+        {
+          "id": "ulezot.updates"
         },
         {
           "id": "omarchy.agents"
