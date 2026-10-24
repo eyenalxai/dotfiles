@@ -1,10 +1,10 @@
 # Maintainer: ulezot
 
 pkgname=t3code-nightly-bin
-pkgver=0.0.46_nightly.20261004.2648
+pkgver=0.1.3_nightly.20261024.3630
 pkgrel=1
 pkgdesc='Nightly desktop control surface for local coding agents'
-arch=('aarch64')
+arch=('x86_64' 'aarch64')
 url='https://github.com/pingdotgg/t3code'
 license=('MIT')
 depends=(
@@ -44,15 +44,33 @@ conflicts=('t3code-nightly' 't3code')
 options=('!debug' '!strip')
 
 _upstream_version="${pkgver/_nightly./-nightly.}"
-_appimage="T3-Code-${_upstream_version}-arm64.AppImage"
-source=(
-  "$_appimage::https://github.com/pingdotgg/t3code/releases/download/v${_upstream_version}/$_appimage"
-  "${pkgname}-${pkgver}-LICENSE::https://raw.githubusercontent.com/pingdotgg/t3code/v${_upstream_version}/LICENSE"
+_license="${pkgname}-${pkgver}-LICENSE"
+_release_url="https://github.com/pingdotgg/t3code/releases/download/v${_upstream_version}"
+_appimage_x86_64="T3-Code-${_upstream_version}-x86_64.AppImage"
+_appimage_aarch64="T3-Code-${_upstream_version}-arm64.AppImage"
+
+source_x86_64=(
+  "$_appimage_x86_64::$_release_url/$_appimage_x86_64"
+  "$_license::https://raw.githubusercontent.com/pingdotgg/t3code/v${_upstream_version}/LICENSE"
 )
-sha256sums=(
-  'eac30fbe3548153b906219c8953c03fc79efeecac24a66edeb7fe869cd5c7dc2' # AppImage (aarch64)
+sha256sums_x86_64=(
+  'e0e19baac5231be858a0e5b88cb648c4f7053d41533d6bbca185c5143ed04cb4' # AppImage (x86_64)
   '935d8f2af0c703f9c39517ee57cc4930b19d02d533be930b63f0e82f93614b43' # upstream license
 )
+
+source_aarch64=(
+  "$_appimage_aarch64::$_release_url/$_appimage_aarch64"
+  "$_license::https://raw.githubusercontent.com/pingdotgg/t3code/v${_upstream_version}/LICENSE"
+)
+sha256sums_aarch64=(
+  '8f589fbc0cbe381bc2efd88d28ae06367aec684dcbf70441a3fbe4d18f2a1127' # AppImage (arm64)
+  '935d8f2af0c703f9c39517ee57cc4930b19d02d533be930b63f0e82f93614b43' # upstream license
+)
+
+case "$CARCH" in
+  x86_64) _appimage="$_appimage_x86_64" ;;
+  aarch64) _appimage="$_appimage_aarch64" ;;
+esac
 
 prepare() {
   chmod +x "$srcdir/$_appimage"
@@ -86,7 +104,7 @@ EOF
       "$pkgdir/usr/share/icons/hicolor/${size_dir##*/}/apps/t3code-nightly.png"
   done
 
-  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/t3code.desktop" <<'EOF'
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/t3code-nightly.desktop" <<'EOF'
 [Desktop Entry]
 Name=T3 Code Nightly
 Comment=Nightly desktop control surface for local coding agents
@@ -97,7 +115,7 @@ Type=Application
 Icon=t3code-nightly
 StartupWMClass=t3code
 Categories=Development;
-MimeType=x-scheme-handler/t3code;
+MimeType=x-scheme-handler/t3code;x-scheme-handler/t3code-dev;
 EOF
 
   install -Dm644 "$srcdir/${pkgname}-${pkgver}-LICENSE" \

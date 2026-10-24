@@ -12,7 +12,7 @@
 source = "github"
 github = "pingdotgg/t3code"
 use_max_tag = true
-include_regex = 'v\d+\.\d+\.\d+-nightly\.\d{8}\.\d+'
+include_regex = '^v\d+\.\d+\.\d+-nightly\.\d{8}\.\d+$'
 prefix = "v"
 from_pattern = "-nightly\\."
 to_pattern = "_nightly."
