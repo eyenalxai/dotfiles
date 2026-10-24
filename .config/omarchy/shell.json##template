@@ -39,9 +39,6 @@
           "id": "omarchy.keyboard-layout"
         },
         {
-          "id": "ulezot.updates"
-        },
-        {
           "id": "omarchy.agents"
         },
         {
@@ -77,6 +74,9 @@
           "source": "~/.config/omarchy/bar/modules/resources.qml",
           "metric": "disk",
           "mount": "/"
+        },
+        {
+          "id": "ulezot.updates"
         },
         {
           "id": "ulezot.opencode-go"
