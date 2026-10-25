@@ -1,6 +1,6 @@
 pkgbase = happ-desktop-bin
 	pkgdesc = Happ — user-friendly GUI client for xray-core with TUN/VPN and anti-censorship
-	pkgver = 4.4.8
+	pkgver = 4.6.0
 	pkgrel = 1
 	url = https://happ.su
 	install = happ-desktop-bin.install
@@ -18,12 +18,12 @@ pkgbase = happ-desktop-bin
 	provides = happ-desktop
 	conflicts = happ
 	conflicts = happ-desktop
-	noextract = happ-desktop-bin-4.4.8-x86_64.pkg.tar.zst
-	noextract = happ-desktop-bin-4.4.8-aarch64.pkg.tar.zst
+	noextract = happ-desktop-bin-4.6.0-x86_64.pkg.tar.zst
+	noextract = happ-desktop-bin-4.6.0-aarch64.pkg.tar.zst
 	options = !strip
-	source_x86_64 = happ-desktop-bin-4.4.8-x86_64.pkg.tar.zst::https://github.com/Happ-proxy/happ-desktop/releases/download/4.4.8/Happ.linux.x64.pkg.tar.zst
-	sha256sums_x86_64 = b21439de20a0fa0d6728008760b714bdbc68b71f74979408e15d3d14a86c98a4
-	source_aarch64 = happ-desktop-bin-4.4.8-aarch64.pkg.tar.zst::https://github.com/Happ-proxy/happ-desktop/releases/download/4.4.8/Happ.linux.arm64.pkg.tar.zst
-	sha256sums_aarch64 = 0ec6ffa7d90753a28c7f09250863c810e256eb02376f4aac8036d0c724d46528
+	source_x86_64 = happ-desktop-bin-4.6.0-x86_64.pkg.tar.zst::https://github.com/Happ-proxy/happ-desktop/releases/download/4.6.0/Happ.linux.x64.pkg.tar.zst
+	sha256sums_x86_64 = 67e532c93695f095742b1e065d22995640dc092dcefe96cf95bece9bea9ffab0
+	source_aarch64 = happ-desktop-bin-4.6.0-aarch64.pkg.tar.zst::https://github.com/Happ-proxy/happ-desktop/releases/download/4.6.0/Happ.linux.arm64.pkg.tar.zst
+	sha256sums_aarch64 = 32ff9d1cf6107daa5d28cc2c11036c339a32ad602018c3f39a9fbde6fbf880e4
 
 pkgname = happ-desktop-bin
