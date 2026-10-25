@@ -2,7 +2,7 @@
 
 _npmname=@opencode-ai/browser-control
 pkgname=opencode-browser-control
-pkgver=0.8.3
+pkgver=0.8.4
 pkgrel=1
 pkgdesc='Local browser driver for trusted agents: control your existing Chromium-family browser through an extension and a local relay'
 arch=('any')
@@ -11,7 +11,7 @@ license=('MIT')
 depends=('nodejs>=22.19.0')
 makedepends=('npm')
 source=("https://registry.npmjs.org/$_npmname/-/${_npmname##*/}-$pkgver.tgz")
-sha256sums=('0fe2d400018dbc2a69ce04c2b072c4eb16e0c15fa5e0fd4ba308627f755d3d97')
+sha256sums=('ae1d2f8a4b513a975bcbb5996ceff51268619e2acc04ca1df510e67cd3f12e76')
 
 build() {
   # The published tarball ships prebuilt JS bundles but keeps runtime
