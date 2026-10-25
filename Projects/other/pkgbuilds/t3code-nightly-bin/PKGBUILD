@@ -1,7 +1,7 @@
 # Maintainer: ulezot
 
 pkgname=t3code-nightly-bin
-pkgver=0.1.3_nightly.20261024.3630
+pkgver=0.1.3_nightly.20261024.3643
 pkgrel=1
 pkgdesc='Nightly desktop control surface for local coding agents'
 arch=('x86_64' 'aarch64')
@@ -54,7 +54,7 @@ source_x86_64=(
   "$_license::https://raw.githubusercontent.com/pingdotgg/t3code/v${_upstream_version}/LICENSE"
 )
 sha256sums_x86_64=(
-  'e0e19baac5231be858a0e5b88cb648c4f7053d41533d6bbca185c5143ed04cb4' # AppImage (x86_64)
+  'ec4e9dd304ae49cf06203dc27c45e9a9ca0e46b90b2861d4c7e98c77b1c851d4' # AppImage (x86_64)
   '935d8f2af0c703f9c39517ee57cc4930b19d02d533be930b63f0e82f93614b43' # upstream license
 )
 
@@ -63,7 +63,7 @@ source_aarch64=(
   "$_license::https://raw.githubusercontent.com/pingdotgg/t3code/v${_upstream_version}/LICENSE"
 )
 sha256sums_aarch64=(
-  '8f589fbc0cbe381bc2efd88d28ae06367aec684dcbf70441a3fbe4d18f2a1127' # AppImage (arm64)
+  'a8f5a02c967adfac66a08db66058653d6a037f98d2fc8f9d995d8f1e94b6d0bb' # AppImage (arm64)
   '935d8f2af0c703f9c39517ee57cc4930b19d02d533be930b63f0e82f93614b43' # upstream license
 )
 
