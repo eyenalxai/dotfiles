@@ -2,7 +2,7 @@
 
 _pkgname=amneziavpn
 pkgname=$_pkgname-git
-pkgver=5.0.3.0.r21.g02838a94
+pkgver=5.0.3.0.r21.g02838a94d
 pkgrel=1
 pkgdesc="Amnezia VPN Client (built from source for aarch64 / x86_64)"
 arch=('aarch64' 'x86_64')
@@ -19,6 +19,7 @@ depends=(
   'qt6-5compat'
   'qt6-base'
   'qt6-declarative'
+  'qt6-httpserver'
   'qt6-remoteobjects'
   'qt6-svg'
   'wireguard-tools'
@@ -53,7 +54,7 @@ sha256sums=('SKIP')
 
 pkgver() {
   cd "$srcdir/amnezia-client"
-  git describe --long --tags --exclude='*[a-zA-Z]*' 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ||
+  git describe --long --tags --abbrev=9 --exclude='*[a-zA-Z]*' 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ||
   printf "5.0.3.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
 }
 

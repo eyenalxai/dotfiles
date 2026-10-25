@@ -1,6 +1,6 @@
 pkgbase = amneziavpn-git
 	pkgdesc = Amnezia VPN Client (built from source for aarch64 / x86_64)
-	pkgver = 5.0.3.0.r21.g02838a94
+	pkgver = 5.0.3.0.r21.g02838a94d
 	pkgrel = 1
 	url = https://github.com/amnezia-vpn/amnezia-client
 	install = amneziavpn.install
@@ -26,6 +26,7 @@ pkgbase = amneziavpn-git
 	depends = qt6-5compat
 	depends = qt6-base
 	depends = qt6-declarative
+	depends = qt6-httpserver
 	depends = qt6-remoteobjects
 	depends = qt6-svg
 	depends = wireguard-tools
