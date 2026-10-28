@@ -1,5 +1,5 @@
 [tools]
-gh = "latest"
+"http:muse" = { version = "latest", url = "https://api.meta.ai/muse-launcher.sh", bin = "muse", version_list_url = "https://api.meta.ai/muse-code/channels/muse-stable", version_json_path = ".version" }
 node = "latest"
 railway = "latest"
 uv = "latest"
