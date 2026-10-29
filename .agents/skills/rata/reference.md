@@ -23,6 +23,7 @@
 | `rata workspace list`                               | List the stored profiles with their viewer and organization.                           |
 | `rata workspace use <name>`                         | Set the default profile.                                                               |
 | `rata whoami`                                       | Show the authenticated viewer.                                                         |
+| `rata status [--json]`                              | Show the repo, workspace, key source, team, project, defaults, viewer and org.         |
 | `rata link`                                         | Link this repository; asks for the workspace, then the team.                           |
 | `rata link --team <key>`                            | Link to a team. Searches every stored workspace. `--create --name <name>` creates it.  |
 | `rata link --project <name>`                        | Record the default project for this repository.                                        |
@@ -40,6 +41,7 @@ recorded `workspace`.
 | Command                                                                                  | Description                                                                                                         |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `rata team list [--limit <n>] [--after <cursor>]`                                        | List teams, one page per call.                                                                                      |
+| `rata team show [<team-ref>] [--json]`                                                   | Show the states, labels, members and priorities of a team. Defaults to the linked team.                             |
 | `rata team create --name <name> [--key <key>]`                                           | Create a team.                                                                                                      |
 | `rata team delete <key> [--yes]`                                                         | Delete a team (Linear keeps it recoverable). `--yes` skips the confirmation.                                        |
 | `rata project list [--team <key>] [--include-archived] [--limit <n>] [--after <cursor>]` | List the projects of the linked team: name, state, progress, id. One page per call. Trashed rows show ` (deleted)`. |
@@ -47,27 +49,27 @@ recorded `workspace`.
 | `rata project delete <ref> [--yes]`                                                      | Move a project to the trash (Linear keeps it recoverable). `--yes` skips the confirmation.                          |
 | `rata project restore <ref>`                                                             | Bring a project back from the trash. Runs without a prompt.                                                         |
 | `rata label list [--team <key>] [--limit <n>] [--after <cursor>]`                        | List the labels of the linked team: name, id, color. One page per call.                                             |
-| `rata label create --name <name> [--color <hex>] [--team <key>]`                         | Create a team-scoped label. `--team` defaults to the linked team.                                                   |
+| `rata label create --name <name> [--color <hex>] [--team <key>] [--if-not-exists]`       | Create a team-scoped label. `--team` defaults to the linked team. `--if-not-exists` returns the existing label.     |
 | `rata label edit <ref> [--name <new>] [--color <hex>] [--team <key>]`                    | Update a label. `<ref>` is a name or a UUID. Pass `--name`, `--color`, or both.                                     |
 
 ## Issues
 
-| Command                                     | Description                                                       |
-| ------------------------------------------- | ----------------------------------------------------------------- |
-| `rata issue list [flags]`                   | List issues. One page per call.                                   |
-| `rata search <text> [flags]`                | Full-text search. Keeps relevance ranking; paging is best effort. |
-| `rata issue show <ref> [--comments]`        | Show one issue.                                                   |
-| `rata issue create --title <title> [flags]` | Create an issue.                                                  |
-| `rata issue update <ref> [flags]`           | Update an issue.                                                  |
-| `rata issue comment <ref> --body <text>`    | Comment on an issue.                                              |
-| `rata issue label add <ref> <label...>`     | Add labels.                                                       |
-| `rata issue label remove <ref> <label...>`  | Remove labels.                                                    |
-| `rata issue assign <assignee> <ref>`        | Assign an issue. `me` or a user id.                               |
-| `rata issue unassign <ref>`                 | Clear the assignee.                                               |
-| `rata issue close <ref> [--comment <text>]` | Close with an optional comment. `--comment-file -` reads stdin.   |
-| `rata issue reopen <ref>`                   | Reopen.                                                           |
-| `rata issue link <ref> [flags]`             | Create relations.                                                 |
-| `rata issue unlink <ref> [flags]`           | Remove relations.                                                 |
+| Command                                              | Description                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------------ |
+| `rata issue list [flags]`                            | List issues. One page per call.                                    |
+| `rata search <text> [flags]`                         | Full-text search. Keeps relevance ranking; paging is best effort.  |
+| `rata issue show <ref> [--comments] [--no-comments]` | Show one issue with comments, children, relations and attachments. |
+| `rata issue create --title <title> [flags]`          | Create an issue.                                                   |
+| `rata issue update <ref> [flags]`                    | Update an issue.                                                   |
+| `rata issue comment <ref> --body <text>`             | Comment on an issue.                                               |
+| `rata issue label add <ref> <label...>`              | Add labels.                                                        |
+| `rata issue label remove <ref> <label...>`           | Remove labels.                                                     |
+| `rata issue assign <ref> --assignee <value>`         | Assign an issue. `me`, a user id, or `none` to clear it.           |
+| `rata issue unassign <ref>`                          | Clear the assignee.                                                |
+| `rata issue close <ref> [--comment <text>]`          | Close with an optional comment. `--comment-file -` reads stdin.    |
+| `rata issue reopen <ref>`                            | Reopen.                                                            |
+| `rata issue link <ref> [flags]`                      | Create relations.                                                  |
+| `rata issue unlink <ref> [flags]`                    | Remove relations.                                                  |
 
 ### `issue list` flags
 
@@ -148,3 +150,14 @@ and `none` clears the priority.
 | `--blocked-by` | This issue waits for the other one. Repeatable.  |
 | `--related`    | Related, with no direction. Repeatable.          |
 | `--duplicate`  | This issue duplicates the other one. Repeatable. |
+
+### Writes
+
+`issue link`, `issue unlink`, `issue assign`, `issue unassign`, `issue label add`
+and `issue label remove` accept `--dry-run`. It resolves the targets and prints
+the actions; no mutation runs. JSON is `{ "dryRun": true, "actions": [...] }`.
+
+These writes are idempotent: a repeat exits 0 and reports `skipped` in JSON.
+`unlink` with a missing relation is a skipped success. `label create` fails on a
+duplicate name with `conflict` unless `--if-not-exists` returns the existing
+label with `created: false`.

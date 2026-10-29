@@ -577,6 +577,11 @@ values fail instead of silently clamping. The start result reports the chosen ra
 Tab capture can include audio; CDP requires `ffmpeg` and has no audio. Use the
 command's `--help` for format and cursor options.
 
+Chrome allows tab capture only after the user clicks the Browser Control icon
+on that tab; no extension permission removes this. For agent-run recordings
+with no click, use CDP: it records any debugger-attached tab, and the encode is
+light (about a quarter of one core for a 15 fps 1440x900 MP4).
+
 Playwright mouse actions automatically reveal the on-page Ghost Cursor
 (`distance-glide` motion + `tactile-bloom` click shockwave). When recording a
 user-facing proof or PR walkthrough video, opt into the `ghostCursor` helpers
@@ -653,6 +658,11 @@ Common diagnoses:
   safe shutdown protocol 2. Legacy relays need a one-time coordinated manual
   stop; foreground/source or newer relays are never force-killed or downgraded.
   MCP observational tools remain available on a mismatch.
+- `Relay is draining…` or `Relay is shutting down…`: `status` and `doctor`
+  show the phase, how long it has lasted, and what holds it. A shutting-down
+  relay forces teardown after `BROWSER_CONTROL_SHUTDOWN_TIMEOUT_MS` (default
+  10s) and the next command starts a fresh relay; named sessions reattach. A
+  restart drain that cannot finish is cancelled and the old relay keeps running.
 - Unexpected restart: inspect private endpoint-scoped
   `~/.browser-control/relays/<port>/lifecycle.jsonl` for requester/build/instance
   metadata. Preparing or selecting a development candidate must not restart the

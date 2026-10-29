@@ -205,7 +205,7 @@ The mission artifact carries the reference index:
 
 At each stage:
 
-- read `docs/agents/references.md` and the repo agent docs;
+- read the repo agent docs;
 - name the components involved: source, vendor source, API docs, examples,
   ADRs, research;
 - add the rows with the reason and the stage;
