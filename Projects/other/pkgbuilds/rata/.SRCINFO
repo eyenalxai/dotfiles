@@ -1,7 +1,7 @@
 pkgbase = rata
 	pkgdesc = Linear issue tracking for agent workflows: triage, tickets and wayfinding from the terminal
 	pkgver = 0.6.0
-	pkgrel = 1
+	pkgrel = 3
 	url = https://github.com/eyenalxai/rata
 	arch = x86_64
 	arch = aarch64

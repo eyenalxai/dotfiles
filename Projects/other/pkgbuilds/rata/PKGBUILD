@@ -2,7 +2,7 @@
 
 pkgname=rata
 pkgver=0.6.0
-pkgrel=1
+pkgrel=3
 pkgdesc='Linear issue tracking for agent workflows: triage, tickets and wayfinding from the terminal'
 arch=('x86_64' 'aarch64')
 url='https://github.com/eyenalxai/rata'
@@ -20,7 +20,17 @@ build() {
   # The prepare script only patches the local dev toolchain (tsgo, oxlint), so
   # skip it and the dev dependencies; the compile needs the runtime tree only.
   bun install --frozen-lockfile --production --ignore-scripts
-  bun build --compile --minify --outfile rata src/main.ts
+  # A compiled Bun binary autoloads config from the working directory by
+  # default: bunfig.toml, .env files, tsconfig.json and package.json. A
+  # project-local preload would run arbitrary code inside rata, and a .env
+  # could replace the Linear key. Disable all four at build time
+  # (oven-sh/bun#25442, #44262).
+  bun build --compile --minify \
+    --no-compile-autoload-bunfig \
+    --no-compile-autoload-dotenv \
+    --no-compile-autoload-tsconfig \
+    --no-compile-autoload-package-json \
+    --outfile rata src/main.ts
 }
 
 check() {
