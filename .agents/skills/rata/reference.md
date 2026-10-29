@@ -3,7 +3,9 @@
 ## Conventions
 
 - `<ref>` is an identifier (`ABC-42`), a UUID, or a `linear.app` URL.
-- `--json` works on every command and prints one stable JSON document.
+- `--json` is a global flag: it works before or after the subcommand and prints
+  one stable JSON document. `--fields` selects dotted paths from the supported
+  read commands and needs `--json`.
 - List commands return one page: `--limit` is the page size (default 50,
   maximum 250) and `--after <cursor>` continues the list. JSON is
   `{ <plural>, pageInfo }`.
@@ -11,7 +13,44 @@
 - The default team and project come from the repository config, written by
   `rata link` and removed by `rata unlink`. List commands default to the linked
   team; without a link they fail and ask for `--team` or `rata link`.
-- Exit code 0 on success, 1 on failure. Failures print one line to stderr.
+- Exit code 0 on success, 1 on failure. With `--json`, a failure writes one JSON
+  object to stderr. A bulk write reports its results on stdout and exits 1 when
+  any result failed.
+
+## Global flags and errors
+
+```bash
+rata --json issue list
+rata issue list --json --fields identifier,title,state.name
+```
+
+With `--json`, a failure writes one object to stderr and exits 1. A bulk write
+is the exception: it reports one result per issue on stdout and exits 1 when any
+result failed.
+
+```json
+{
+  "error": {
+    "code": "conflict",
+    "message": "The label `Bug` already exists.",
+    "hint": "Labels resolve case-insensitively; use `Bug`, or pass `--if-not-exists`."
+  }
+}
+```
+
+`hint` is a string or `null`; `RATA_DEBUG=1` adds `details`. The codes are
+`validation`, `not_linked`, `not_found`, `ambiguous`, `auth`, `forbidden`,
+`conflict`, `rate_limited`, `network` and `internal`. In human mode the error
+prints `error: <message>` and, when present, `hint: <hint>` on stderr.
+
+`--fields` applies to the command's own object: the `issue` of `issue show`,
+each item of `issues`, `teams`, `labels` or `projects`, the `team` of
+`team show`, the `defaults` object of `config show`, or the whole `status`
+document. The wrapper key stays. It is valid on `status`, `issue show`,
+`issue list`, `search`, `team show`, `team list`, `label list`, `project list`
+and `config show`. Other commands reject it with `validation`.
+
+`NO_COLOR=1` drops color from help and errors. Rata's own output is plain text.
 
 ## Setup
 
@@ -57,22 +96,22 @@ recorded `workspace`.
 
 ## Issues
 
-| Command                                              | Description                                                        |
-| ---------------------------------------------------- | ------------------------------------------------------------------ |
-| `rata issue list [flags]`                            | List issues. One page per call.                                    |
-| `rata search <text> [flags]`                         | Full-text search. Keeps relevance ranking; paging is best effort.  |
-| `rata issue show <ref> [--comments] [--no-comments]` | Show one issue with comments, children, relations and attachments. |
-| `rata issue create --title <title> [flags]`          | Create an issue.                                                   |
-| `rata issue update <ref> [flags]`                    | Update an issue.                                                   |
-| `rata issue comment <ref> --body <text>`             | Comment on an issue.                                               |
-| `rata issue label add <ref> <label...>`              | Add labels.                                                        |
-| `rata issue label remove <ref> <label...>`           | Remove labels.                                                     |
-| `rata issue assign <ref> --assignee <value>`         | Assign an issue. `me`, a user id, or `none` to clear it.           |
-| `rata issue unassign <ref>`                          | Clear the assignee.                                                |
-| `rata issue close <ref> [--comment <text>]`          | Close with an optional comment. `--comment-file -` reads stdin.    |
-| `rata issue reopen <ref>`                            | Reopen.                                                            |
-| `rata issue link <ref> [flags]`                      | Create relations.                                                  |
-| `rata issue unlink <ref> [flags]`                    | Remove relations.                                                  |
+| Command                                              | Description                                                                   |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `rata issue list [flags]`                            | List issues. One page per call.                                               |
+| `rata search <text> [flags]`                         | Full-text search. Keeps relevance ranking; paging is best effort.             |
+| `rata issue show <ref> [--comments] [--no-comments]` | Show one issue with comments, children, relations and attachments.            |
+| `rata issue create --title <title> [flags]`          | Create an issue.                                                              |
+| `rata issue update <ref> [flags]`                    | Update an issue.                                                              |
+| `rata issue comment <ref> --body <text>`             | Comment on an issue. `--wait` bounds the visibility check.                    |
+| `rata issue label add [<ref>] <label...>`            | Add labels. `--parent` targets every child; then every positional is a label. |
+| `rata issue label remove [<ref>] <label...>`         | Remove labels. The same `--parent` rule.                                      |
+| `rata issue assign [<ref>] --assignee <value>`       | Assign an issue, or every child with `--parent`. `me`, a user id, or `none`.  |
+| `rata issue unassign <ref>`                          | Clear the assignee.                                                           |
+| `rata issue close <ref> [--comment <text>]`          | Close with an optional comment. `--comment-file -` reads stdin.               |
+| `rata issue reopen <ref>`                            | Reopen.                                                                       |
+| `rata issue link <ref> [flags]`                      | Create relations.                                                             |
+| `rata issue unlink <ref> [flags]`                    | Remove relations.                                                             |
 
 ### `issue list` flags
 
@@ -127,19 +166,20 @@ The priority sort fetches every matching issue across all pages before
 
 ### `issue create` flags
 
-| Flag                       | Meaning                                                |
-| -------------------------- | ------------------------------------------------------ |
-| `--title`                  | Required.                                              |
-| `--body` / `--body-file -` | Description.                                           |
-| `--team`                   | Team key or id. Default: the repository config.        |
-| `--project`                | Project. Default: the repository config.               |
-| `--label`                  | Label name. Repeatable. Adds to the default labels.    |
-| `--no-default-labels`      | Drop the default labels for this call.                 |
-| `--parent`                 | Parent issue reference.                                |
-| `--state`                  | Workflow state name.                                   |
-| `--assignee`               | `me`, a user id, or `none` to skip the default.        |
-| `--priority`               | `none`, `urgent`, `high`, `medium`, `low`, or `0`-`4`. |
-| `--dry-run`                | Print the planned create without writing.              |
+| Flag                       | Meaning                                                                    |
+| -------------------------- | -------------------------------------------------------------------------- |
+| `--title`                  | Required.                                                                  |
+| `--body` / `--body-file -` | Description.                                                               |
+| `--team`                   | Team key or id. Default: the repository config.                            |
+| `--project`                | Project. Default: the repository config.                                   |
+| `--label`                  | Label name. Repeatable. Adds to the default labels.                        |
+| `--no-default-labels`      | Drop the default labels for this call.                                     |
+| `--parent`                 | Parent issue reference.                                                    |
+| `--state`                  | Workflow state name.                                                       |
+| `--assignee`               | `me`, a user id, or `none` to skip the default.                            |
+| `--priority`               | `none`, `urgent`, `high`, `medium`, `low`, or `0`-`4`.                     |
+| `--wait`                   | Seconds to wait for the new child under `--parent`. Default 5; 0 disables. |
+| `--dry-run`                | Print the planned create without writing.                                  |
 
 ### `issue update` flags
 
@@ -161,7 +201,49 @@ and `none` clears the priority.
 `issue create`, `issue link`, `issue unlink`, `issue assign`, `issue unassign`,
 `issue label add`, `issue label remove`, `config set` and `config unset` accept
 `--dry-run`. It resolves the targets and prints the actions; no mutation runs.
-JSON is `{ "dryRun": true, "actions": [...] }`.
+JSON is `{ "dryRun": true, "actions": [...] }` for the single-issue forms. The
+bulk forms return `{ "dryRun": true, "results": [...] }`; see **Bulk writes by
+parent**.
+
+### Read-after-write
+
+Linear documents no read-after-write guarantee. `issue comment` and
+`issue create --parent` check that the new comment or child appears on a bounded
+re-read. The default bound is 5 seconds. `--wait <seconds>` changes it and
+`--wait 0` disables the check.
+
+A timed-out check still exits 0: the mutation payload is the source of truth.
+JSON adds `visible` next to `comment` or `issue`. It is `false` on timeout and
+`null` when the check is disabled. `issue create` without `--parent` reports
+`null`. Human mode prints a warning to stderr on timeout.
+
+### Bulk writes by parent
+
+`issue assign`, `issue label add` and `issue label remove` accept `--parent`.
+Pass exactly one of the positional issue reference and `--parent`. With
+`--parent`, every positional of a label command is a label, and the command
+targets every child of the parent, open and closed, in creation order.
+
+Rata validates every target and label before the first write: a bad reference or
+a missing label aborts the batch with zero changes. The writes then run
+best-effort and the command exits 1 when any result failed. JSON is:
+
+```json
+{
+  "dryRun": false,
+  "results": [
+    { "identifier": "ABC-3", "status": "updated", "issue": { "identifier": "ABC-3" } },
+    { "identifier": "ABC-4", "status": "skipped", "issue": { "identifier": "ABC-4" } },
+    {
+      "identifier": "ABC-5",
+      "status": "failed",
+      "error": { "code": "not_found", "message": "...", "hint": null }
+    }
+  ]
+}
+```
+
+`--dry-run` reports the same results with `"dryRun": true` and writes nothing.
 
 These writes are idempotent: a repeat exits 0 and reports `skipped` in JSON.
 `unlink` with a missing relation is a skipped success. `label create` fails on a

@@ -42,8 +42,18 @@ rata search "flaky test" --json
 another team. Do not guess a workflow state name: read it from `team show`.
 
 An issue reference is an identifier (`ABC-42`), a UUID, or a `linear.app` URL.
-Every command supports `--json`; parse that, not the human output. List
-commands return one page with `pageInfo`: see **Paging lists**.
+`--json` is global: it works before or after the subcommand. Parse that, not the
+human output. `--fields` trims a read to dotted paths, for example
+`rata issue list --json --fields identifier,title,state.name`. A failed `--json`
+command writes one `error` object (`code`, `message`, `hint`) to stderr and
+exits with code 1. List commands return one page with `pageInfo`: see **Paging
+lists**.
+
+A comment or a child that a write just created can be missing from the next
+read. `issue comment` and `issue create --parent` check for up to 5 seconds.
+`--wait <seconds>` changes the bound and `--wait 0` skips the check. JSON reports
+`visible`: `null` means unchecked, `false` means not seen. The write itself still
+succeeded.
 
 ## Paging lists
 
@@ -75,6 +85,18 @@ rata issue label remove ABC-42 needs-triage
 
 States: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`,
 `wontfix`. Categories: `bug`, `enhancement`.
+
+Repair every child of a spec in one call. `--parent` targets all children, open
+and closed, and makes every positional of a label command a label:
+
+```bash
+rata issue label add --parent ABC-60 ready-for-agent
+rata issue assign --parent ABC-60 --assignee me
+```
+
+Maps stay unassigned until the claim step: label a map's children in bulk, but
+claim them one by one. A bad reference or a missing label aborts the batch before
+any write. Add `--dry-run` to preview.
 
 Set a priority on every actionable issue (`ready-for-agent` or
 `ready-for-human`):
