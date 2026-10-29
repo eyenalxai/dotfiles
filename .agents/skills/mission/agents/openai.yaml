@@ -1,0 +1,5 @@
+interface:
+  display_name: "Mission"
+  short_description: "Drive one piece of work to reviewable PRs"
+policy:
+  allow_implicit_invocation: false
