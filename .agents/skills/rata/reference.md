@@ -28,7 +28,10 @@
 | `rata link --team <key>`                            | Link to a team. Searches every stored workspace. `--create --name <name>` creates it.  |
 | `rata link --project <name>`                        | Record the default project for this repository.                                        |
 | `rata link --workspace <name>`                      | Link in one workspace profile. Skips the workspace prompt.                             |
-| `rata unlink`                                       | Remove the stored link of this repository.                                             |
+| `rata config show [--json]`                         | Show the issue defaults of this repository.                                            |
+| `rata config set --assignee me --label <name> ...`  | Set the issue defaults. `--label` is repeatable and replaces the list.                 |
+| `rata config unset --label`                         | Clear one default. `--assignee`, `--label` and `--priority` select the fields.         |
+| `rata unlink`                                       | Remove the stored link and defaults of this repository.                                |
 
 The API key is resolved in order: `LINEAR_API_KEY`, the repository `workspace`
 from the repository config, the `default` profile. `rata link --workspace <name>`
@@ -130,11 +133,13 @@ The priority sort fetches every matching issue across all pages before
 | `--body` / `--body-file -` | Description.                                           |
 | `--team`                   | Team key or id. Default: the repository config.        |
 | `--project`                | Project. Default: the repository config.               |
-| `--label`                  | Label name. Repeatable.                                |
+| `--label`                  | Label name. Repeatable. Adds to the default labels.    |
+| `--no-default-labels`      | Drop the default labels for this call.                 |
 | `--parent`                 | Parent issue reference.                                |
 | `--state`                  | Workflow state name.                                   |
-| `--assignee`               | `me`, or a user id.                                    |
+| `--assignee`               | `me`, a user id, or `none` to skip the default.        |
 | `--priority`               | `none`, `urgent`, `high`, `medium`, `low`, or `0`-`4`. |
+| `--dry-run`                | Print the planned create without writing.              |
 
 ### `issue update` flags
 
@@ -153,9 +158,10 @@ and `none` clears the priority.
 
 ### Writes
 
-`issue link`, `issue unlink`, `issue assign`, `issue unassign`, `issue label add`
-and `issue label remove` accept `--dry-run`. It resolves the targets and prints
-the actions; no mutation runs. JSON is `{ "dryRun": true, "actions": [...] }`.
+`issue create`, `issue link`, `issue unlink`, `issue assign`, `issue unassign`,
+`issue label add`, `issue label remove`, `config set` and `config unset` accept
+`--dry-run`. It resolves the targets and prints the actions; no mutation runs.
+JSON is `{ "dryRun": true, "actions": [...] }`.
 
 These writes are idempotent: a repeat exits 0 and reports `skipped` in JSON.
 `unlink` with a missing relation is a skipped success. `label create` fails on a

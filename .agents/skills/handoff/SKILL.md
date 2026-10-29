@@ -9,6 +9,8 @@ Write a handoff document summarising the current conversation so a fresh agent c
 
 Inside a mission, the mission skill uses this contract automatically at planned session boundaries.
 
+A next-ticket prompt waits until its blocking PRs are merged. If a blocking PR is open, the handoff is premature: report the PR URL, head SHA, and check state instead.
+
 Include a "suggested skills" section in the document, naming which skills the next agent should call the Skill tool for.
 
 Do not duplicate content already captured in other artifacts (specs, plans, ADRs, issues, commits, diffs). Reference them by path or URL instead.
@@ -26,7 +28,8 @@ the same block at the end of the document.
 The prompt is self-contained:
 
 - the handoff path or mission artifact;
-- the fixed point and the next ready ticket, plus the blocking edges after it;
+- the fixed point (the merge commit), the next ready ticket, and the blocking
+  PRs, plus the blocking edges after it;
 - the current gate, the method that reached it, and its status when a mission
   is active;
 - the skill to call first (the mission, the next stage, or `router` for a

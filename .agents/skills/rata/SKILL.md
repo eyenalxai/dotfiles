@@ -29,7 +29,8 @@ than one stored workspace, pass `--workspace <name>` to choose one.
 ## Read before you write
 
 ```bash
-rata status --json                        # repo, workspace, team, viewer and org
+rata status --json                        # repo, workspace, team, defaults, viewer and org
+rata config show --json                   # issue defaults for this repository
 rata team show --json                     # states, labels, members and priorities
 rata issue list --json                    # list issues; returns one page
 rata issue list --after <cursor> --json   # read the next page
@@ -115,7 +116,15 @@ EOF
 ```
 
 `create` resolves the team and project from the repository config, which
-`rata link` writes. Override them with `--team` and `--project`.
+`rata link` writes. Override them with `--team` and `--project`. The repository
+issue defaults fill the assignee, labels and priority. Set them once:
+
+```bash
+rata config set --assignee me --label enhancement --priority medium
+```
+
+`--label` adds to the default labels; `--no-default-labels` drops them for one
+call. `--assignee none` and `--priority none` clear their defaults.
 
 Wire blocking edges as you publish. Linear has one `blocks` relation, so
 `--blocked-by` records it in the direction you mean:
@@ -148,9 +157,12 @@ A map is an issue labelled `wayfinder:map`. Its tickets are children labelled
 `task`.
 
 ```bash
-rata issue create --title "Map: switch billing to Stripe" --label wayfinder:map
-rata issue create --parent ABC-50 --title "Research: Stripe webhook retries" --label wayfinder:research
+rata issue create --title "Map: switch billing to Stripe" --label wayfinder:map --no-default-labels --assignee none
+rata issue create --parent ABC-50 --title "Research: Stripe webhook retries" --label wayfinder:research --no-default-labels --assignee none
 ```
+
+Maps and children stay unassigned and carry only `wayfinder:*` labels. The
+priority default still applies.
 
 Claim a ticket by assigning yourself. Resolve it with a comment, then close it:
 

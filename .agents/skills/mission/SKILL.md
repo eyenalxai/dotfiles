@@ -139,7 +139,7 @@ session per ticket; a bug has one session. The plan is a table in the artifact:
 | Session | Work | Exit |
 | --- | --- | --- |
 | 1 | classify, grill, route | prompt for the first stage |
-| 2 | implement <ticket>, review, PR | prompt for the next ticket |
+| 2 | implement <ticket>, review, PR | merged PR, then prompt for the next ticket |
 
 Replan when the scope changes. The owner sees the whole route and where the
 handoffs fall before the work starts.
@@ -150,7 +150,7 @@ handoffs fall before the work starts.
 `/mission handoff` command. A boundary is any of:
 
 - the tickets are ready and the first implementation starts;
-- a ticket's PR is open and the next ready ticket starts;
+- a ticket's PR is merged and the next ready ticket starts;
 - a gate is pending and the next session should carry it;
 - the context reaches the smart zone;
 - a side task needs its own context;
@@ -174,7 +174,8 @@ side task.
 The prompt is self-contained:
 
 - the mission path or URL;
-- the fixed point and the next ready ticket, plus the blocking edges after it;
+- the fixed point (the merge commit), the next ready ticket, and the blocking
+  PRs, plus the blocking edges after it;
 - the current gate, its method, and its status;
 - the next skill to read;
 - the references for that stage;
@@ -187,7 +188,7 @@ A starting shape:
 ```text
 Read the mission at <path or URL>. Run /mission continue.
 The current gate is <gate>, <approved or pending>, reached with <method>.
-The previous PR is <url>. The next ticket is <id>.
+The blocking PRs are merged: <urls>. The merge commit is <sha>. The next ticket is <id>.
 Read the mission references for <stage>, then <skill>.
 Run <checks>. Open one PR. Report the PR URL, head SHA, checks, and the next
 ready ticket. The owner reviews and merges.
@@ -237,8 +238,9 @@ check state, and the owner review and merge.
 
 A ticket ends with a reviewable PR. Open one PR, run `code-review`, fix the
 findings, and report the PR URL, head SHA, checks, and the next ready ticket.
-The owner reviews and merges. When the owner asks the mission skill to merge,
-use a merge commit.
+The owner reviews and merges. The next ticket starts only after that merge,
+unless the owner explicitly asks for a stacked PR. When the owner asks the
+mission skill to merge, use a merge commit.
 
 ## Trackers
 
