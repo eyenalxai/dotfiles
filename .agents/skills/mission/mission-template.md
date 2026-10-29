@@ -2,11 +2,11 @@
 
 Status: active
 Scope: fog | feature | change | bug | trivial
-Stage: classify
+Phase: classify
 Goal: <one sentence>
-Exit: PR for owner review and merge
+Exit: PR for user review and merge
 
-## Route
+## Flow
 
 - [ ] grill: <notes>
 - [ ] map: <url>
@@ -15,33 +15,33 @@ Exit: PR for owner review and merge
 - [ ] tickets: <urls>
 - [ ] implement <ticket>: <PR url>
 - [ ] code-review <PR>: <findings>
-- [ ] owner merge <PR>: <commit>
+- [ ] user merge <PR>: <commit>
 
 ## Gates
 
-| Gate | Method | Artifact | Status | Approved by | Date |
+| Gate | Method | Document | Status | Approved by | Date |
 | --- | --- | --- | --- | --- | --- |
 | Scope and understanding | <grill method> | <notes or map> | pending | | |
-| Spec | owner review | <spec or issue> | pending | | |
-| Tickets | owner review | <tickets or issue> | pending | | |
+| Spec | user review | <spec or issue> | pending | | |
+| Tickets | user review | <tickets or issue> | pending | | |
 | PR | code-review | <PR> | pending | | |
 
 ## Session plan
 
 | Session | Work | Exit |
 | --- | --- | --- |
-| 1 | classify, grill, route | prompt for the first stage |
+| 1 | classify, grill, choose the path | prompt for the first phase |
 
 ## References
 
-| Reference | Why | Path or URL | Stage |
+| Reference | Why | Path or URL | Phase |
 | --- | --- | --- | --- |
 
 ## Decisions
 
 - <decision>: <ADR or issue>
 
-## Artifacts
+## Outputs
 
 - spec: <path>
 - tickets: <urls>
@@ -53,8 +53,10 @@ Exit: PR for owner review and merge
 - Gate: <gate>
 - Method: <grill method>
 - Command: <exact command>
-- Produce: <artifact>
+- Produce: <output>
 
 ## Handoff log
 
-- <date and time>: <session>, <stage>, <gate>, <method>, <prompt path or URL>
+- <date and time>: <session>, <phase>, <gate>, <method>, prompt delivered in chat
+
+Never paste the prompt anywhere in this document. The prompt is delivered in chat.

@@ -21,23 +21,25 @@ If the user passed arguments, treat them as a description of what the next sessi
 
 ## The prompt is the handoff
 
-The document is the durable copy; the prompt is the deliverable. End the chat
-reply with one fenced `text` block the owner can copy with one click, and put
-the same block at the end of the document.
+The document is the handoff summary; the prompt is the deliverable. End the
+chat reply with one fenced `text` block the user can copy with one click. That
+is the only copy of the prompt. Never put the delivered prompt in an issue, a
+PR, a commit, the repo, or the mission document. If the mission document is an
+issue, the issue gets the log line, not the prompt.
 
 The prompt is self-contained:
 
-- the handoff path or mission artifact;
+- the handoff path or mission document;
 - the fixed point (the merge commit), the next ready ticket, and the blocking
   PRs, plus the blocking edges after it;
 - the current gate, the method that reached it, and its status when a mission
   is active;
-- the skill to call first (the mission, the next stage, or `router` for a
-  standalone route), then `code-review` and `pr` per PR;
+- the skill to call first (the mission, the next phase, or `router` for a
+  standalone flow), then `code-review` and `pr` per PR;
 - the build and check commands;
 - the handback: open one PR, run `code-review`, fix the findings, report the PR
-  URL, head SHA, checks, and the next ready ticket. The owner reviews and
+  URL, head SHA, checks, and the next ready ticket. The user reviews and
   merges.
 
-Write the prompt in the owner's language and keep it positive: state the
-desired end state and the owner's merge step.
+Write the prompt in the user's language and keep it positive: state the
+desired end state and the user's merge step.
