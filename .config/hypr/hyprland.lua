@@ -25,6 +25,9 @@ hyprsplit.monitor_priority({ "HDMI-A-2", "HDMI-A-1" })
 -- Or disable only bindings for Omarchy's preinstalled apps/web apps while
 -- keeping core window-manager bindings:
 -- omarchy_preinstalled_bindings = false
+--
+-- Disable Omarchy's default touchpad gestures. Add your own in hypr/input.lua.
+-- omarchy_default_gestures = false
 
 -- Load Omarchy defaults.
 require("default.hypr.omarchy")
