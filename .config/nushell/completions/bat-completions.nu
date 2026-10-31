@@ -1,7 +1,7 @@
 # bat-completions.nu
 # Custom completions for bat, and for the `cat` wrapper that decorates it
 # (`cat` runs `bat --plain --paging=never`), in Nushell.
-# nu-version: 0.115.1
+# nu-version: 0.116.1
 
 use ./completion-helpers.nu *
 
@@ -124,8 +124,10 @@ def "nu-complete cat flag-values" [flag: string, token: string = ''] {
 # Whole-command completer for the `cat` wrapper, attached with `@complete`.
 # Wrapped commands collect their flags into `...args` instead of declaring them,
 # so flag names are read from the `bat` extern and completed here.
-def "nu-complete cat" [spans: list<string>] {
-  let args = ($spans | skip 1)
+# `place` is the record Nushell hands to a completer; `place.command` holds the
+# words of the invocation, including the command itself.
+def "nu-complete cat" [place: record] {
+  let args = ($place.command | skip 1)
   # The parser appends an empty argument when the cursor sits after a space.
   let last = ($args | last | default '')
   let separated = ($last | is-empty)

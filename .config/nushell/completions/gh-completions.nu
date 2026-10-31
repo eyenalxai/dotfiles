@@ -1,6 +1,6 @@
 # gh-completions.nu
 # Custom completions for the GitHub CLI (gh) in Nushell
-# nu-version: 0.115.1
+# nu-version: 0.116.1
 
 use ./completion-helpers.nu *
 
@@ -48,12 +48,12 @@ def "nu-complete gh candidates" [args: list<string>] {
 
 # Whole-command completer attached to the gh extern below with `@complete`:
 # a positional completer is never consulted for `--flag` words, so completing
-# flags requires this command-wide form. It receives every word of the
+# flags requires this command-wide form. `place.command` holds every word of the
 # invocation, including the command itself.
-def "nu-complete gh" [spans: list<string>] {
+def "nu-complete gh" [place: record] {
   # `gh <TAB>` has no words after the command yet; __complete still wants the
   # word being completed, which is then empty.
-  let args = ($spans | skip 1)
+  let args = ($place.command | skip 1)
   let args = (if ($args | is-empty) { [''] } else { $args })
   try { nu-complete gh candidates $args } catch { null }
 }
