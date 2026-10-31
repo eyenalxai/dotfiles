@@ -4,7 +4,7 @@ config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"
 # Font
 font-family = "JetBrainsMono Nerd Font"
 font-style = Regular
-{% if yadm.hostname == "laptop" %}
+{% if yadm.hostname == "bijibendiannao" %}
 font-size = 11
 {% else %}
 font-size = 13

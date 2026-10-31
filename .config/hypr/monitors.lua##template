@@ -1,7 +1,7 @@
 -- See https://wiki.hypr.land/Configuring/Basics/Monitors/
 -- List current monitors and supported resolutions with: hyprctl monitors all
 
-{% if yadm.hostname == "laptop" %}
+{% if yadm.hostname == "bijibendiannao" %}
 local omarchy_gdk_scale = 2
 local omarchy_monitor_scale = 1.6
 {% else %}
@@ -12,7 +12,7 @@ local omarchy_monitor_scale = 1
 hl.env("GDK_SCALE", tostring(omarchy_gdk_scale))
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = omarchy_monitor_scale })
 
-{% if yadm.hostname == "laptop" %}
+{% if yadm.hostname == "bijibendiannao" %}
 -- Built-in laptop display
 hl.monitor({ output = "eDP-1", mode = "preferred", position = "0x0", scale = omarchy_monitor_scale })
 {% else %}

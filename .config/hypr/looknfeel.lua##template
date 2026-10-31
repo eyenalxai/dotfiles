@@ -24,7 +24,7 @@ hl.config({
   },
 })
 
-{% if yadm.hostname == "laptop" %}
+{% if yadm.hostname == "bijibendiannao" %}
 -- Enable smooth workspace slide animation for trackpad gestures with inertia (macOS feel)
 hl.animation({
   leaf = "workspaces",

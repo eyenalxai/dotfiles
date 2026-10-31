@@ -133,7 +133,7 @@ o.bind("SUPER + B", "Helium", { launch = "helium-browser" })
 hl.unbind("SUPER + W")
 o.bind("SUPER + Q", "Close window", hl.dsp.window.close())
 
-{% if yadm.hostname == "laptop" %}
+{% if yadm.hostname == "bijibendiannao" %}
 -- Laptop-only: clipboard manager on CTRL + SHIFT + X instead of Super + Ctrl + V
 hl.unbind("SUPER + CTRL + V")
 hl.unbind("SUPER + SHIFT + X")
@@ -151,7 +151,7 @@ hl.unbind("F9")
 hl.unbind("SUPER + CTRL + X")
 -- F1 has no modifier, so Hyprland delivers both the press and the release.
 hl.bind("F1", hl.dsp.global("hex:dictation"), { description = "Dictation (push-to-talk)" })
-{% if yadm.hostname == "laptop" %}
+{% if yadm.hostname == "bijibendiannao" %}
 
 -- Laptop-only: open the Omarchy menu with CTRL + SPACE instead of SUPER + SPACE.
 hl.unbind("SUPER + SPACE")

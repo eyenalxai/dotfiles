@@ -82,7 +82,7 @@
           "id": "ulezot.opencode-go"
         },
         {
-{% if yadm.hostname == "laptop" %}
+{% if yadm.hostname == "bijibendiannao" %}
           "id": "ulsippoi.power"
 {% else %}
           "id": "omarchy.power"
