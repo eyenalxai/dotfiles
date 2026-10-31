@@ -11,7 +11,7 @@ Inside a mission, the mission skill uses this contract automatically at planned 
 
 A next-ticket prompt waits until its blocking PRs are merged. If a blocking PR is open, the handoff is premature: report the PR URL, head SHA, and check state instead.
 
-Include a "suggested skills" section in the document, naming which skills the next agent should call the Skill tool for.
+Include a "suggested skills" section in the document, naming which skills the next agent should load with the Skill tool, in order.
 
 Do not duplicate content already captured in other artifacts (specs, plans, ADRs, issues, commits, diffs). Reference them by path or URL instead.
 
@@ -34,12 +34,16 @@ The prompt is self-contained:
   PRs, plus the blocking edges after it;
 - the current gate, the method that reached it, and its status when a mission
   is active;
-- the skill to call first (the mission, the next phase, or `router` for a
-  standalone flow), then `code-review` and `pr` per PR;
+- the skills to load first, in order (the mission, the next phase, or `router`
+  for a standalone flow), then `code-review` and `pr` per PR;
+- the stop: if a named skill will not load, stop and say which one failed; do
+  not simulate its output;
 - the build and check commands;
 - the handback: open one PR, run `code-review`, fix the findings, report the PR
   URL, head SHA, checks, and the next ready ticket. The user reviews and
   merges.
 
 Write the prompt in the user's language and keep it positive: state the
-desired end state and the user's merge step.
+desired end state and the user's merge step. Name the load chain in order, for
+example `wayfinder`, then `grilling` and `domain-modeling`, or `implement`, then
+`tdd` and `code-review`.

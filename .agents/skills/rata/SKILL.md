@@ -33,8 +33,11 @@ rata status --json                        # repo, workspace, team, defaults, vie
 rata config show --json                   # issue defaults for this repository
 rata team show --json                     # states, labels, members and priorities
 rata issue list --json                    # list issues; returns one page
+rata issue list --all --json              # drain every page
 rata issue list --after <cursor> --json   # read the next page
 rata issue show ABC-42 --json             # comments, children, relations, attachments
+rata issue view ABC-42 --summary --json   # lean header read; `view` aliases `show`
+rata issue section get ABC-42 "Handoff log"  # one heading section of the body
 rata search "flaky test" --json
 ```
 
@@ -49,17 +52,48 @@ command writes one `error` object (`code`, `message`, `hint`) to stderr and
 exits with code 1. List commands return one page with `pageInfo`: see **Paging
 lists**.
 
+`issue show` has `--summary`, `--no-body`, `--no-relations`, `--no-children` and
+`--no-attachments`. `--summary` reads the header fields only and rejects
+`--comments`. The `--no-*` flags drop those parts and skip their fetches. `view`
+is an alias for `show`.
+
+Every issue carries `updatedAt`. Pass it to `--if-unchanged <updatedAt>` on
+`issue update` or `issue section append|replace` to fail with `conflict` when
+the issue changed since that read. Linear has no compare-and-swap, so the check
+is best effort.
+
+Edit one section of the body with `issue section replace`. It is the safe body
+write: it replaces the content under one heading and keeps the rest of the body.
+The heading match is exact and case-sensitive. Read the issue for `updatedAt`,
+preview the diff, then write against that snapshot:
+
+```bash
+rata issue show ABC-42 --summary --json
+rata issue section replace ABC-42 "Handoff log" --body-file handoff.md --dry-run
+rata issue section replace ABC-42 "Handoff log" --body-file handoff.md --if-unchanged <updatedAt>
+```
+
+The file holds the content under the heading, without the heading line. A deeper
+heading belongs to that section, so write it too. Do not rewrite the whole body
+for one section: `issue update --body-file` replaces the whole body and drops
+every heading that the new body leaves out, without an error. `issue section
+append` adds to the end of a section, or creates a missing heading, and
+`--level` sets its level. `issue section get` reads the content back;
+`--with-heading` adds the heading line.
+
 A comment or a child that a write just created can be missing from the next
-read. `issue comment` and `issue create --parent` check for up to 5 seconds.
-`--wait <seconds>` changes the bound and `--wait 0` skips the check. JSON reports
-`visible`: `null` means unchecked, `false` means not seen. The write itself still
-succeeded.
+read. `issue comment create` and `issue create --parent` check for up to 5
+seconds. `--wait <seconds>` changes the bound and `--wait 0` skips the check.
+JSON reports `visible`: `null` means unchecked, `false` means not seen. The
+write itself still succeeded.
 
 ## Paging lists
 
 `issue list`, `search`, `team list`, `project list` and `label list` return one
 page per call. `--limit` is the page size: 50 by default, 250 at most.
-`--after <cursor>` reads the next page. JSON is `{ <plural>, pageInfo }`:
+`--after <cursor>` reads the next page. Add `--all` to drain every page;
+`--limit` stays the page size and `--after` starts from the cursor. JSON is
+`{ <plural>, pageInfo }`:
 
 ```json
 {
@@ -68,11 +102,13 @@ page per call. `--limit` is the page size: 50 by default, 250 at most.
 }
 ```
 
-Continue with `--after b2c3...` while `pageInfo.hasNextPage` is true. Keep the
-filters and the order fixed across pages: a cursor is bound to its query. Lists
-are ordered by creation time; `search` keeps Linear's relevance ranking, so its
-paging is best effort. The human output prints a next-page hint when more
-results exist. Internal reads drain every page, so `issue show` is complete.
+Continue with `--after b2c3...` while `pageInfo.hasNextPage` is true, or add
+`--all` for the full set. With `--all`, `pageInfo` is
+`{ "hasNextPage": false, "endCursor": null }`. Keep the filters and the order
+fixed across pages: a cursor is bound to its query. Lists are ordered by
+creation time; `search` keeps Linear's relevance ranking, so its paging is best
+effort. The human output prints a next-page hint when more results exist.
+Internal reads drain every page, so `issue show` is complete.
 
 ## Triage
 
@@ -118,11 +154,29 @@ Post the reasoning as a comment. `--body-file -` reads markdown from stdin, so
 long bodies never touch the command line:
 
 ```bash
-rata issue comment ABC-42 --body-file - <<'EOF'
+rata issue comment create ABC-42 --body-file - <<'EOF'
 ## Triage
 
 ...
 EOF
+```
+
+`issue comment create` is retry-safe with `--dedupe-key`. The key is scoped to
+the issue, so a retried handoff comment returns the one already posted with
+`status: "skipped"`:
+
+```bash
+rata issue comment create ABC-42 --body "Handoff." --dedupe-key mission-42-handoff
+```
+
+Use the mission and ticket in the key, for example
+`mission-<spec>-<ticket>-handoff`, so a retry reuses the comment and a new
+ticket gets its own. Rewrite or remove a comment with
+`issue comment update <comment-id>` and `issue comment delete <comment-id> --yes`.
+To change the issue and comment in one call, add `--comment` to `issue update`:
+
+```bash
+rata issue update ABC-42 --state Done --comment "Shipped in PR #12."
 ```
 
 Close a `wontfix` with `rata issue close ABC-42 --comment "..."`.
@@ -165,8 +219,7 @@ rata issue create --title "Switch billing to Stripe" --label ready-for-agent --p
 rata issue create --title "Add the Stripe client" --parent ABC-50 --label ready-for-agent --priority medium --body-file -
 rata issue create --title "Switch the webhooks" --parent ABC-50 --label ready-for-agent --priority medium --body-file -
 rata issue link ABC-52 --blocked-by ABC-51
-rata issue list --parent ABC-50 --limit 250 --json
-# continue with --after <pageInfo.endCursor> while pageInfo.hasNextPage is true
+rata issue list --parent ABC-50 --all --json
 ```
 
 `issue show <spec-ref> --json` also lists the child issues. A wayfinding map
@@ -190,7 +243,7 @@ Claim a ticket by assigning yourself. Resolve it with a comment, then close it:
 
 ```bash
 rata issue assign ABC-51 --assignee me
-rata issue comment ABC-51 --body-file - <<'EOF'
+rata issue comment create ABC-51 --body-file - <<'EOF'
 ## Answer
 
 ...
@@ -198,16 +251,22 @@ EOF
 rata issue close ABC-51
 ```
 
-The frontier is the set of tickets under a map that are unblocked and
+The frontier is the set of tickets under a map that are open, unblocked and
 unassigned. Read the first ready ticket with:
 
 ```bash
-rata issue list --parent ABC-50 --unblocked --unassigned --sort priority --limit 1 --json
+rata next --parent ABC-50
 ```
 
-The JSON is `{ issues, pageInfo }`. The first result is the most urgent
-ticket; ties keep the previous order. The sort reads every matching page
-before it applies the limit, so one call returns the top ticket.
+The JSON is `{ issue }`. `issue` is the summary, or `null` when the frontier is
+empty. Human output prints the ticket line, or `No ready ticket.`; both exit 0.
+`next` reads every matching page before it picks: priority first (urgent
+first), then the oldest `createdAt`.
+
+Check why a ticket is not ready with `rata why ABC-51`. The JSON carries
+`blocked`, which is true when any blocker is open, and `blockedBy`, where each
+blocker names its state and whether it is `closed`. Human output prints
+`ABC-51 is ready.` when nothing blocks.
 
 ## Reference
 

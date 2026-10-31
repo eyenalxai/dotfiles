@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 You don't remember every skill, so route.
 
-Before stating what a skill does or recommending a step be skipped, read that skill's SKILL.md: the summaries here are for orientation only.
+Before performing a skill, stating what it does, or recommending a step be skipped, load it with the Skill tool: the summaries here are for orientation only. If a named skill will not load, stop and say which one failed; do not simulate its output.
 
 `mission` drives the main flow as one entry. This router is the classifier it calls, and it also works on its own when you only want the next step.
 
@@ -70,15 +70,15 @@ The same check applies before you recommend any phase that starts new work.
    harness, or a side task, or when the context is full. In a multi-ticket
    effort, each ticket starts in a fresh session.
 5. **Answer once.** Name the gate or PR that decides the step, then one Next
-   step line. If the choice is handoff, name `/handoff`, not the phase it will
-   run, and produce the prompt with `handoff`; the prompt is the deliverable,
-   and it goes in chat.
+   step line. Name a skill to load, not a phase to perform. If the choice is
+   handoff, name `/handoff`, not the phase it will run, and produce the prompt
+   with `handoff`; the prompt is the deliverable, and it goes in chat.
 
 ## The main flow: idea to reviewable PR
 
 `mission` drives this flow. The phases below are the underlying map.
 
-1. **The grill.** `grilling` and `domain-modeling` build shared understanding. In a working directory, the grill calls both. With no working directory, use `grill-me`. `/grill-with-docs` is the standalone command for the same composition in a repo.
+1. **The grill.** Load `grilling`, and `domain-modeling` when the repo has docs, with the Skill tool. They build shared understanding. With no working directory, use `grill-me`. `/grill-with-docs` is the standalone command for the same composition in a repo.
 2. **The plan.** Use `to-spec` to record the agreed spec and `to-tickets` to cut it into tickets with blocking edges. `wayfinder` charts a foggy, multi-session effort as decision tickets first. `research` supplies facts and `prototype` answers a question that needs runnable code.
 3. **The build.** `implement` builds one ticket and drives `tdd` at the agreed seams; `implement-spec` works the whole ticket graph. Both close with `code-review`. `pr` shapes the body. The user reviews and merges.
 
