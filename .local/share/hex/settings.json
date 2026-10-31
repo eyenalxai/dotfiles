@@ -5,6 +5,7 @@
   "sound_effect_volume": 0.5,
   "sound_theme": "signature",
   "microphone": null,
+  "avoid_bluetooth_microphone": true,
   "recording_audio_behavior": "pause_media",
   "recording_duck_volume": 0.2,
   "pause_browser_media": false,
@@ -12,43 +13,41 @@
   "double_tap_only": false,
   "shortcut_mode": "hold",
   "dictation_hotkey": {
-    "modifiers": {
-      "control": null,
-      "option": null,
-      "shift": null,
-      "command": null,
-      "function": false
-    },
-    "key": {
-      "code": 0,
-      "label": "F1"
-    }
+    "keys": [
+      {
+        "code": 0,
+        "label": "F1"
+      }
+    ]
   },
   "edit_hotkey": {
-    "modifiers": {
-      "control": "either",
-      "option": "either",
-      "shift": null,
-      "command": null,
-      "function": false
-    },
     "key": {
       "code": 0,
       "label": "I"
+    },
+    "modifiers": {
+      "command": null,
+      "control": "either",
+      "function": false,
+      "option": "either",
+      "shift": null
     }
   },
   "paste_last_hotkey": {
-    "modifiers": {
-      "control": "either",
-      "option": "either",
-      "shift": null,
-      "command": null,
-      "function": false
-    },
-    "key": {
-      "code": 0,
-      "label": "V"
-    }
+    "keys": [
+      {
+        "modifier": "control",
+        "side": "any"
+      },
+      {
+        "modifier": "option",
+        "side": "any"
+      },
+      {
+        "code": 0,
+        "label": "V"
+      }
+    ]
   },
   "show_dock_icon": true,
   "transcription": {
@@ -85,10 +84,10 @@
     "modes": []
   },
   "voice_action": {
+    "deadline_seconds": 60,
     "enabled": true,
     "model": null,
-    "variant": null,
-    "deadline_seconds": 60
+    "variant": null
   },
   "history_retention": "week",
   "meetings": {
@@ -106,32 +105,22 @@
     }
   },
   "capture": {
-    "enabled": false,
+    "enabled": true,
     "hotkey": {
-      "modifiers": {
-        "control": "either",
-        "option": "either",
-        "shift": null,
-        "command": null,
-        "function": false
-      },
-      "key": {
-        "code": 0,
-        "label": "S"
-      }
-    },
-    "list_hotkey": {
-      "modifiers": {
-        "control": "either",
-        "option": "either",
-        "shift": "either",
-        "command": null,
-        "function": false
-      },
-      "key": {
-        "code": 0,
-        "label": "V"
-      }
+      "keys": [
+        {
+          "modifier": "control",
+          "side": "any"
+        },
+        {
+          "modifier": "option",
+          "side": "any"
+        },
+        {
+          "code": 0,
+          "label": "S"
+        }
+      ]
     },
     "transcriber": "parakeet",
     "folder": null,
@@ -173,6 +162,9 @@
   },
   "vocabulary_boost": "normal",
   "migrations": [
-    "streaming-english-model"
+    "streaming-english-model",
+    "annotate-on-by-default",
+    "scrawl-capture-settings",
+    "scrawl-routing-settings"
   ]
 }
