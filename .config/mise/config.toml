@@ -1,7 +1,5 @@
 [tools]
-node = "latest"
 railway = "latest"
-uv = "latest"
 
 [settings.upgrade]
 auto_prune = true
