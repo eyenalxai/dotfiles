@@ -49,7 +49,7 @@ Exit: PR for user review and merge
 
 ## Next step
 
-- Skill: <skill>
+- Skill to load: <skill>
 - Gate: <gate>
 - Method: <grill method>
 - Command: <exact command>

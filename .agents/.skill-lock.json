@@ -340,9 +340,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/rata.git",
       "skillPath": "skills/rata/SKILL.md",
-      "skillFolderHash": "5835804d1dda368f7e1c2aae012bcc44e624be02",
+      "skillFolderHash": "45062c359d20f80ac8f842fa62563a5454b66c76",
       "installedAt": "2026-10-05T11:45:07.275Z",
-      "updatedAt": "2026-10-29T11:51:53.366Z"
+      "updatedAt": "2026-10-29T17:55:34.465Z"
     },
     "improve": {
       "source": "shadcn/improve",
@@ -377,27 +377,27 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
       "skillPath": "skills/productivity/handoff/SKILL.md",
-      "skillFolderHash": "0a55ab37bef4414ce5b46307b33dcb5c08acca6d",
+      "skillFolderHash": "5783f050ac412ef882d8d9e2eb3a73849cf0bc53",
       "installedAt": "2026-10-29T07:46:54.117Z",
-      "updatedAt": "2026-10-29T12:41:03.480Z"
+      "updatedAt": "2026-10-29T17:55:25.870Z"
     },
     "mission": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
       "skillPath": "skills/engineering/mission/SKILL.md",
-      "skillFolderHash": "3ee2f6b0406d9c5f181c169bc4316325e620007d",
+      "skillFolderHash": "dd0d453a1de3cf2c8bd5ac05bdd41b5c24716711",
       "installedAt": "2026-10-29T07:46:54.125Z",
-      "updatedAt": "2026-10-29T12:41:03.482Z"
+      "updatedAt": "2026-10-29T17:55:28.376Z"
     },
     "router": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
       "skillPath": "skills/engineering/router/SKILL.md",
-      "skillFolderHash": "ce252c22f9903ba1c74172692c2f9ff034229972",
+      "skillFolderHash": "a670520e0c26d4c79e7a85c3a9c0c1484556e43c",
       "installedAt": "2026-10-29T08:15:50.731Z",
-      "updatedAt": "2026-10-29T12:41:03.482Z"
+      "updatedAt": "2026-10-29T17:55:30.780Z"
     },
     "wait-what": {
       "source": "eyenalxai/skills",

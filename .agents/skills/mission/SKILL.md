@@ -25,6 +25,11 @@ Each skill owns its own procedure. Read the skill's `SKILL.md` and follow it.
 `mission` decides what happens next, what it produces, and which gate it must
 pass.
 
+A skill named here is a file to load, not a label to perform. Load it with the
+Skill tool before you produce its output. The summaries in this skill are
+orientation; the procedure lives in the named skill. If a named skill will not
+load, stop and say which one failed. Never simulate its output.
+
 ## Commands
 
 | Command | What it does |
@@ -41,20 +46,21 @@ pass.
 2. Classify the scope with the table below.
 3. Find the mission document. Create it from `./mission-template.md` when none
    exists.
-4. Run the grill. `grilling` and `domain-modeling` are model-invoked;
-   call them. When the repo has `GLOSSARY.md` or `docs/adr/`, call both. When it
-   has no docs, call `grilling`. When an existing spec, ticket, or direct
-   instruction already holds the understanding, run a short grill to confirm
-   the frontier is empty and record that source.
+4. Load the grill. Call the Skill tool for `grilling`, and for
+   `domain-modeling` when the repo has `GLOSSARY.md` or `docs/adr/`. When an
+   existing spec, ticket, or direct instruction already holds the understanding,
+   run a short grill to confirm the frontier is empty and record that source.
+   Do not write a round from this summary.
 5. Record the scope and understanding gate. Present the problem, constraints,
    approach, flow, and the method. Wait for the user's approval.
 6. Only after approval, name the next phase.
 
 ## The grill
 
-`grilling` and `domain-modeling` are model-invoked, so `mission` runs them as
-part of the flow. `grill-with-docs` is the user-invoked shortcut that calls the
-same two skills; it is the standalone command, not the process dependency.
+`grilling` owns the round format, the frontier, and the wait. `domain-modeling`
+owns the glossary and the ADRs. `mission` owns the gate: when the grill opens,
+what it produces, and whether a short grill is enough. Load `grilling`, and
+`domain-modeling` when the repo has docs, before the first round.
 
 The depth comes from the frontier, not from the scope. A clear bug may have one
 question about the repro and the expected behavior. A foggy idea may take many
@@ -121,9 +127,9 @@ at a pending gate is the approval itself, not the next phase.
 | Handoff | `handoff` | next-session prompt | Current gate | new session |
 | Done | none | merged PRs | none | close the mission |
 
-The grill phase uses the two model-invoked skills that `grill-with-docs` wraps.
-The wrapper remains the standalone shortcut for a user who wants to start a
-grill outside a mission.
+The grill phase loads the two skills that `grill-with-docs` wraps. The wrapper
+remains the standalone shortcut for a user who wants to start a grill outside a
+mission.
 
 Optional detours: `research` when facts are missing,
 `prototype` when a question needs runnable code,
@@ -180,7 +186,7 @@ The prompt is self-contained:
 - the fixed point (the merge commit), the next ready ticket, and the blocking
   PRs, plus the blocking edges after it;
 - the current gate, its method, and its status;
-- the next skill to read;
+- the skills to load, in order;
 - the references for that phase;
 - the build and check commands;
 - the exit: open one PR, run `code-review`, fix the findings, report the PR URL,
@@ -192,7 +198,9 @@ A starting shape:
 Read the mission at <path or URL>. Run /mission continue.
 The current gate is <gate>, <approved or pending>, reached with <method>.
 The blocking PRs are merged: <urls>. The merge commit is <sha>. The next ticket is <id>.
-Read the mission references for <phase>, then <skill>.
+Read the mission references for <phase>, then load <skills> in order with the
+Skill tool. If a skill will not load, stop and say which one, and do not
+simulate its output.
 Run <checks>. Open one PR. Report the PR URL, head SHA, checks, and the next
 ready ticket. The user reviews and merges.
 ```
@@ -227,11 +235,13 @@ Every mission reply starts with the mission line and ends with the next step:
 Mission: <slug> | <scope> | <phase>
 Gate: <gate> <approved or pending>
 Method: <grill method>
-Next skill: <skill> (<why>)
+Next skill: load <skill> (<why>)
 Read: <top references>
 Produce: <output>
 Next step: <exact command>
 ```
+
+A next skill is a load, not a phase to perform.
 
 At a pending gate, the next step is the user's approval of the named document.
 At a handoff, the prompt follows in chat. At a PR, the line is the PR URL, head
@@ -268,6 +278,8 @@ next step in the mission document.
 ## It is working if
 
 - The grill runs at every scope, and its depth follows the frontier.
+- Every phase starts with its skill loaded, and a missing skill stops the
+  session instead of producing a substitute.
 - Every gate is recorded with its method and approved before the next phase.
 - The user always knows the scope, phase, gate, method, next skill, and next
   command.
