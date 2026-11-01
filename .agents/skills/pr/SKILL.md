@@ -12,6 +12,10 @@ metadata:
 Use this template for writing the PR body:
 
 ```markdown
+## Why
+
+<the problem, the route taken, and the alternative rejected>
+
 ## Summary
 
 <diagram, diff-sketch, or tree>
@@ -20,6 +24,10 @@ Use this template for writing the PR body:
 
 - **Before:** <screenshot/output/failing test run>
   **After:** <screenshot/output/passing test run>
+
+## What this unlocks
+
+<the next capability or decision this makes possible>
 
 ## Merge Danger
 
@@ -35,6 +43,12 @@ Use this template for writing the PR body:
 ## Sections
 
 Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md`.
+
+### Why
+
+State the problem in the user's terms, the route taken, and the alternative
+rejected. When there was no real alternative, write `no alternative: <reason>`
+in one clause. Link the originating issue or mission document.
 
 ### Summary
 
@@ -162,6 +176,11 @@ Concrete evidence that the change works. Show a before and after.
 Screenshots are S-tier - when the environment is set up for it and the change is visual.
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
+
+### What this unlocks
+
+Name the next capability, ticket, or decision this makes possible. Keep it
+concrete.
 
 ### Merge Danger
 

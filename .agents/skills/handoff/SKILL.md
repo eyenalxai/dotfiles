@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS (`$TMPDIR`, else `/tmp`; `%TEMP%` on Windows) - not the current workspace.
 
-Inside a mission, the mission skill uses this contract automatically at planned session boundaries.
+Inside a mission, the mission skill uses this contract automatically at planned session boundaries. When a mission is active, the mission output contract owns the reply around the prompt.
 
 A next-ticket prompt waits until its blocking PRs are merged. If a blocking PR is open, the handoff is premature: report the PR URL, head SHA, and check state instead.
 
@@ -30,6 +30,7 @@ issue, the issue gets the log line, not the prompt.
 The prompt is self-contained:
 
 - the handoff path or mission document;
+- the goal, why the next step is next, and what it unlocks;
 - the fixed point (the merge commit), the next ready ticket, and the blocking
   PRs, plus the blocking edges after it;
 - the current gate, the method that reached it, and its status when a mission
@@ -39,9 +40,11 @@ The prompt is self-contained:
 - the stop: if a named skill will not load, stop and say which one failed; do
   not simulate its output;
 - the build and check commands;
+- the output contract the next session must use: progress trail, Doing, Why
+  now, Why this way, Unlocks, Gate, Next step;
 - the handback: open one PR, run `code-review`, fix the findings, report the PR
-  URL, head SHA, checks, and the next ready ticket. The user reviews and
-  merges.
+  URL, head SHA, checks, the next ready ticket, the why, and the unlock. The
+  user reviews and merges.
 
 Write the prompt in the user's language and keep it positive: state the
 desired end state and the user's merge step. Name the load chain in order, for

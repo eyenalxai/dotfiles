@@ -28,9 +28,9 @@ Exit: PR for user review and merge
 
 ## Session plan
 
-| Session | Work | Exit |
-| --- | --- | --- |
-| 1 | classify, grill, choose the path | prompt for the first phase |
+| Session | Work | Why | Exit |
+| --- | --- | --- | --- |
+| 1 | classify, grill, choose the path | the scope and the frontier decide the path | prompt for the first phase |
 
 ## References
 
@@ -39,7 +39,7 @@ Exit: PR for user review and merge
 
 ## Decisions
 
-- <decision>: <ADR or issue>
+- <decision>. Why: <why>. Alternative: <rejected alternative, or "no alternative: <reason>">. Record: <ADR or issue>.
 
 ## Outputs
 
@@ -52,6 +52,8 @@ Exit: PR for user review and merge
 - Skill to load: <skill>
 - Gate: <gate>
 - Method: <grill method>
+- Why: <why this step is next>
+- Unlocks: <what it makes possible>
 - Command: <exact command>
 - Produce: <output>
 

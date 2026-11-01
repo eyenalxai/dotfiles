@@ -15,7 +15,11 @@ Before performing a skill, stating what it does, or recommending a step be skipp
 ## Answer shape
 
 End every routing reply with a **Next step** line that names the exact skill or
-command, the ticket or document, and what it produces.
+command, the ticket or document, why it is next, and what it unlocks.
+
+Inside a mission, the mission output contract owns the full reply: progress
+trail, Doing, Why now, Why this way, Unlocks, Gate, Next step. Standalone, the
+Next step line carries the why and the unlock.
 
 The next step is the action that unblocks the work now, not the phase after it.
 For a pending gate or an open blocking PR, use this table:
@@ -34,8 +38,8 @@ waits. These are the standalone answers. If an active mission document exists,
 the next step is `/mission continue`; the mission owns the phase and handoff
 decision.
 
-Next step: `/handoff` for ticket 123. It produces the prompt for a fresh session that runs `/implement` and `/code-review` to a reviewable PR.
-Next step: `/code-review` the open PR. It produces findings to fix before the user merges.
+Next step: `/handoff` for ticket 123, because its blockers are merged and it is the next slice. It produces the prompt for a fresh session that runs `/implement` and `/code-review` to a reviewable PR, which unblocks ticket 124.
+Next step: `/code-review` the open PR, because its checks are green and the diff is the last gate. It produces findings to fix before the user merges, which clears the last gate.
 
 When the next step is `/handoff`, the prompt is the deliverable: one fenced
 `text` block in chat that the user can copy with one click. Never put the
@@ -70,9 +74,10 @@ The same check applies before you recommend any phase that starts new work.
    harness, or a side task, or when the context is full. In a multi-ticket
    effort, each ticket starts in a fresh session.
 5. **Answer once.** Name the gate or PR that decides the step, then one Next
-   step line. Name a skill to load, not a phase to perform. If the choice is
-   handoff, name `/handoff`, not the phase it will run, and produce the prompt
-   with `handoff`; the prompt is the deliverable, and it goes in chat.
+   step line with the why and the unlock. Name a skill to load, not a phase to
+   perform. If the choice is handoff, name `/handoff`, not the phase it will
+   run, and produce the prompt with `handoff`; the prompt is the deliverable,
+   and it goes in chat.
 
 ## The main flow: idea to reviewable PR
 
@@ -111,9 +116,10 @@ At a boundary, the options are continue, clear, handoff, subagent, and compact. 
 
 A ticket ends with a reviewable PR. The implementer opens one PR, runs
 `code-review`, fixes the findings, and reports the PR URL, head SHA, checks,
-and the next ready ticket. The user reviews and merges. The next ticket starts
-only after that merge, unless the user explicitly asks for a stacked PR. When
-the user asks the agent to merge, use a merge commit.
+the next ready ticket, the progress line, the why, and what the PR unlocks.
+The user reviews and merges. The next ticket starts only after that merge,
+unless the user explicitly asks for a stacked PR. When the user asks the agent
+to merge, use a merge commit.
 
 ## Context hygiene
 
