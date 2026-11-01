@@ -53,7 +53,7 @@ $env.config.edit_mode = "emacs"
 # Load integrations
 use starship.nu
 source zoxide.nu
-source mise.nu
+if (which mise | is-not-empty) { source mise.nu }
 
 # mise.nu replaces $env.PATH with directories baked by `mise activate nu` on
 # another machine (stale /home/ulezot entries), discarding the user dirs that
