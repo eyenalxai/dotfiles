@@ -2,62 +2,335 @@
 # keyd-mac-modifiers - apply the MacBook modifier rotation via keyd:
 #   Command -> Control, Option -> Super, Control -> Alt
 #
-# The single source of truth is ~/.config/keyd/default.conf (tracked with yadm).
-# This script symlinks it into /etc/keyd/ and enables/reloads the keyd daemon.
+# The config's single source of truth is ~/.config/keyd/default.conf (tracked
+# with yadm); it is symlinked into /etc/keyd/.
+#
+# keyd grabs the Apple SPI keyboard and replays every key through its uinput
+# "keyd virtual keyboard" (0fac:0ade). uinput devices carry no ID_INTEGRATION,
+# so libinput treats that keyboard as external and never pairs it with the
+# internal touchpad: disable-while-typing silently does nothing. This script
+# writes the udev rule that tags the virtual keyboard as internal, so typing
+# pauses the touchpad again.
+#
+# Safe to run from any state: keyd missing or stopped, /etc files missing or
+# stale, leftovers from older attempts, a chroot without systemd, a machine
+# without an internal touchpad, or an already converged system (nothing is
+# restarted).
 #
 # Usage:  sudo keyd-mac-modifiers
 
-print "keyd-mac-modifiers: MacBook modifier rotation via keyd"
-print "  Command -> Control, Option -> Super, Control -> Alt"
-print ""
+# --- helpers ---------------------------------------------------------------
 
-if (^id -u | str trim) != "0" {
-    error make {msg: "this script must be run as root - try: sudo ~/.local/bin/keyd-mac-modifiers"}
+def die [msg: string] {
+    print -e $"error: ($msg)"
+    exit 1
 }
 
-# Resolve the invoking user's home even when run through sudo.
-let user = if ($env.SUDO_USER? | is-empty) {
-    ^stat -c '%U' ($env.CURRENT_FILE | path expand)
-} else {
-    $env.SUDO_USER
+def step [msg: string] {
+    print $"==> ($msg)"
 }
-let home = (^getent passwd $user | split row ':' | get 5)
 
-let src = $"($home)/.config/keyd/default.conf"
-let dst = "/etc/keyd/default.conf"
+def info [msg: string] {
+    print $"    ($msg)"
+}
 
-print $"  config: ($src)"
-print $"  deploy: ($dst)"
-print ""
+def run_cmd [cmd: string, ...args: string] {
+    ^$cmd ...$args | complete
+}
 
-if not ($src | path exists) {
-    error make {msg: $"($src) not found"}
+def checked [label: string, result: record] {
+    if $result.exit_code != 0 {
+        let err = ($result.stderr | str trim)
+        if ($err | is-empty) {
+            die $"($label) failed"
+        }
+        die $"($label) failed: ($err)"
+    }
+}
+
+def read_text [path: string] {
+    if not (path_present $path) { return "" }
+    open --raw $path | decode utf-8
+}
+
+def is_symlink [path: string] {
+    (run_cmd "test" "-L" $path).exit_code == 0
+}
+
+def is_dir [path: string] {
+    (run_cmd "test" "-d" $path).exit_code == 0
+}
+
+def path_present [path: string] {
+    (is_symlink $path) or ($path | path exists)
+}
+
+def backup_path [path: string] {
+    $"($path).bak-(date now | format date '%Y%m%d-%H%M%S')"
+}
+
+def deploy_link [src: string, dst: string] {
+    let dir = ($dst | path dirname)
+    if not ($dir | path exists) {
+        checked $"install -d ($dir)" (run_cmd "install" "-d" $dir)
+    }
+
+    if (is_symlink $dst) {
+        let current = ((run_cmd "readlink" "-f" $dst).stdout | str trim)
+        let wanted = ((run_cmd "realpath" $src).stdout | str trim)
+        if $current == $wanted {
+            return "unchanged"
+        }
+        checked $"ln -sfn ($dst)" (run_cmd "ln" "-sfn" $src $dst)
+        return "relinked"
+    }
+
+    if (path_present $dst) {
+        let backup = (backup_path $dst)
+        checked $"mv ($dst) ($backup)" (run_cmd "mv" $dst $backup)
+        info $"backed up ($dst) -> ($backup)"
+        checked $"ln -sfn ($dst)" (run_cmd "ln" "-sfn" $src $dst)
+        return "replaced"
+    }
+
+    checked $"ln -sfn ($dst)" (run_cmd "ln" "-sfn" $src $dst)
+    "linked"
+}
+
+def write_rule [dst: string, content: string] {
+    let dir = ($dst | path dirname)
+    if not ($dir | path exists) {
+        checked $"install -d ($dir)" (run_cmd "install" "-d" $dir)
+    }
+
+    if (is_symlink $dst) or (is_dir $dst) {
+        let backup = (backup_path $dst)
+        checked $"mv ($dst) ($backup)" (run_cmd "mv" $dst $backup)
+        info $"backed up ($dst) -> ($backup)"
+    }
+
+    let current = (read_text $dst)
+    if $current == $content {
+        return "unchanged"
+    }
+
+    if (path_present $dst) {
+        let first_line = if ($current | is-empty) { "" } else { $current | lines | first }
+        if not ($first_line | str contains "Managed by keyd-mac-modifiers") {
+            let backup = (backup_path $dst)
+            checked $"cp ($dst) ($backup)" (run_cmd "cp" "-p" $dst $backup)
+            info $"backed up ($dst) -> ($backup)"
+        }
+    }
+
+    $content | save --force $dst
+    "written"
+}
+
+def keyd_event [] {
+    let vendors = (try { ls /sys/class/input/event*/device/id/vendor | get name } catch { [] })
+    for vendor in $vendors {
+        let id_dir = ($vendor | path dirname)
+        let vid = (open $vendor | str trim)
+        let pid = (open $"($id_dir)/product" | str trim)
+        if $vid == "0fac" and $pid == "0ade" {
+            return ($vendor | path dirname | path dirname | path dirname | path basename)
+        }
+    }
+    ""
+}
+
+def integration_tag [dev: string] {
+    if ($dev | is-empty) { return "" }
+    let r = (run_cmd "udevadm" "info" "-q" "property" "-n" $"/dev/input/($dev)")
+    if $r.exit_code != 0 { return "" }
+    $r.stdout | lines | where {|line| $line | str starts-with "ID_INTEGRATION=" } | str join
+}
+
+def has_internal_touchpad [] {
+    let r = (run_cmd "sh" "-c" 'for d in /dev/input/event*; do udevadm info -q property -n "$d" 2>/dev/null | grep -qx "ID_INPUT_TOUCHPAD_INTEGRATION=internal" && echo "$d" && break; done')
+    ($r.stdout | str trim | is-not-empty)
+}
+
+def file_mtime [path: string] {
+    let r = (run_cmd "stat" "-c" "%Y" $path)
+    if $r.exit_code != 0 { return 0 }
+    $r.stdout | str trim | into int
+}
+
+def keyd_start_epoch [] {
+    let stamp = ((run_cmd "systemctl" "show" "keyd" "-p" "ActiveEnterTimestamp" "--value").stdout | str trim)
+    if ($stamp | is-empty) or ($stamp == "n/a") { return 0 }
+    let parsed = (run_cmd "date" "-d" $stamp "+%s")
+    if $parsed.exit_code != 0 { return 0 }
+    let value = ($parsed.stdout | str trim)
+    if ($value | is-empty) { return 0 }
+    $value | into int
+}
+
+# --- main ------------------------------------------------------------------
+
+if ((run_cmd "id" "-u").stdout | str trim) != "0" {
+    die "must run as root - try: sudo ~/.local/bin/keyd-mac-modifiers"
+}
+
+if (which udevadm | is-empty) {
+    die "udevadm is not installed - this script needs udev"
+}
+
+# Resolve the dotfiles user and home, whether invoked as root, via sudo, from a
+# login shell, or through a symlink.
+let candidates = [
+    ($env.SUDO_USER? | default ""),
+    ($env.DOAS_USER? | default ""),
+    ((run_cmd "logname").stdout | str trim),
+    (do {
+        let p = ($env.CURRENT_FILE? | default "")
+        if ($p | is-empty) { return "" }
+        let real = ((run_cmd "realpath" ($p | path expand)).stdout | str trim)
+        if ($real | is-empty) { return "" }
+        (run_cmd "stat" "-c" "%U" $real).stdout | str trim
+    }),
+] | where {|u| ($u | is-not-empty) and ($u != "root") }
+
+if ($candidates | is-empty) {
+    die "cannot tell which user owns the dotfiles - run this via sudo as that user"
+}
+let user = ($candidates | first)
+
+let passwd = (run_cmd "getent" "passwd" $user)
+if $passwd.exit_code != 0 {
+    die $"user ($user) does not exist"
+}
+let home = ($passwd.stdout | str trim | split row ':' | get 5)
+if ($home | is-empty) {
+    die $"cannot resolve the home directory of ($user)"
+}
+
+let conf_src = $"($home)/.config/keyd/default.conf"
+let conf_dst = "/etc/keyd/default.conf"
+let rule_dst = "/etc/udev/rules.d/99-keyd-virtual-keyboard.rules"
+
+let rule_content = ([
+    '# Managed by keyd-mac-modifiers - do not edit, edit the script.'
+    '# keyd grabs the internal keyboard and replays every key through its uinput'
+    '# keyboard (vendor 0fac, product 0ade = "keyd virtual keyboard"). uinput'
+    '# devices carry no ID_INTEGRATION, so libinput treats it as an external'
+    '# keyboard and never pairs it with the internal touchpad for'
+    '# disable-while-typing. Tag it internal so typing pauses the touchpad.'
+    'ACTION=="add|change", SUBSYSTEM=="input", ATTRS{id/vendor}=="0fac", ATTRS{id/product}=="0ade", ENV{ID_INTEGRATION}="internal"'
+] | str join (char nl)) + (char nl)
+
+step $"keyd rotation for ($user) \(($home)\)"
+if not ($conf_src | path exists) {
+    die $"($conf_src) not found - is the dotfiles checkout complete for ($user)?"
 }
 
 if (which keyd | is-empty) {
-    print "keyd is not installed - installing it..."
-    ^pacman -S --needed --noconfirm keyd
+    step "Installing keyd"
+    if (which pacman | is-empty) {
+        die "keyd is not installed and pacman is not available"
+    }
+    checked "pacman -S keyd" (run_cmd "pacman" "-S" "--needed" "--noconfirm" "keyd")
 }
 
-print $"Linking ($src) -> ($dst)"
-^install -d /etc/keyd
-^ln -sfn $src $dst
-
-print "Validating the config with `keyd check`..."
-let check = (^keyd check $dst | complete)
-print ($check.stdout | str trim)
+step "Validating the keyd config"
+# sh(1) rather than ^keyd: Nushell caches external commands from PATH at
+# startup, so a keyd that pacman just installed is not visible to `^keyd`.
+let check = (run_cmd "sh" "-c" 'keyd check "$1"' "sh" $conf_src)
 if $check.exit_code != 0 {
-    error make {msg: "keyd check reported issues above - not enabling keyd"}
+    print -e ($check.stdout | str trim)
+    print -e ($check.stderr | str trim)
+    die "keyd check failed - no changes were made"
 }
-print "  config is valid"
-print ""
+info "config is valid"
 
-print "Enabling and (re)starting keyd..."
-^systemctl enable --now keyd
-^systemctl restart keyd
+step "Linking the keyd config"
+let conf_state = (deploy_link $conf_src $conf_dst)
+info $"($conf_dst): ($conf_state)"
+
+step "Writing the udev integration rule"
+let rule_state = (write_rule $rule_dst $rule_content)
+info $"($rule_dst): ($rule_state)"
+
+let changed = ($conf_state != "unchanged") or ($rule_state != "unchanged")
+
+if ("/run/udev/control" | path exists) {
+    step "Reloading udev rules"
+    checked "udevadm control --reload-rules" (run_cmd "udevadm" "control" "--reload-rules")
+    run_cmd "udevadm" "settle" "--timeout=5" | ignore
+} else {
+    info "udevd is not running - the rule is read when it starts"
+}
+
+let systemd_running = ("/run/systemd/system" | path exists)
+
+if $systemd_running {
+    step "Enabling keyd"
+    checked "systemctl enable keyd" (run_cmd "systemctl" "enable" "keyd")
+
+    let active = (((run_cmd "systemctl" "is-active" "keyd").stdout | str trim) == "active")
+    let tag_before = (integration_tag (keyd_event))
+    let config_is_newer = ((file_mtime $conf_dst) > (keyd_start_epoch))
+
+    if $changed or (not $active) or ($tag_before != "ID_INTEGRATION=internal") or $config_is_newer {
+        step "Restarting keyd"
+        let restart = (run_cmd "systemctl" "restart" "keyd")
+        if $restart.exit_code != 0 {
+            die $"keyd failed to restart: ($restart.stderr | str trim) - if it is masked: sudo systemctl unmask keyd"
+        }
+    } else {
+        info "already converged - keyd not restarted"
+    }
+
+    let state = ((run_cmd "systemctl" "is-active" "keyd").stdout | str trim)
+    if $state != "active" {
+        die $"keyd is ($state) after the restart - see: journalctl -u keyd"
+    }
+
+    mut dev = ""
+    for _ in 0..50 {
+        $dev = (keyd_event)
+        if ($dev | is-not-empty) { break }
+        sleep 100ms
+    }
+
+    step "Checking disable-while-typing pairing"
+    if ($dev | is-empty) {
+        info "keyd exposes no virtual keyboard (no keyboard grabbed) - nothing to pair"
+    } else if (has_internal_touchpad) {
+        let tag = (integration_tag $dev)
+        if $tag == "ID_INTEGRATION=internal" {
+            info $"($dev) is internal - typing now pauses the touchpad"
+        } else {
+            print -e $"error: ($dev) reports ($tag), expected ID_INTEGRATION=internal"
+            print -e $"       check the rule and the device: udevadm info -a -n /dev/input/($dev)"
+            exit 1
+        }
+    } else {
+        info "no internal touchpad on this machine - nothing to pair"
+    }
+} else {
+    step "Enabling keyd for the next boot"
+    if (which systemctl | is-not-empty) {
+        let enable = (run_cmd "systemctl" "enable" "keyd")
+        if $enable.exit_code != 0 {
+            info "systemctl enable failed - enable keyd once systemd is up"
+        } else {
+            info "systemd is not running (chroot) - keyd starts on next boot"
+        }
+    } else {
+        info "systemctl is not available - enable keyd once installed"
+    }
+}
 
 print ""
-print "Done - the rotation is active:"
+if $systemd_running {
+    print "Done - the rotation is active:"
+} else {
+    print "Done - deployed (takes effect on next boot):"
+}
 print "  Command -> Control, Option -> Super, Control -> Alt"
+print "  Touchpad: pauses while typing (keyd keyboard tagged internal)"
 print "  Panic:  Backspace+Escape+Enter stops keyd"
-print $"  Revert: sudo systemctl disable --now keyd && sudo rm ($dst)"
+print $"  Revert: sudo systemctl disable --now keyd && sudo rm ($conf_dst) ($rule_dst)"
