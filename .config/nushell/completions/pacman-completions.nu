@@ -76,9 +76,9 @@ def pacman-operations [] {
 }
 
 # Positional targets completer for pacman
-def complete-pacman-targets [context: string] {
-    let words = ($context | split row -r '\s+' | drop 1)
-    let current = ($context | split row -r '\s+' | last)
+def complete-pacman-targets [buffer: string] {
+    let words = ($buffer | split row -r '\s+' | drop 1)
+    let current = ($buffer | split row -r '\s+' | last)
     let prev_pkgs = ($words | where { |it| not ($it starts-with "-") and ($it != "pacman") and ($it != "sudo") })
 
     # Check operations

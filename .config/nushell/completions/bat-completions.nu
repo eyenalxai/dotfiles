@@ -38,12 +38,12 @@ def "nu-complete bat languages" [] {
 
 # `--style` takes a comma-separated list of components, so after the first
 # component complete the next one while keeping the prefix already typed.
-def "nu-complete bat styles" [context: string] {
+def "nu-complete bat styles" [buffer: string] {
   let components = [
     default full auto plain changes header header-filename header-filesize
     grid rule numbers snip
   ]
-  let token = ((nu-complete words $context) | get token)
+  let token = ((nu-complete words $buffer) | get token)
   if ($token | str contains ',') {
     let prefix = ($token | str substring 0..($token | str index-of ','))
     $components | each {|component| $"($prefix)($component)" }

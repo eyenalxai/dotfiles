@@ -170,9 +170,9 @@ def "nu-complete pkill pids" [] {
 }
 
 # Complete running process names, context-aware (filters by user if -u/--euid/-U/--uid is given)
-def "nu-complete pkill process names" [context?: string] {
+def "nu-complete pkill process names" [buffer?: string] {
   try {
-    let ctx = ($context | default "")
+    let ctx = ($buffer | default "")
     let filter_user = ($ctx | parse -r '(?:\s|^)(?:-u|--euid|-U|--uid)\s+(?P<user>\S+)' | get -o 0.user)
 
     let procs = (^ps -eo pid=,ppid=,user=,comm=,args=

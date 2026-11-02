@@ -2,14 +2,14 @@
 # Custom completions for systemctl in Nushell
 
 # Check if the execution context specifies user mode (--user or -u)
-def is-user-context [context?: string] {
-    let ctx = ($context | default "")
+def is-user-context [buffer?: string] {
+    let ctx = ($buffer | default "")
     ($ctx =~ '(^|\s)(--user|-u)(\s|$)')
 }
 
 # Return the appropriate flag list for systemctl invocations
-def get-context-user-flag [context?: string] {
-    if (is-user-context $context) { ["--user"] } else { [] }
+def get-context-user-flag [buffer?: string] {
+    if (is-user-context $buffer) { ["--user"] } else { [] }
 }
 
 # Subcommands supported by systemctl
@@ -103,9 +103,9 @@ export def "nu-complete systemctl subcommands" [] {
 }
 
 # Complete all units (loaded units in memory + unit files on disk)
-export def "nu-complete systemctl all-units" [context?: string] {
-    let user_flag = (get-context-user-flag $context)
-    let is_user = (is-user-context $context)
+export def "nu-complete systemctl all-units" [buffer?: string] {
+    let user_flag = (get-context-user-flag $buffer)
+    let is_user = (is-user-context $buffer)
 
     let loaded = (try {
         ^systemctl ...$user_flag list-units --all --output=json
@@ -149,8 +149,8 @@ export def "nu-complete systemctl all-units" [context?: string] {
 }
 
 # Complete active / activating / failed units (for stop, kill, freeze, thaw)
-export def "nu-complete systemctl active-units" [context?: string] {
-    let user_flag = (get-context-user-flag $context)
+export def "nu-complete systemctl active-units" [buffer?: string] {
+    let user_flag = (get-context-user-flag $buffer)
     try {
         ^systemctl ...$user_flag list-units --state=active,activating,reloading,failed --output=json
         | from json
@@ -167,8 +167,8 @@ export def "nu-complete systemctl active-units" [context?: string] {
 }
 
 # Complete all installed unit files (for enable, reenable, preset, edit, revert)
-export def "nu-complete systemctl all-unit-files" [context?: string] {
-    let user_flag = (get-context-user-flag $context)
+export def "nu-complete systemctl all-unit-files" [buffer?: string] {
+    let user_flag = (get-context-user-flag $buffer)
     let files = (try {
         ^systemctl ...$user_flag list-unit-files --output=json
         | from json
@@ -181,13 +181,13 @@ export def "nu-complete systemctl all-unit-files" [context?: string] {
     if ($files | is-not-empty) {
         $files
     } else {
-        nu-complete systemctl all-units $context
+        nu-complete systemctl all-units $buffer
     }
 }
 
 # Complete currently enabled unit files (for disable)
-export def "nu-complete systemctl enabled-unit-files" [context?: string] {
-    let user_flag = (get-context-user-flag $context)
+export def "nu-complete systemctl enabled-unit-files" [buffer?: string] {
+    let user_flag = (get-context-user-flag $buffer)
     let files = (try {
         ^systemctl ...$user_flag list-unit-files --state=enabled,enabled-runtime,linked,linked-runtime,alias --output=json
         | from json
@@ -200,13 +200,13 @@ export def "nu-complete systemctl enabled-unit-files" [context?: string] {
     if ($files | is-not-empty) {
         $files
     } else {
-        nu-complete systemctl all-units $context
+        nu-complete systemctl all-units $buffer
     }
 }
 
 # Complete currently masked unit files (for unmask)
-export def "nu-complete systemctl masked-unit-files" [context?: string] {
-    let user_flag = (get-context-user-flag $context)
+export def "nu-complete systemctl masked-unit-files" [buffer?: string] {
+    let user_flag = (get-context-user-flag $buffer)
     let files = (try {
         ^systemctl ...$user_flag list-unit-files --state=masked,masked-runtime --output=json
         | from json
@@ -219,13 +219,13 @@ export def "nu-complete systemctl masked-unit-files" [context?: string] {
     if ($files | is-not-empty) {
         $files
     } else {
-        nu-complete systemctl all-units $context
+        nu-complete systemctl all-units $buffer
     }
 }
 
 # Complete target units (for isolate, set-default, add-wants, add-requires)
-export def "nu-complete systemctl target-units" [context?: string] {
-    let user_flag = (get-context-user-flag $context)
+export def "nu-complete systemctl target-units" [buffer?: string] {
+    let user_flag = (get-context-user-flag $buffer)
     try {
         ^systemctl ...$user_flag list-units --type=target --all --output=json
         | from json
@@ -242,8 +242,8 @@ export def "nu-complete systemctl target-units" [context?: string] {
 }
 
 # Complete failed units (for is-failed, reset-failed)
-export def "nu-complete systemctl failed-units" [context?: string] {
-    let user_flag = (get-context-user-flag $context)
+export def "nu-complete systemctl failed-units" [buffer?: string] {
+    let user_flag = (get-context-user-flag $buffer)
     let failed = (try {
         ^systemctl ...$user_flag list-units --state=failed --output=json
         | from json
@@ -259,13 +259,13 @@ export def "nu-complete systemctl failed-units" [context?: string] {
     if ($failed | is-not-empty) {
         $failed
     } else {
-        nu-complete systemctl all-units $context
+        nu-complete systemctl all-units $buffer
     }
 }
 
 # Complete active job IDs (for cancel)
-export def "nu-complete systemctl jobs" [context?: string] {
-    let user_flag = (get-context-user-flag $context)
+export def "nu-complete systemctl jobs" [buffer?: string] {
+    let user_flag = (get-context-user-flag $buffer)
     try {
         ^systemctl ...$user_flag list-jobs --output=json
         | from json
@@ -384,8 +384,8 @@ export def "nu-complete systemctl job-modes" [] {
 
 # Dynamic positional arguments completer for `systemctl` base command
 # Dispatches based on the subcommand in the context line
-export def "nu-complete systemctl dynamic-args" [context?: string] {
-    let ctx = ($context | default "")
+export def "nu-complete systemctl dynamic-args" [buffer?: string] {
+    let ctx = ($buffer | default "")
     let words = ($ctx | split row -r '\s+' | where { |w|
         not ($w starts-with "-") and ($w != "systemctl") and ($w != "^systemctl") and ($w | is-not-empty)
     })

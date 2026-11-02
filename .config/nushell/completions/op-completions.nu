@@ -32,8 +32,8 @@ def "nu-complete op accounts" [] {
 # ==============================================================================
 
 # Extract the vault name or ID given to --vault (or --current-vault) on the command line
-def "nu-complete op vault-from-context" [context: string] {
-  let matches = ($context | parse -r "--(?:current-)?vault(?:=|\\s+)(?:\"(?<dq>[^\"]*)\"|'(?<sq>[^']*)'|(?<bare>\\S+))")
+def "nu-complete op vault-from-context" [buffer: string] {
+  let matches = ($buffer | parse -r "--(?:current-)?vault(?:=|\\s+)(?:\"(?<dq>[^\"]*)\"|'(?<sq>[^']*)'|(?<bare>\\S+))")
   if ($matches | is-empty) { return "" }
   let m = ($matches | last)
   if ((($m.dq? | default "") | is-not-empty)) { return $m.dq }
@@ -42,9 +42,9 @@ def "nu-complete op vault-from-context" [context: string] {
 }
 
 # Complete 1Password item names and IDs, filtered by --vault when present
-def "nu-complete op items" [context: string] {
+def "nu-complete op items" [buffer: string] {
   let data = (nu-complete cached json "op" "items" [op item list --format json] 5min)
-  let vault = (nu-complete op vault-from-context $context)
+  let vault = (nu-complete op vault-from-context $buffer)
   let items = if ($vault | is-empty) {
     $data
   } else {

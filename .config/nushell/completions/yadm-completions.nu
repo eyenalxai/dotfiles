@@ -110,8 +110,8 @@ def "nu-complete yadm remotes" [] {
   | uniq-by value # Deduplicate where fetch and push remotes are the same
 }
 
-def "nu-complete yadm remote-subcommands" [context: string] {
-  let words = ($context | split row -r '\s+' | drop 1)
+def "nu-complete yadm remote-subcommands" [buffer: string] {
+  let words = ($buffer | split row -r '\s+' | drop 1)
   let after_remote = ($words | skip until { |w| $w == "remote" } | skip 1)
   let has_v = ($after_remote | any { |w| $w in ["-v", "--verbose"] })
   let non_flag_args = ($after_remote | where { |w| not ($w starts-with "-") })
@@ -199,9 +199,9 @@ def "nu-complete yadm switch" [] {
   }
 }
 
-def "nu-complete yadm checkout" [context: string, position?:int] {
+def "nu-complete yadm checkout" [buffer: string, place: record] {
   use yadm-completion-utils *
-  let preceding = $context | str substring ..$position
+  let preceding = $buffer | str substring ..$place.cursor
   # See what user typed before, like 'git checkout a-branch a-path'.
   # We exclude some flags from previous tokens, to detect if  a branch name has been used as the first argument.
   # FIXME: This method is still naive, though.
@@ -433,7 +433,7 @@ def "nu-complete yadm introspect categories" [] {
   ]
 }
 
-def "nu-complete yadm add" [context: string = "", position: int = 0] {
+def "nu-complete yadm add" [buffer: string, place: record] {
   let modified = (
     try {
       let status_out = (do { ^yadm status -uno --porcelain=2 } | complete)
@@ -451,7 +451,7 @@ def "nu-complete yadm add" [context: string = "", position: int = 0] {
     }
   )
 
-  let last_word = ($context | str substring ..$position | split words | last? | default "")
+  let last_word = ($buffer | str substring ..$place.cursor | split words | last? | default "")
   let path_completions = (
     try {
       $last_word | commandline complete --type path | each { |p| { value: $p, description: "Path" } }
@@ -572,9 +572,9 @@ export extern "yadm fetch" [
 ]
 
 # Yield local branches and (if remote is specified) remote branches with colon prefix
-def "nu-complete yadm push" [context: string, position: int] {
+def "nu-complete yadm push" [buffer: string, place: record] {
   use yadm-completion-utils *
-  let preceding = $context | str substring ..$position
+  let preceding = $buffer | str substring ..$place.cursor
   let tokens = $preceding | str trim | args-split | where ($it not-in $YADM_SKIPABLE_FLAGS)
 
   # Check if we have a remote argument (2nd token, 1st is 'git', 2nd is 'push', 3rd is remote)

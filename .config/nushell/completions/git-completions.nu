@@ -110,8 +110,8 @@ def "nu-complete git remotes" [] {
   | uniq-by value # Deduplicate where fetch and push remotes are the same
 }
 
-def "nu-complete git remote-subcommands" [context: string] {
-  let words = ($context | split row -r '\s+' | drop 1)
+def "nu-complete git remote-subcommands" [buffer: string] {
+  let words = ($buffer | split row -r '\s+' | drop 1)
   let after_remote = ($words | skip until { |w| $w == "remote" } | skip 1)
   let has_v = ($after_remote | any { |w| $w in ["-v", "--verbose"] })
   let non_flag_args = ($after_remote | where { |w| not ($w starts-with "-") })
@@ -199,9 +199,9 @@ def "nu-complete git switch" [] {
   }
 }
 
-def "nu-complete git checkout" [context: string, position?:int] {
+def "nu-complete git checkout" [buffer: string, place: record] {
   use git-completion-utils *
-  let preceding = $context | str substring ..$position
+  let preceding = $buffer | str substring ..$place.cursor
   # See what user typed before, like 'git checkout a-branch a-path'.
   # We exclude some flags from previous tokens, to detect if  a branch name has been used as the first argument.
   # FIXME: This method is still naive, though.
@@ -467,9 +467,9 @@ export extern "git fetch" [
 ]
 
 # Yield local branches and (if remote is specified) remote branches with colon prefix
-def "nu-complete git push" [context: string, position: int] {
+def "nu-complete git push" [buffer: string, place: record] {
   use git-completion-utils *
-  let preceding = $context | str substring ..$position
+  let preceding = $buffer | str substring ..$place.cursor
   let tokens = $preceding | str trim | args-split | where ($it not-in $GIT_SKIPABLE_FLAGS)
 
   # Check if we have a remote argument (2nd token, 1st is 'git', 2nd is 'push', 3rd is remote)
