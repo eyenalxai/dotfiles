@@ -1,6 +1,6 @@
 ---
 name: mission
-description: Drive one piece of work from a request to reviewable pull requests. Classifies the scope, runs the grill and approval gates, keeps a durable mission document, recommends the next skill, tracks references across sessions, and hands off to fresh sessions automatically.
+description: Drive one piece of work from a request to reviewable pull requests. Classifies the scope, runs the grill and the owner's approval gate, keeps a durable mission document, recommends the next skill, tracks references across sessions, and hands off to fresh sessions automatically.
 argument-hint: "<request> | continue | status | handoff | done"
 disable-model-invocation: true
 ---
@@ -11,16 +11,16 @@ disable-model-invocation: true
 
 `mission` is the single entry point for a piece of work. It turns a request into
 a flow, keeps that flow in a mission document, and drives it phase by phase until
-every ticket has a pull request you can review and merge.
+every ticket has a pull request the owner can review and merge.
 
 It does six things:
 
 - the scope decision, made with `router`;
-- the grill and the approval gates;
+- the grill and the owner's approval gate;
 - the mission document, the only state that survives a session;
 - the flow and the session plan;
 - the reference index and the handoff prompt;
-- the progress trail and the why for every step you see.
+- the answer-first reply, with the state kept out of it.
 
 Each skill owns its own procedure. Read the skill's `SKILL.md` and follow it.
 `mission` decides what happens next, what it produces, and which gate it must
@@ -37,7 +37,7 @@ load, stop and say which one failed. Never simulate its output.
 | --- | --- |
 | `/mission <request>` | Start a mission, or attach to the matching one |
 | `/mission continue` | Read the mission, verify references, name the next step |
-| `/mission status` | Show the progress trail, the why for the current step, the unlock, the gate, and the next step |
+| `/mission status` | Show the state from the mission document: flow, current phase, gate, decisions, and next step |
 | `/mission handoff` | Force a handoff prompt at the current boundary |
 | `/mission done` | Close a mission whose PRs are merged |
 
@@ -45,17 +45,26 @@ load, stop and say which one failed. Never simulate its output.
 
 1. Read `AGENTS.md`, the tracker doc, and `router`.
 2. Classify the scope with the table below.
-3. Find the mission document. Create it from `./mission-template.md` when none
-   exists.
+3. Find the mission document in the configured tracker (see the Tracker section).
+   Create it from `./mission-template.md` when none exists.
 4. Load the grill. Call the Skill tool for `grilling`, and for
-   `domain-modeling` when the repo has `GLOSSARY.md` or `docs/adr/`. When an
-   existing spec, ticket, or direct instruction already holds the understanding,
-   run a short grill to confirm the frontier is empty and record that source.
-   Do not write a round from this summary.
-5. Record the scope and understanding gate. Present the problem, constraints,
-   approach, flow, the method, and what the first step unlocks. Wait for the
-   user's approval.
-6. Only after approval, name the next phase.
+   `domain-modeling` when the repo has `GLOSSARY.md` or `docs/adr/`.
+5. Run the grill. The grill builds the fact base, asks the frontier, and ends
+   when the owner confirms shared understanding. When an existing spec, ticket,
+   or direct instruction already holds the understanding, run a short grill to
+   confirm the frontier is empty and record that source. Do not write a round
+   from a summary.
+6. Present the phase-boundary gate: the problem, the constraints, the rule
+   changes, the file scope, the flow, and what implementation unlocks. Wait for
+   the owner's words.
+7. After the owner's approval, route by scope. A change, bug, or trivial goes to
+   `implement`. A feature or fog goes to `to-spec`, then `to-tickets`, then
+   `implement`. Do not implement a proposal.
+
+The gate opens after the grill, not before it. The owner cannot approve an
+understanding that does not exist yet. Why: the prior flow recorded a scope
+approval before the questions were answered, and the record looked legitimate
+while the understanding was empty.
 
 ## The grill
 
@@ -64,9 +73,9 @@ owns the glossary and the ADRs. `mission` owns the gate: when the grill opens,
 what it produces, and whether a short grill is enough. Load `grilling`, and
 `domain-modeling` when the repo has docs, before the first round.
 
-The depth comes from the frontier, not from the scope. A clear bug may have one
-question about the repro and the expected behavior. A foggy idea may take many
-rounds. The grill is part of the process at every scope, and the user answers
+The depth comes from the frontier, not from the scope. A clear bug may need one
+question about the repro and the expected behavior. A foggy idea may need many
+rounds. The grill is part of the process at every scope, and the owner answers
 the questions inside the mission.
 
 `domain-modeling` writes only what clears its bar: resolved terms in
@@ -95,22 +104,58 @@ Ask, in order:
 | Trivial | one obvious edit | short grill plus the tracker issue | issue -> implement | one PR |
 
 Every path ends at a PR with `code-review` and `pr`.
-The user reviews and merges.
+The owner reviews and merges.
 
 ## Gates
 
-Every flow passes the same gates. The method can change; the gate cannot.
+The gates a flow passes depend on its scope. A gate that the scope does not have
+is `not used`, never `skipped`. Why: `skipped` implies a gate was bypassed;
+`not used` says the path has no such gate. The prior newsletter thread asked the
+owner to approve a ticket on a bug because the skill made every gate universal,
+and the ticket gate did not exist for that path.
 
-| Gate | Method | The user approves | Next |
-| --- | --- | --- | --- |
-| Scope and understanding | grill, research, diagnosis, an existing spec or ticket, or a direct confirmation | problem, constraints, approach, flow | spec or issue |
-| Spec | the user reads the spec or issue | requirements, non-goals, acceptance | tickets |
-| Tickets | the user reads the ticket graph or issue | ticket graph, blocking edges, acceptance | implement |
-| PR | `code-review` | diff, evidence, merge danger | merge |
+| Scope | Gates |
+| --- | --- |
+| Fog | decisions, spec, tickets, PR |
+| Feature | scope and understanding, spec, tickets, PR |
+| Change | scope and understanding, PR |
+| Bug | scope and understanding (the repro and the fix direction), PR |
+| Trivial | scope and understanding (the issue), PR |
 
-At a pending gate, `mission` presents the document, the open questions, and the
-decision it needs. It records the user's approval, then advances. The next step
-at a pending gate is the approval itself, not the next phase.
+A feature has the spec gate and the ticket gate because the spec and the ticket
+graph are the design decisions before a multi-session build. A change, bug, or
+trivial has only the scope gate and the PR gate. The issue is the work item, not
+a separate approval. Why: a one-session path has no ticket graph to approve, and
+a ticket gate there stops the work for no decision.
+
+## Gate integrity
+
+A gate is approved only by the owner's own words in the conversation. Nothing
+else counts: not a handoff prompt, not the mission document, not a tracker
+status, not an agent summary. If the words do not clearly approve the named
+gate, stop and ask. Why: the agent writes the record, so a record can only check
+the agent against itself.
+
+The agent never writes an approval on the owner's behalf. It quotes the owner's
+exact words and the decision those words answered. Why: a false approval record
+hides the skipped gate; the quote makes the gap visible.
+
+The approved scope is the rule changes and the file scope. State them at the
+level the change needs: a list for a small change, a pattern plus exceptions for
+a large one. The plan's length follows the number of decisions, not the number of
+files. Why: a per-file list for a large change is unreadable, and the PR is the
+detailed review.
+
+A change, bug, or trivial has one approval at the phase boundary and one at the
+PR. The phase boundary is the end of the grill, when the rule changes and the
+file scope are known. The PR is the second approval. A feature adds the spec gate
+and the ticket gate before the build. Why: per-file approval is a chore, not a
+gate, and a record check cannot replace the owner.
+
+A gate found skipped reopens. Stop the build, correct the record, and ask the
+owner at the gate. Do not apologize and continue; the next action is the gate,
+not a new artifact. Why: a new artifact looks like progress and buries the
+missing decision.
 
 ## Phase contracts
 
@@ -125,7 +170,7 @@ at a pending gate is the approval itself, not the next phase.
 | Tickets | `to-tickets` | tickets with blocking edges | Tickets | implement |
 | Implement | `implement` or `implement-spec` | code and PRs | PR | code-review |
 | Review | `code-review` | Standards and Spec findings | PR | fix or PR |
-| PR | `pr` | PR body, evidence, merge danger | PR | user review and merge |
+| PR | `pr` | PR body, evidence, merge danger | PR | owner review and merge |
 | Handoff | `handoff` | next-session prompt | Current gate | new session |
 | Done | none | merged PRs | none | close the mission |
 
@@ -149,7 +194,7 @@ document:
 | 1 | classify, grill, choose the path | prompt for the first phase |
 | 2 | implement <ticket>, review, PR | merged PR, then prompt for the next ticket |
 
-Replan when the scope changes. The user sees the whole flow and where the
+Replan when the scope changes. The owner sees the whole flow and where the
 handoffs fall before the work starts.
 
 ## Automatic handoff
@@ -163,7 +208,7 @@ handoffs fall before the work starts.
 - the context reaches the smart zone;
 - a side task needs its own context;
 - the next phase runs in a different harness or directory;
-- the user asks for a fresh session;
+- the owner asks for a fresh session;
 - the scope changes enough that the current session is the wrong place.
 
 At the boundary:
@@ -176,6 +221,11 @@ At the boundary:
    phase, gate, method, `prompt delivered in chat`.
 4. Stop editing. The new session starts with `/mission continue`.
 
+An approval does not survive a handoff. The new session presents the gate and
+waits for the owner's words. There is no exception. Why: a prompt written by the
+agent cannot grant authority, and an exception in the prompt is still the
+agent's words. The handoff reports the gate, it never grants it.
+
 A single-session change or bug stays in one session through the PR. Handoff is
 for travel: a new session, a new ticket, a new directory, a new harness, or a
 side task.
@@ -184,36 +234,39 @@ side task.
 
 The prompt is self-contained:
 
-- the mission path or URL;
-- the goal, why this ticket is next, and what it unlocks;
-- the fixed point (the merge commit), the next ready ticket, and the blocking
-  PRs, plus the blocking edges after it;
-- the current gate, its method, and its status;
+- the mission issue title and team, not its id or URL;
+- the goal, why this work is next, and what it unlocks;
+- the fixed point (the merge commit), the next ready work in plain words, and
+  the blocking PRs, plus the blocking edges after it;
+- the current gate, its method, and whether it is approved or pending;
+- the approved rule changes and the file scope;
 - the skills to load, in order;
 - the references for that phase;
 - the build and check commands;
 - the output contract for the next session;
 - the exit: open one PR, run `code-review`, fix the findings, report the PR URL,
-  head SHA, checks, the next ready ticket, the why, and the unlock. The user
+  check state, what changed, what it unlocks, and the merge danger. The owner
   reviews and merges.
 
 A starting shape:
 
 ```text
-Read the mission at <path or URL>. Run /mission continue.
-The goal is <goal>. The current gate is <gate>, <approved or pending>, reached
-with <method>.
-The blocking PRs are merged: <urls>. The merge commit is <sha>. The next ticket
-is <id>: <why it is next, and what it unlocks>.
+Find the mission issue in team <team> by its title: <title>. Run /mission
+continue. The goal is <goal>. The current gate is <gate>, <approved or
+pending>, reached with <method>. The approved rule changes are <list or
+pattern>. The file scope is <list or pattern>, and <what is out> is out.
+The blocking PRs are merged: <urls>. The merge commit is <sha>. The next work
+is <plain name>: <why it is next, and what it unlocks>. Its tracking key is in
+the mission document.
 Read the mission references for <phase>, then load <skills> in order with the
 Skill tool. If a skill will not load, stop and say which one, and do not
 simulate its output.
-Run <checks>. Open one PR. Report the PR URL, head SHA, checks, the progress
-line, the why, the unlock, and the next ready ticket. The user reviews and
-merges.
+Run <checks>. Open one PR. Report the PR URL, check state, what changed, what it
+unlocks, and the merge danger. Name the next ready work in plain words. The
+owner reviews and merges.
 ```
 
-Write the prompt in the user's language. The `mission` skill owns the decision
+Write the prompt in the owner's language. The `mission` skill owns the decision
 and the content. The `handoff` skill owns the format.
 
 ## References
@@ -233,82 +286,117 @@ At each phase:
 - at session start, check each path or URL and mark stale entries.
 
 The `research` output and the `domain-modeling` ADRs are references. The
-handoff prompt carries the mission path and the next phase's top references.
+handoff prompt carries the mission issue title and team and the next phase's top
+references.
 
 ## Output contract
 
-Every mission reply opens with the progress line and the reasoning for the
-current step:
+The reply is the answer, not a status report. The mission document holds the
+state; read it and update it, but do not repeat it in every reply.
 
-```text
-Progress: <mission> > <node> ✓ > <node> [now] > <node> > ...
-Doing: <the step in plain words>
-Why now: <the problem it solves, or what breaks without it>
-Why this way: <the route taken; the alternative rejected and why>
-Unlocks: <what becomes possible only after this step>
-Gate: <gate> <approved or pending>
-Next step: <exact command or approval, in plain words>
-```
+- Put the answer first, and name the work in plain words.
+- Do not open with a progress trail, mission name, gate, or labeled reasoning.
+  Explain the why in the body when it helps the decision.
+- Do not put a ticket id, mission id, issue key, or tracker link in a reply.
+  Give one only when the owner asks for it. Those keys belong in the mission
+  document, the tracker, the branch, the commit, and the PR body.
+- When the owner must act, end with one plain sentence:
+  `Next step: <the action>`. Do not add a trail, a gate block, or repeated
+  context around it.
+- The full state, the why, the unlock, and the gate belong in the handoff
+  prompt, when the work moves to a new session, a new thread, or another agent.
+  That is where context is lost. The handoff prompt is the one place that
+  carries the mission state; it names the mission issue by title and team, not
+  by id or URL.
 
-The trail follows the mission's Flow. Mark done nodes with ✓, the current node
-with `[now]`, and leave pending nodes plain. A ticket trail uses ticket ids.
+When the reason for a step is not in the mission, the ticket, the spec, or the
+code, stop and ask the owner. Record the answer in the mission document's
+Decisions. Never invent a rationale. A next skill is a load, not a phase to
+perform.
 
-- Plain words before labels. An id, PR, branch, file, or skill name never
-  stands alone. It gets a clause that says what it is and why it matters.
-- `Why this way` names the alternative that was rejected. When there was no
-  real alternative, write `no alternative: <reason>` in one clause. Do not
-  invent a rejected option.
-- When the reason for a step is not in the mission, the ticket, the spec, or
-  the code, stop and ask the user. Record the answer in the mission document's
-  Decisions. Never invent a rationale.
-- The trail and the reasoning lines appear on every reply, including a status
-  check and a one-line step. Scale the prose to the step; never drop the why.
-- A next skill is a load, not a phase to perform.
+At a pending gate, the reply presents the decision and the recommendation. The
+owner's words in context count. If the words are ambiguous, stop and ask. There
+is no template sentence. Why: a template turns the owner's approval into a
+password and moves the authority back to the agent.
 
-At a pending gate, the next step is the user's approval of the named document.
-At a handoff, the prompt follows in chat. At a PR, the line is the PR URL, head
-SHA, check state, and the user review and merge.
+At a PR, report the PR URL, the check state, what changed, what it unlocks, and
+the merge danger. The head SHA stays in the PR and the handoff log.
+
+## Disagreement
+
+- Start with the claim, not with agreement. "You're right" is not an argument.
+  Why: agreement without a reason hides whether the agent checked the claim.
+- A recommendation changes only with new evidence. Tone is not evidence. Name
+  the new fact or keep the recommendation. Why: a recommendation that follows
+  the mood is a mirror, not advice.
+- A claim about the owner's position must quote the owner. No quote, no claim.
+  Why: the prior session invented a position the owner never held and used it to
+  win the argument.
+- One sentence for a real error, then the correction. Do not repeat the apology.
+  Why: a second apology moves the work back to the owner.
 
 ## Handback
 
 A ticket ends with a reviewable PR. Open one PR, run `code-review`, fix the
-findings, and report the PR URL, head SHA, checks, and the next ready ticket,
-with the progress line, the why for the step, and what the PR unlocks. The user
-reviews and merges. The next ticket starts only after that merge, unless the
-user explicitly asks for a stacked PR. When the user asks the mission skill to
-merge, use a merge commit.
+findings, and report the PR URL, check state, what changed, what it unlocks, and
+the merge danger. Name the next ready work in plain words. The head SHA stays in
+the PR and the handoff log. The owner reviews and merges. The next ticket starts
+only after that merge, unless the owner explicitly asks for a stacked PR. When
+the owner asks the mission skill to merge, use a merge commit.
 
-## Trackers
+## Recovery
+
+When a gate is found skipped, the next action is the gate, not an artifact.
+
+1. Stop the build and stop adding files.
+2. Correct the record: remove any approval the owner did not give, quote the
+   owner's actual words, or mark the gate pending.
+3. Make any artifact produced before the gate a draft or a proposal.
+4. Rebuild the fact base: the surface inventory and the prior decisions.
+5. Ask the whole frontier once, with the round ledger.
+6. Wait for the owner's words at the gate.
+
+Do not ask the owner whether to continue. State the gate and wait. Why: asking
+whether to continue moves the decision back to the owner without a document to
+approve, and the prior session used that question to keep working.
+
+## Tracker
 
 Use the configured tracker. Linear: `rata` creates and updates the mission
-issue or project and the wayfinder map. GitHub: `gh` creates the issue and the
-PR. With no tracker, use `docs/agents/missions/<slug>.md`.
+issue and the wayfinder map. GitHub: `gh` creates the issue and the PR. If no
+tracker is configured, stop and ask the owner to set one up.
 
-The mission document is the issue, project, or file. Keep the flow, gates,
+The mission document is the configured tracker issue. Keep the flow, gates,
 session plan, references, decisions, outputs, and next step in that one place.
 Keep the handoff log there too, but never the prompt itself.
-
-Older mission documents use the previous headings. Read `Stage` as `Phase`,
-`Route` as `Flow`, and `Artifacts` as `Outputs`.
 
 ## Scope changes
 
 A mission can move between scopes. If a phase reveals fog, add a wayfinder or
 research detour. If the fog clears and the work collapses, reduce the flow to
-a change or a bug. Record the change, the reason, the new gates, and the new
-next step in the mission document.
+a change or a bug. If the work grows past one session, reclassify to a feature
+and add the spec and ticket gates. Record the change, the reason, the new gates,
+and the new next step in the mission document.
+
+When the owner explicitly chooses one PR for work that is larger than one
+session, record that choice and keep the change path. The owner owns the review
+size; the agent does not silently grow the PR.
 
 ## It is working if
 
 - The grill runs at every scope, and its depth follows the frontier.
 - Every phase starts with its skill loaded, and a missing skill stops the
   session instead of producing a substitute.
-- Every gate is recorded with its method and approved before the next phase.
-- The user always sees the progress trail, the why for the current step, what
-  it unlocks, the gate, and the next command.
-- A fresh session resumes from the mission document without re-explaining.
+- Every gate is approved by the owner's words, quoted, or marked `not used` when
+  the scope does not have it.
+- The approved scope is the rule changes and the file scope, not a per-file
+  click.
+- The reply starts with the answer, and the mission document plus the handoff
+  carry the state and the why.
+- A fresh session resumes from the mission document without re-explaining, and
+  it asks again at a pending gate.
 - Every load-bearing reference is a path or URL in the mission, and stale
   references are flagged at session start.
-- Each ticket ends at a PR with `code-review`, and the user merges it.
-- A handoff prompt appears in chat at the planned boundary, and the mission
-  document has only the log line.
+- Each ticket ends at a PR with `code-review`, and the owner merges it.
+- A handoff prompt appears in chat at the planned boundary, reports the gate
+  status, and never grants it.

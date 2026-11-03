@@ -1,75 +1,108 @@
 ---
 name: to-spec
-description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed."
+description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you have already discussed."
 disable-model-invocation: true
 ---
 
-This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user; just synthesize what you already know.
+# To Spec
 
-The issue tracker and triage label vocabulary should have been provided to you. If not, ask the user for the tracker.
+Take the current conversation and the codebase understanding and produce a spec.
+Do not interview the owner; synthesize what you already know. Why: the grill
+already asked the questions, and a second interview re-opens settled decisions.
+
+The issue tracker and triage label vocabulary should have been provided to you.
+If not, ask the owner for the tracker.
 
 ## Process
 
-1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the spec, and respect any ADRs in the area you're touching.
+1. Explore the repo to understand the current state of the codebase, if you have
+   not already. Use the project's domain glossary vocabulary throughout the spec,
+   and respect any ADRs in the area you touch. Why: a spec that invents a term or
+   contradicts an ADR sends the ticket graph in the wrong direction.
 
-2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
+2. Sketch the seams at which the feature will be tested. Prefer an existing seam
+   to a new one, and use the highest seam possible. If a new seam is needed,
+   propose it at the highest point you can. The fewer seams across the codebase,
+   the better; the ideal number is one. Why: every new seam is a new place the
+   implementation can drift from the spec.
 
-Check with the user that these seams match their expectations.
+   Check with the owner that the seams match their expectations. Why: a seam the
+   owner does not expect becomes a test the owner did not approve, and the owner
+   sees it first at the PR.
 
-3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+3. Write the spec using the template below, then publish it to the project issue
+   tracker. Apply the `ready-for-agent` triage label; no additional triage is
+   needed. Why: the spec is the gate document, so it must be in the tracker
+   before the ticket graph is cut.
 
-<spec-template>
+## The spec template
 
+```markdown
 ## Problem Statement
 
-The problem that the user is facing, from the user's perspective.
+The problem the owner is facing, from the owner's perspective.
 
 ## Solution
 
-The solution to the problem, from the user's perspective.
+The solution from the owner's perspective.
 
 ## User Stories
 
-A LONG, numbered list of user stories. Each user story should be in the format of:
+One story per actor and outcome in the scope:
 
 1. As an <actor>, I want a <feature>, so that <benefit>
 
-<user-story-example>
-1. As a mobile bank customer, I want to see balance on my accounts, so that I can make better informed decisions about my spending
-</user-story-example>
-
-This list of user stories should be extremely extensive and cover all aspects of the feature.
+Cover every actor and every outcome in the scope. A story that cannot be tested
+is not a story; move it to Out of Scope. Do not write a story the spec does not
+cover. Why: the ticket graph is cut from these stories, so a missing story is a
+missing ticket and an invented story is unapproved work.
 
 ## Implementation Decisions
 
-A list of implementation decisions that were made. This can include:
+The decisions already made:
 
-- The modules that will be built/modified
-- The interfaces of those modules that will be modified
-- Technical clarifications from the developer
-- Architectural decisions
-- Schema changes
-- API contracts
-- Specific interactions
+- the modules to build or modify
+- the interfaces that change
+- the technical clarifications from the owner
+- the architectural decisions
+- the schema changes
+- the API contracts
+- the specific interactions
 
-Do NOT include specific file paths or code snippets. They may end up being outdated very quickly.
-
-Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it within the relevant decision and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
+Do not include specific file paths or code snippets; they go stale. Exception:
+when a prototype produced a snippet that encodes a decision more precisely than
+prose can (a state machine, a reducer, a schema, a type shape), inline the
+decision-rich part and note that it came from a prototype. Trim it to the
+decision, not a working demo.
 
 ## Testing Decisions
 
-A list of testing decisions that were made. Include:
-
-- A description of what makes a good test (only test external behavior, not implementation details)
-- Which modules will be tested
-- Prior art for the tests (i.e. similar types of tests in the codebase)
+- what makes a good test: external behavior, not implementation details
+- which modules are tested
+- the prior art for these tests in the codebase
 
 ## Out of Scope
 
-A description of the things that are out of scope for this spec.
+Everything this spec does not cover, with the reason. Move any user story here
+that is real but not in this scope. Why: the ticket graph must stop at the
+scope, and an unlisted out-of-scope item comes back as a surprise ticket.
 
 ## Further Notes
 
-Any further notes about the feature.
+Anything else the implementer needs.
+```
 
-</spec-template>
+## Check before publishing
+
+- Every problem in the Problem Statement has a solution.
+- Every in-scope actor and outcome has a story.
+- Every story has an acceptance the tests can check.
+- Every testing decision names a seam the owner approved.
+- No file paths, no code snippets, except a prototype decision.
+- Every rejected option is in Out of Scope or in the mission's Rejected options
+  with its reason. Why: a rejected option that is only in chat comes back in the
+  tickets.
+
+Publish the spec, then create the tickets with `to-tickets`. The owner approves
+the spec at the Spec gate before the tickets are cut. Why: a ticket graph cut
+from an unapproved spec multiplies the unapproved decision.

@@ -9,12 +9,27 @@ metadata:
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
+## The authorizing gate
+
+Before writing the body, read the mission document and the owner's words.
+
+- If the gate is approved, quote the owner's exact words in the Why section and
+  name the decision those words answered. A quote is a log, not proof; the
+  owner's merge is the approval.
+- If the gate is pending, open the PR as a draft and say it is a proposal, not a
+  decision. Do not write "approved" anywhere.
+- If the scope is a rule plus a file pattern, the body names the rule and the
+  pattern, not a per-file list.
+
+Why: the prior PR looked approved because the body said so. The body cannot grant
+the gate; it can only make the gate visible to the owner.
+
 Use this template for writing the PR body:
 
 ```markdown
 ## Why
 
-<the problem, the route taken, and the alternative rejected>
+<the problem, the route taken, and the alternative rejected. State the authorizing gate and the owner's exact words, or say the gate is pending and this is a proposal.>
 
 ## Summary
 
@@ -42,13 +57,15 @@ Use this template for writing the PR body:
 
 ## Sections
 
-Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md`.
+Skip all preambles and keep prose brief. Use the owner's domain language from `GLOSSARY.md`.
 
 ### Why
 
-State the problem in the user's terms, the route taken, and the alternative
+State the problem in the owner's terms, the route taken, and the alternative
 rejected. When there was no real alternative, write `no alternative: <reason>`
-in one clause. Link the originating issue or mission document.
+in one clause. Link the originating issue or mission document. State the
+authorizing gate and the owner's exact words, or say the gate is pending and the
+PR is a proposal.
 
 ### Summary
 
@@ -154,7 +171,7 @@ For a state or control-flow change:
 +  invalidate cache
 ```
 
-- Show the whole block when most of it is new, when omitted context would hide ownership or order, or when the user needs a copyable target shape:
+- Show the whole block when most of it is new, when omitted context would hide ownership or order, or when the owner needs a copyable target shape:
 
 ```ts
 function expandSkill(command: string): string {
@@ -165,9 +182,9 @@ function expandSkill(command: string): string {
 
 #### Guidance
 
-Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
+Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the owner's current question or the options to resolve the current discussion point.
 
-You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user.
+You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the owner.
 
 ### Evidence
 
@@ -187,3 +204,17 @@ concrete.
 Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
 
 The blast radius is the potential impact or scope of the changes introduced by this PR. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
+
+State the gate risk in the merge danger. If the gate is pending, the merge is a
+decision, not a review. If the gate is approved, the merge is the second
+approval. Why: the owner reads the merge danger to decide, and a hidden pending
+gate turns a review into an unapproved build.
+
+## Handback
+
+Report the PR URL, the check state, what changed, what it unlocks, and the merge
+danger. The head SHA stays in the PR and the handoff log. Why: the SHA is for the
+machine; the owner's decision is the merge.
+
+Use `Closes <issue>` in the body when the PR completes the issue. Use `Refs
+<issue>` when the issue stays open.

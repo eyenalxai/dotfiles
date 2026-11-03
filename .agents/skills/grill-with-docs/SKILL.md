@@ -4,4 +4,4 @@ description: A relentless interview to sharpen a plan or design, which also crea
 disable-model-invocation: true
 ---
 
-Call the Skill tool twice, for "grilling" and "domain-modeling".
+Call the Skill tool twice, for `grilling` and `domain-modeling`. Why: `grilling` owns the interview and `domain-modeling` owns the glossary and ADRs; loading both keeps the questions and the written model in one pass. Use this in a repo; use `grill-me` when there is no repo.

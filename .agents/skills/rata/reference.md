@@ -13,9 +13,8 @@
 - The default team and project come from the repository config, written by
   `rata link` and removed by `rata unlink`. List commands default to the linked
   team; without a link they fail and ask for `--team` or `rata link`.
-- Exit code 0 on success, 1 on failure. With `--json`, a failure writes one JSON
-  object to stderr. A bulk write reports its results on stdout and exits 1 when
-  any result failed.
+- Exit code 0 on success; a failure exits with the code of its class, from 1 to 6. With `--json`, a failure writes one JSON object to stderr. A bulk write
+  reports its results on stdout and exits with the first failed result's code.
 
 ## Global flags and errors
 
@@ -24,9 +23,9 @@ rata --json issue list
 rata issue list --json --fields identifier,title,state.name
 ```
 
-With `--json`, a failure writes one object to stderr and exits 1. A bulk write
-is the exception: it reports one result per issue on stdout and exits 1 when any
-result failed.
+With `--json`, a failure writes one object to stderr and exits with the code of
+its class. A bulk write is the exception: it reports one result per issue on
+stdout and exits with the first failed result's code.
 
 ```json
 {
@@ -44,12 +43,13 @@ result failed.
 prints `error: <message>` and, when present, `hint: <hint>` on stderr.
 
 `--fields` applies to the command's own object: the `issue` of `issue show`,
-the `section` of `issue section get`, each item of `issues`, `teams`, `labels`
-or `projects`, the `team` of `team show`, the `defaults` object of
-`config show`, or the whole `status` document. The wrapper key stays. It is
-valid on `status`, `issue show`, `issue section get`, `issue list`, `search`,
-`team show`, `team list`, `label list`, `project list` and `config show`.
-Other commands reject it with `validation`.
+the whole object of `issue status`, the `section` of `issue section get`, each
+item of `issues`, `teams`, `labels` or `projects`, the `team` of `team show`,
+the `defaults` object of `config show`, or the whole `status` document. The
+wrapper key stays. It is valid on `status`, `issue show`, `issue status`,
+`issue section get`, `issue list`, `search`, `team show`, `team list`,
+`label list`, `project list` and `config show`. Other commands reject it with
+`validation`.
 
 `NO_COLOR=1` drops color from help and errors. Rata's own output is plain text.
 
@@ -97,29 +97,30 @@ recorded `workspace`.
 
 ## Issues
 
-| Command                                              | Description                                                                   |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `rata issue list [flags]`                            | List issues. One page per call.                                               |
-| `rata next --parent <ref>`                           | Show the next ready child of a parent: priority, then oldest `createdAt`.     |
-| `rata why <ref>`                                     | Show one level of the blocking graph: `blocked` and `blockedBy`.              |
-| `rata search <text> [flags]`                         | Full-text search. Keeps relevance ranking; paging is best effort.             |
-| `rata issue show <ref> [--comments] [--no-comments]` | Show one issue. `view` aliases `show`. `--summary` reads headers only.        |
-| `rata issue create --title <title> [flags]`          | Create an issue.                                                              |
-| `rata issue update <ref> [flags]`                    | Update an issue.                                                              |
-| `rata issue section get <ref> <heading>`             | Print one section of the body. `--with-heading` adds the heading line.        |
-| `rata issue section append <ref> <heading>`          | Append to a section, or create it at the end. `--level` sets a new heading.   |
-| `rata issue section replace <ref> <heading>`         | Replace a section and keep its heading.                                       |
-| `rata issue comment create <ref> [--body <text>]`    | Comment on an issue. `--dedupe-key` makes a retry idempotent.                 |
-| `rata issue comment update <comment-id>`             | Replace one comment body. `--dry-run` prints the diff.                        |
-| `rata issue comment delete <comment-id> [--yes]`     | Move one comment to the trash. JSON mode needs `--yes`.                       |
-| `rata issue label add [<ref>] <label...>`            | Add labels. `--parent` targets every child; then every positional is a label. |
-| `rata issue label remove [<ref>] <label...>`         | Remove labels. The same `--parent` rule.                                      |
-| `rata issue assign [<ref>] --assignee <value>`       | Assign an issue, or every child with `--parent`. `me`, a user id, or `none`.  |
-| `rata issue unassign <ref>`                          | Clear the assignee.                                                           |
-| `rata issue close <ref> [--comment <text>]`          | Close with an optional comment. `--comment-file -` reads stdin.               |
-| `rata issue reopen <ref>`                            | Reopen.                                                                       |
-| `rata issue link <ref> [flags]`                      | Create relations.                                                             |
-| `rata issue unlink <ref> [flags]`                    | Remove relations.                                                             |
+| Command                                               | Description                                                                   |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `rata issue list [flags]`                             | List issues. One page per call.                                               |
+| `rata next --parent <ref>`                            | Show the next ready child of a parent: priority, then oldest `createdAt`.     |
+| `rata why <ref>`                                      | Show one level of the blocking graph: `blocked` and `blockedBy`.              |
+| `rata search <text> [flags]`                          | Full-text search. Keeps relevance ranking; paging is best effort.             |
+| `rata issue show <ref> [--comments] [--no-comments]`  | Show one issue. `view` aliases `show`. `--summary` reads headers only.        |
+| `rata issue status <ref> [--json] [--fields <paths>]` | Read the summary, blockers, GitHub PRs and next unblocked child in one call.  |
+| `rata issue create --title <title> [flags]`           | Create an issue.                                                              |
+| `rata issue update <ref> [flags]`                     | Update an issue.                                                              |
+| `rata issue section get <ref> <heading>`              | Print one section of the body. `--with-heading` adds the heading line.        |
+| `rata issue section append <ref> <heading>`           | Append to a section, or create it at the end. `--level` sets a new heading.   |
+| `rata issue section replace <ref> <heading>`          | Replace a section and keep its heading.                                       |
+| `rata issue comment create <ref> [--body <text>]`     | Comment on an issue. `--dedupe-key` makes a retry idempotent.                 |
+| `rata issue comment update <comment-id>`              | Replace one comment body. `--dry-run` prints the diff.                        |
+| `rata issue comment delete <comment-id> [--yes]`      | Move one comment to the trash. JSON mode needs `--yes`.                       |
+| `rata issue label add [<ref>] <label...>`             | Add labels. `--parent` targets every child; then every positional is a label. |
+| `rata issue label remove [<ref>] <label...>`          | Remove labels. The same `--parent` rule.                                      |
+| `rata issue assign [<ref>] --assignee <value>`        | Assign an issue, or every child with `--parent`. `me`, a user id, or `none`.  |
+| `rata issue unassign <ref>`                           | Clear the assignee.                                                           |
+| `rata issue close <ref> [--comment <text>]`           | Close with an optional comment. `--comment-file -` reads stdin.               |
+| `rata issue reopen <ref>`                             | Reopen.                                                                       |
+| `rata issue link <ref> [flags]`                       | Create relations.                                                             |
+| `rata issue unlink <ref> [flags]`                     | Remove relations.                                                             |
 
 ### `issue show` flags
 

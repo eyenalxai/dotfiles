@@ -5,3 +5,5 @@ disable-model-invocation: true
 ---
 
 Wait, I don't understand where you've got to here. Re-pitch that: give me a little bit of context, talk in ASD-STE100 Simplified Technical English, and use the ubiquitous language from `GLOSSARY.md` (follow `GLOSSARY-MAP.md` to the right one if the repo has more than one).
+
+Why this shape: the previous message assumed context the owner does not have. The re-pitch starts from the missing context, uses plain English, and uses the repo's words so the next answer lands.

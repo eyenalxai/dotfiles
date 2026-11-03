@@ -7,6 +7,10 @@ description: Test-driven development. Use when the user wants to build features 
 
 TDD is the red → green loop. This skill is the reference that makes that loop produce tests worth keeping: what a good test is, where tests go, the anti-patterns, and the rules of the loop. Every section applies on every cycle: consult them before and during the loop, not after.
 
+## When to use
+
+Use TDD when the change has a pre-agreed seam and the behavior is testable through it. If no seam is agreed, stop and agree one with `codebase-design`; a test at an unconfirmed seam tests the wrong boundary. If the change is markdown or prose, there is no code seam; use the review check instead. Why: the red-green loop is only as good as the seam it runs at, and a wrong seam makes a green test meaningless.
+
 When exploring the codebase, read `GLOSSARY.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
 
 ## What a good test is
@@ -33,6 +37,6 @@ When the shape of that interface is itself in question (how deep the module is, 
 
 ## Rules of the loop
 
-- **Red before green.** Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features.
-- **One slice at a time.** One seam, one test, one minimal implementation per cycle.
-- **Refactoring is not part of the loop.** It belongs to the review stage (see the `code-review` skill), not the red → green implementation cycle.
+- **Red before green.** Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features. Why: a test that passes before the code is not testing the change.
+- **One slice at a time.** One seam, one test, one minimal implementation per cycle. Why: a batch of tests verifies imagined behavior, and the tests go blind to the real change.
+- **Refactoring is not part of the loop.** It belongs to the review stage (see the `code-review` skill), not the red → green implementation cycle. Why: a refactor and a behavior change in one step hides which one broke the test.

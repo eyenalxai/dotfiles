@@ -7,6 +7,10 @@ description: Build and sharpen a project's domain model. Use when discussing cod
 
 Actively build and sharpen the project's domain model as you design. This is the *active* discipline: challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise. (Merely *reading* `GLOSSARY.md` for vocabulary is not this skill: that's a one-line habit any skill can do. This skill is for when you're changing the model, not just consuming it.)
 
+## Decide what to write
+
+Ask three questions. Is the term fuzzy or in conflict with the glossary? If yes, sharpen it and write it in `GLOSSARY.md`. Is the decision hard to reverse, surprising without context, and a real tradeoff? If yes, write an ADR. Otherwise, write nothing. Why: a glossary of guesses and ADRs for reversible choices add noise, and the next session cannot tell which entries are settled.
+
 ## File structure
 
 Most repos have a single context:

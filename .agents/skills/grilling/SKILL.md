@@ -1,30 +1,116 @@
 ---
 name: grilling
-description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
+description: Grill the owner relentlessly about a plan, decision, or idea. Use when the owner wants to stress-test their thinking, or uses any 'grill' trigger phrases.
 ---
 
-Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
+# Grilling
 
-Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.
+Interview the owner relentlessly until you reach a shared understanding. Map
+this as a **design tree**: every decision branches into the decisions that hang
+off it.
 
-Format a round like so:
+## Build the fact base before the first round
 
+Before the first round on a product or UI question, produce two inventories:
+
+1. **Surface inventory**: every existing screen, button, route, command, file,
+   or API that could be the thing the owner is asking about. Search the code,
+   the mission document, the issue, the ADRs, and the earlier rounds. Name the
+   path or URL for each.
+2. **Prior-decisions inventory**: every decision the owner already made in this
+   mission or in the referenced session, with the owner's words as the source.
+   Include rejected options and the reason.
+
+Why: a question about a surface that already exists wastes the owner's time and
+signals the agent did not read the code. The prior analytics session asked where
+to put an export when the existing export button was already on the table page.
+
+If a fact is in the environment, find it yourself. Dispatch a sub-agent when the
+search is large. Do not ask the owner for a fact you can look up. The owner's
+decisions are the only thing you put to them.
+
+## Work the tree in rounds
+
+The **frontier** is every decision whose prerequisites are already settled: the
+questions you can ask now without guessing at answers you have not heard yet.
+Ask the whole frontier in one round: number each question and give your
+recommended answer. Then wait for the owner's answers before the next round. Why:
+one question at a time hides the shape of the decision and lets the round shrink
+without anyone noticing.
+
+A question whose answer depends on another question still open in this round
+belongs to a later round, not this one.
+
+## The round ledger
+
+Before the questions, write the ledger:
+
+```text
+Settled:
+- <decision>: <owner's words or source>
+Rejected:
+- <option>: <reason>
+Open:
+- Q1, Q2, ...
 ```
-❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+
+Every round carries the ledger. Why: the ledger is the memory of the tree. It
+shows what is already decided, what is out, and what is left, so the agent does
+not re-open a settled decision or re-offer a rejected option.
+
+When a round shrinks, name every question that left and the owner answer that
+removed it. Why: a round that silently drops questions looks complete while the
+frontier is still open. The prior session collapsed six questions into one and
+did not say which five left.
+
+## Format a round
+
+```text
+❓ **Q1** - **<question title>**: <question body, including the options>
+
+Why this question: <the decision it settles and what breaks without it>
+Why I cannot answer it myself: <the missing fact, or why the choice is the owner's>
 
 ➡️ <your recommended answer>
 
 ---
 
-❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+❓ **Q2** - **<question title>**: <question body, including the options>
+
+Why this question: <the decision it settles and what breaks without it>
+Why I cannot answer it myself: <the missing fact, or why the choice is the owner's>
 
 ➡️ <your recommended answer>
 ```
 
-Word each question so "yes" accepts your recommended answer.
+Word each question so "yes" accepts your recommended answer. Every question
+carries both why lines. If the answer is a fact you can find, find it. If it is
+the owner's decision, say why it cannot be answered from the environment.
 
-Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
+## Rules for the questions
 
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
+- Never offer an option the owner already rejected. If it must appear, put it in
+  the ledger as rejected with the reason. Why: re-offering a rejected option
+  tells the owner their answer did not land.
+- Never ask the owner to find a surface that already exists. Put the surface in
+  the question. Why: that is the agent's search, not the owner's decision.
+- Never ask a question whose answer is in the code, the mission, the issue, or
+  the ADRs. Find it and put it in the fact base. Why: a question with a findable
+  answer is a reading failure dressed as a decision.
+- Never classify an owner decision as an engineering choice. If the owner said
+  it, it is settled. If the agent chose it, label it `engineering` in the ledger.
+  Why: relabelling an owner decision as engineering removes it from the gate.
+- If the owner says they do not care, do not turn that into a decision. Record
+  `owner: no preference` and choose the safe default with the reason. Why: "I do
+  not care" is permission to decide, not a decision the agent can quote later.
 
-The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
+## The end
+
+The session is done when the frontier is empty: every branch of the design tree
+visited, nothing left silently assumed. Do not act on it until the owner
+confirms you have reached a shared understanding. Why: the gate is the owner's
+words, and a full ledger is not a substitute for their confirmation.
+
+The confirmation is the owner's words in context. If the words are ambiguous,
+ask. Do not demand a template sentence; the gate is the decision, not a
+password.
