@@ -57,6 +57,11 @@
   },
   "transcription_recents": [
     {
+      "model": "parakeet_v3",
+      "language": "en",
+      "recognition_hints": ""
+    },
+    {
       "model": "parakeet_unified_en",
       "language": "en",
       "recognition_hints": ""
@@ -160,6 +165,20 @@
   "updates": {
     "channel": null
   },
+  "vocabulary": [
+    {
+      "term": "monorepo",
+      "sounds_like": [
+        "Monoriapo"
+      ]
+    },
+    {
+      "term": "real",
+      "sounds_like": [
+        "Radio"
+      ]
+    }
+  ],
   "vocabulary_boost": "normal",
   "migrations": [
     "streaming-english-model",
