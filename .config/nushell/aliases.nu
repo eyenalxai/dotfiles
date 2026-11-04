@@ -21,9 +21,39 @@ alias psql = psql --pset=pager=off
 alias json-schema = jq --argjson nullable true 'include "schema"; schema'
 
 # System control
-alias shutdown = hyprshutdown -t 'Shutting down...' --post-cmd 'shutdown -P 0'
-alias reboot = hyprshutdown -t 'Restarting...' --post-cmd 'reboot'
-alias logout = hyprshutdown
+# Inside Hyprland, go through hyprshutdown so apps close and the compositor
+# exits cleanly first. From a TTY (or SSH), hyprshutdown refuses to run, so
+# talk to systemd directly.
+def in-hyprland [] {
+    let signature = ($env.HYPRLAND_INSTANCE_SIGNATURE? | default "")
+    if ($signature | is-empty) { return false }
+    if (which hyprshutdown | is-empty) { return false }
+    (do { ^hyprctl version } | complete).exit_code == 0
+}
+
+def shutdown [] {
+    if (in-hyprland) {
+        ^hyprshutdown -t 'Shutting down...' --post-cmd 'shutdown -P 0'
+    } else {
+        ^shutdown -P 0
+    }
+}
+
+def reboot [] {
+    if (in-hyprland) {
+        ^hyprshutdown -t 'Restarting...' --post-cmd 'reboot'
+    } else {
+        ^reboot
+    }
+}
+
+def logout [] {
+    if (in-hyprland) {
+        ^hyprshutdown
+    } else {
+        exit
+    }
+}
 
 # Reboot into Windows (one-shot EFI boot override)
 def windows-reboot [] {
@@ -34,7 +64,11 @@ def windows-reboot [] {
         return
     }
     ^sudo efibootmgr --bootnext $win.num
-    hyprshutdown -t 'Restarting into Windows...' --post-cmd 'reboot'
+    if (in-hyprland) {
+        ^hyprshutdown -t 'Restarting into Windows...' --post-cmd 'reboot'
+    } else {
+        ^reboot
+    }
 }
 
 # Arch / Pacman / AUR helpers
