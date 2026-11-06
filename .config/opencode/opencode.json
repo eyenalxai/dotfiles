@@ -4,13 +4,18 @@
     "subagent_depth": 2
   },
   "mcp": {
-    "railway": {
-      "command": [
-        "railway",
-        "mcp"
-      ],
-      "enabled": true,
-      "type": "local"
+    "servers": {
+      "railway": {
+        "command": [
+          "railway",
+          "mcp"
+        ],
+        "type": "local"
+      },
+      "reui": {
+        "type": "remote",
+        "url": "https://mcp.reui.io/api/mcp"
+      }
     }
   },
   "model": "opencode-go/deepseek-v4.1-flash",
