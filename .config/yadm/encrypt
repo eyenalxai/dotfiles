@@ -46,3 +46,6 @@
 .config/opencode/skills/emil-unslop-design
 .config/opencode/skills/emil-unslop-writing
 .config/opencode/skills/emil-writing-skills
+
+# ReUI registry skill (keep encrypted, never track in plaintext)
+.agents/skills/reui
