@@ -42,24 +42,25 @@ session will focus on and tailor the document accordingly.
 The document is the summary; the prompt is the deliverable. End the chat reply
 with one fenced `text` block the owner can copy with one click. That is the only
 copy of the prompt. Never put the delivered prompt in an issue, a PR, a commit,
-the repo, or the mission document. The mission document gets the log line, not
-the prompt. Why: a prompt pasted into a durable record becomes state the owner
-did not approve, and the next agent treats the record as authority.
+the repo, or the mission document. The record gets no log line and no prompt.
+Why: a prompt pasted into a durable record becomes state the owner did not
+approve, and the next agent treats the record as authority.
 
 ## The prompt reports the gate, it never grants it
 
-The prompt may say that a gate was approved, pending, or not used. It may quote
-the owner's words. It may not turn those words into a new approval. The next
+The prompt may say that a gate was approved, pending, or not used. It reports
+the decision, never the words, never the user, and never the name of the person
+who decided. It may not turn that decision into a new approval. The next
 session presents the gate and waits for the owner's words, unless the owner
 explicitly says the earlier approval carries. Why: the prompt is written by the
 agent; if a prompt can grant a gate, the agent can approve its own work.
 
 An approval does not survive a handoff. There is no exception. A fresh session
 is a fresh conversation, and the owner's words in the old conversation are not
-the owner's words in the new one. Quote the old words as context, mark the gate
-`pending` in the new session, and ask. Why: a prompt that says the earlier
-approval carries is still the agent's words, and the owner did not speak them in
-the new conversation.
+the owner's words in the new one. Mark the gate `pending` in the new session,
+state the decision to be made, and ask. Do not carry the old approval or the old
+words. Why: a prompt that says the earlier approval carries is still the agent's
+words, and the owner did not speak them in the new conversation.
 
 If the gate is pending, say `Open gate: pending` and name the decision. Do not
 write "the scope is approved" or "decide this first." The first is a false
@@ -69,15 +70,17 @@ record; the second is the agent delegating the owner's decision to itself.
 
 The prompt is self-contained:
 
-- the mission issue title and team, not its id or URL. The prompt carries the
-  state, so the next session can start without opening the issue;
+- the work item issue title and team, not its id or URL, or that no record
+  exists yet and the next session must not create one before the gate;
 - the goal, why the next step is next, and what it unlocks;
 - the mission flow, the decisions that constrain the work, and the session
   plan;
 - the fixed point (the merge commit), the next ready work in plain words, and
   the blocking PRs, plus the blocking edges after it;
 - the current gate, the method that reached it, and whether it is approved or
-  pending;
+  pending, stated neutrally and never with words or a name;
+- the current state only, with no prior attempts, sessions, issues, or versions;
+- the grill ledger and the open questions when no record exists yet;
 - the approved rule changes and the file scope, at the level the change needs: a
   list for a small change, a pattern plus exceptions for a large one;
 - the skills to load first, in order (the mission, the next phase, or `router`
@@ -93,7 +96,7 @@ The prompt is self-contained:
   the next ready work in plain words. The owner reviews and merges.
 
 The prompt is the one place that carries the full mission state. It names the
-mission issue by title and team, not by id or URL. The reply around it does not
+work item issue by title and team, not by id or URL. The reply around it does not
 repeat the state, and it does not print a ticket id, mission id, or issue key in
 the prose.
 
@@ -107,14 +110,20 @@ example `wayfinder`, then `grilling` and `domain-modeling`, or `implement`, then
 - A rejected option, unless the prompt names it as rejected with the reason and
   says `Do not re-offer`. Why: a bare rejected option reads as an open choice,
   and the next session re-offers it.
-- A constraint with no source. Label it `proposed` when it is not in the mission
-  or the owner's words. Why: a proposal that looks like a decision closes a
-  question the owner never answered.
+- A constraint with no source. Label it `proposed` when it is not in the record
+  or the decision. Why: a proposal that looks like a decision closes a question
+  that was never answered.
 - A stale reference without a mark. Write `stale: <what changed>` when the path
   or URL no longer holds. Why: the next session spends its first round
   discovering the reference is gone.
 - An approval the owner did not give. Why: that is the failure this contract
   exists to prevent.
+- A direct quote, a mention of the user, or the name of the person who decided.
+  State the decision in neutral language. Why: the prompt is read as authority,
+  and a name or a quote ties that authority to one message.
+- History of the issue or mission: prior attempts, sessions, issues, or versions.
+  State the current state only. Why: history invites the next session to reopen
+  a settled decision.
 
 ## Check before delivering
 
@@ -129,8 +138,10 @@ Read the prompt as the next session would.
    it.
 5. Does it name a per-file approval list for a large change? If yes, replace it
    with the rule and the file scope.
-6. Does it say `head SHA` in the human report? If yes, move the SHA to the PR
-   and the log; the human report carries the decision.
+6. Does it say `head SHA` in the human report? If yes, move the SHA to the PR;
+   the human report carries the decision.
+7. Does it quote, mention the user, name who decided, or carry history? If yes,
+   rewrite it as neutral current state.
 
 This is a reading, not a program. There is no build command for a prompt. Why:
 the gate is the owner's words, and a program can only check the agent's text

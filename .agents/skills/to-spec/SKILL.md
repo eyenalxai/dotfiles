@@ -10,6 +10,11 @@ Take the current conversation and the codebase understanding and produce a spec.
 Do not interview the owner; synthesize what you already know. Why: the grill
 already asked the questions, and a second interview re-opens settled decisions.
 
+Write the spec in neutral language. Never reproduce words directly, never
+mention the user, and never name who decided. The spec is current state only: no
+prior attempts, sessions, issues, or versions. Why: the spec records what will
+be built, not who said it or how the decision was reached.
+
 The issue tracker and triage label vocabulary should have been provided to you.
 If not, ask the owner for the tracker.
 

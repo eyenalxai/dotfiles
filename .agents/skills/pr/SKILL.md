@@ -11,25 +11,27 @@ metadata:
 
 ## The authorizing gate
 
-Before writing the body, read the mission document and the owner's words.
+Before writing the body, read the mission document and the gate decision.
 
-- If the gate is approved, quote the owner's exact words in the Why section and
-  name the decision those words answered. A quote is a log, not proof; the
-  owner's merge is the approval.
+- If the gate is approved, state the decision in neutral, general language.
+  Never reproduce the words, mention the user, or name who decided. The merge is
+  the approval.
 - If the gate is pending, open the PR as a draft and say it is a proposal, not a
   decision. Do not write "approved" anywhere.
 - If the scope is a rule plus a file pattern, the body names the rule and the
   pattern, not a per-file list.
+- State the current problem, the route, and the alternative rejected. Do not
+  carry history of the issue or mission.
 
 Why: the prior PR looked approved because the body said so. The body cannot grant
-the gate; it can only make the gate visible to the owner.
+the gate; it can only make the decision visible.
 
 Use this template for writing the PR body:
 
 ```markdown
 ## Why
 
-<the problem, the route taken, and the alternative rejected. State the authorizing gate and the owner's exact words, or say the gate is pending and this is a proposal.>
+<the problem, the route taken, and the alternative rejected. State the authorizing gate and the decision in neutral language, or say the gate is pending and this is a proposal. Never quote or mention the user, and never name who decided. Do not add history.>
 
 ## Summary
 
@@ -57,15 +59,16 @@ Use this template for writing the PR body:
 
 ## Sections
 
-Skip all preambles and keep prose brief. Use the owner's domain language from `GLOSSARY.md`.
+Skip all preambles and keep prose brief. Use the project's domain language from `GLOSSARY.md`.
 
 ### Why
 
-State the problem in the owner's terms, the route taken, and the alternative
+State the problem in plain terms, the route taken, and the alternative
 rejected. When there was no real alternative, write `no alternative: <reason>`
 in one clause. Link the originating issue or mission document. State the
-authorizing gate and the owner's exact words, or say the gate is pending and the
-PR is a proposal.
+authorizing gate and the decision in neutral language, or say the gate is pending
+and the PR is a proposal. Never quote or mention the user, and never name who
+decided. Do not add history.
 
 ### Summary
 
@@ -213,8 +216,8 @@ gate turns a review into an unapproved build.
 ## Handback
 
 Report the PR URL, the check state, what changed, what it unlocks, and the merge
-danger. The head SHA stays in the PR and the handoff log. Why: the SHA is for the
-machine; the owner's decision is the merge.
+danger. The head SHA stays in the PR. Why: the SHA is for the machine; the
+owner's decision is the merge.
 
 Use `Closes <issue>` in the body when the PR completes the issue. Use `Refs
 <issue>` when the issue stays open.

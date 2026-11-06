@@ -1,14 +1,27 @@
-# Mission: <title>
+<!--
+This is the work item issue, not a separate mission issue. Create or claim it
+after the scope gate.
+
+Neutral language: never reproduce words directly, never mention the user, never
+name who decided, and never add history. State decisions in neutral, general
+language.
+
+Update cadence: write at the gate, at a handoff, on a scope change, or when a
+false record would mislead. Do not comment after each decision, session, or PR
+state. The PR carries its own status.
+-->
+
+# <title>
 
 Status: active
 Scope: fog | feature | change | bug | trivial
 Phase: classify
 Goal: <one sentence>
-Exit: PR for owner review and merge
+Exit: PR for review and merge
 
 ## Problem
 
-<the failure or the need in the owner's terms. Link the source. Do not restate the whole report.>
+<the failure or the need in plain terms. Link the source. Do not restate the whole report. Do not add history.>
 
 ## Flow
 
@@ -19,35 +32,35 @@ Exit: PR for owner review and merge
 - [ ] tickets: <urls>
 - [ ] implement <ticket>: <PR url>
 - [ ] code-review <PR>: <findings>
-- [ ] owner merge <PR>: <commit>
+- [ ] merge <PR>: <commit>
 
 ## Gates
 
 The gates depend on the scope. Use `not used` for a gate the scope does not have.
 Never use `skipped`.
 
-| Gate | Method | Document | Status | Approved by | Date | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| Scope and understanding | <grill method> | <notes or map> | pending | | | |
-| Spec | owner review | <spec or issue> | <pending or not used> | | | |
-| Tickets | owner review | <tickets or issue> | <pending or not used> | | | |
-| PR | code-review | <PR> | pending | | | |
+| Gate | Method | Document | Status | Date |
+| --- | --- | --- | --- | --- |
+| Scope and understanding | <grill method> | <notes or map> | pending | |
+| Spec | decision | <spec or issue> | <pending or not used> | |
+| Tickets | decision | <tickets or issue> | <pending or not used> | |
+| PR | code-review | <PR> | pending | |
 
 `Status` is `pending`, `approved`, or `not used`. Set the spec and ticket gates
-to `pending` for a feature and `not used` for every other scope. `Evidence` holds
-the owner's exact words and the decision they answered. A quote is a log, not
-proof; the owner's merge is the approval. Why: the agent writes the record, so a
-record can only check the agent against itself.
+to `pending` for a feature and `not used` for every other scope. Record the date
+of the decision. Never reproduce the words or name who decided. Why: the merge
+is the approval, and the agent writes the record, so a record can only check the
+agent against itself.
 
 ## Session plan
 
 | Session | Work | Why | Exit |
 | --- | --- | --- | --- |
-| 1 | classify, grill, choose the path, present the gate | the scope and the frontier decide the path | the owner's words at the gate |
-| 2 | implement the approved rule changes and file scope, review, PR | the gate is approved | PR for owner review and merge |
+| 1 | classify, grill, choose the path, present the gate | the scope and the frontier decide the path | the gate decision |
+| 2 | implement the approved rule changes and file scope, review, PR | the gate is approved | PR for review and merge |
 
-Replan when the scope changes. The owner sees the whole flow and where the
-handoffs fall before the work starts.
+Replan when the scope changes. The whole flow and the handoff points are visible
+before the work starts. Do not narrate the old scope.
 
 ## References
 
@@ -59,24 +72,22 @@ changed>`. Why: a missing reference costs the next session its first round.
 
 ## Decisions
 
-Record every decision with its source and its status.
+Record the settled decisions only. The grill ledger and open questions stay in
+the conversation until the gate. Why: a record written after every answer is a
+diary, and it buries the state the next session needs.
 
-- <decision>. Why: <why>. Alternative: <rejected alternative, or "no alternative: <reason>">. Decided by: owner | engineering | pending. Status: settled | proposed. Record: <ADR or issue>.
+- <decision>. Why: <why>. Alternative: <rejected alternative, or "no alternative: <reason>">. Status: settled. Record: <ADR or issue>.
 
-A decision the owner made is `owner` and is settled. A decision the agent made
-inside the approved scope is `engineering`. A decision the owner has not answered
-is `pending` and keeps the gate open. Why: the prior record labelled agent
-choices as owner decisions, and the gate looked approved.
+State the decision, the reason, and the rejected alternative. Do not name who
+decided. A decision without a clear answer is not recorded; it stays in the
+conversation and keeps the gate open. Do not add the history of how the decision
+was reached.
 
 ## Rejected options
 
 - <option>: <reason>. Do not re-offer.
 
 Why: a rejected option that is not written down comes back in the next round.
-
-## Open questions
-
-- <question>: <the decision it settles>. Recommendation: <answer>. Status: open | answered.
 
 ## Outputs
 
@@ -86,7 +97,7 @@ Why: a rejected option that is not written down comes back in the next round.
 
 ## Follow-ups
 
-- <next mission or none. Why: the owner asked for it, or the work is out of scope.>
+- <next mission or none. Why: it was requested, or the work is out of scope.>
 
 ## Next step
 
@@ -98,9 +109,5 @@ Why: a rejected option that is not written down comes back in the next round.
 - Command: <exact command>
 - Produce: <output>
 
-## Handoff log
-
-- <date and time>: <session>, <phase>, <gate>, <method>, PR <url>, head <sha>, prompt delivered in chat
-
-Never paste the prompt anywhere in this document. The prompt is delivered in
-chat.
+The prompt is delivered in chat and never pasted into this document. This
+record keeps no handoff log.

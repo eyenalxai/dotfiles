@@ -15,7 +15,7 @@ reference is ambiguous, ask.
 
 ## Check the gate before the first edit
 
-Read the mission document and the owner's words.
+Read the mission document and the gate decision.
 
 - If the gate is pending, stop and ask. Do not start with a "small" edit; a small
   edit is still a build.
@@ -64,7 +64,7 @@ shape and the ask-don't-invent rule. Outside a mission, ask when the why is
 missing and record the answer in the ticket.
 
 The handback report carries the PR URL, the check state, what changed, what it
-unlocks, and the merge danger. The head SHA stays in the PR and the handoff log.
+unlocks, and the merge danger. The head SHA stays in the PR.
 Why: a SHA is a machine identifier; the owner's decision is the merge.
 
 Commit your work to the current branch. Open one PR. The owner reviews and

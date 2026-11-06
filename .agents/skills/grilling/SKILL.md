@@ -18,8 +18,8 @@ Before the first round on a product or UI question, produce two inventories:
    the mission document, the issue, the ADRs, and the earlier rounds. Name the
    path or URL for each.
 2. **Prior-decisions inventory**: every decision the owner already made in this
-   mission or in the referenced session, with the owner's words as the source.
-   Include rejected options and the reason.
+   mission or in the referenced session, with the message or record that carries
+   it as the source. Include rejected options and the reason.
 
 Why: a question about a surface that already exists wastes the owner's time and
 signals the agent did not read the code. The prior analytics session asked where
@@ -47,12 +47,17 @@ Before the questions, write the ledger:
 
 ```text
 Settled:
-- <decision>: <owner's words or source>
+- <decision>: <source>
 Rejected:
 - <option>: <reason>
 Open:
 - Q1, Q2, ...
 ```
+
+The ledger lives in the conversation. Do not write it to the tracker before the
+gate. When the record is written, it carries the settled decisions, not the
+ledger. Why: the record is a snapshot of current state, not a transcript of the
+grill.
 
 Every round carries the ledger. Why: the ledger is the memory of the tree. It
 shows what is already decided, what is out, and what is left, so the agent does
@@ -102,7 +107,7 @@ the owner's decision, say why it cannot be answered from the environment.
   Why: relabelling an owner decision as engineering removes it from the gate.
 - If the owner says they do not care, do not turn that into a decision. Record
   `owner: no preference` and choose the safe default with the reason. Why: "I do
-  not care" is permission to decide, not a decision the agent can quote later.
+  not care" is permission to decide, not a decision the agent can record later.
 
 ## The end
 
@@ -111,6 +116,6 @@ visited, nothing left silently assumed. Do not act on it until the owner
 confirms you have reached a shared understanding. Why: the gate is the owner's
 words, and a full ledger is not a substitute for their confirmation.
 
-The confirmation is the owner's words in context. If the words are ambiguous,
-ask. Do not demand a template sentence; the gate is the decision, not a
-password.
+The confirmation is a clear decision in the conversation. If the decision is
+ambiguous, ask. Do not demand a template sentence; the gate is the decision, not
+a password. Do not reproduce the words or name who decided in any artifact.

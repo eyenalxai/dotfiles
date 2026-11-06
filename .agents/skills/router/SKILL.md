@@ -18,10 +18,11 @@ When the owner must act, end with one plain sentence: `Next step: <the action>`.
 Name the exact skill or command, the work or document, why it is next, and what
 it unlocks. Name the work in plain words, never by a ticket id or issue key.
 
-Inside a mission, the mission output contract owns the reply: answer first, no
-status block, and one plain Next step sentence when the owner must act. The
-mission document holds the state. Standalone, the Next step line carries the
-why and the unlock.
+Inside a mission, even before its record exists, the mission output contract
+owns the reply: answer first, no status block, and one plain Next step sentence
+when the owner must act. The mission document holds the state once it exists;
+before the gate, the conversation holds it. Standalone, the Next step line
+carries the why and the unlock.
 
 The next step is the action that unblocks the work now, not the phase after it.
 For a pending gate or an open blocking PR, use this table:
@@ -53,10 +54,12 @@ delivered prompt in an issue, a PR, a commit, the repo, or the mission document.
 classification questions. Read the state in this order before you name a step.
 The same check applies before you recommend any phase that starts new work.
 
-1. **Check for a mission.** If an active mission document exists, the next step
-   is `/mission continue`; the mission owns the phase, gate, and handoff
-   decision. The gate is the owner's words in the conversation; do not infer it
-   from a record. Stop here. The rest of this procedure is the standalone path.
+1. **Check for a mission.** If the conversation is in a mission, or an active
+   mission document exists, the next step is `/mission continue`; the mission
+   owns the phase, gate, and handoff decision. A mission can be active before
+   its record exists, and the record is not authority. The gate is the owner's
+   words in the conversation; do not infer it from a record. Stop here. The rest
+   of this procedure is the standalone path.
 2. **Read the standalone state.** Read the ticket graph, the current branch, and
    the latest PR. Use the configured tracker, not memory.
 3. **Check the blocking PRs.** Resolve each blocking ticket to its PR and read
@@ -70,7 +73,7 @@ The same check applies before you recommend any phase that starts new work.
    PR is open, the next step is that PR, not the next ticket: report each open
    PR's URL, check state, what changed, what it unlocks, and the merge danger,
    and say they must merge before the next ticket starts. The head SHA stays in
-   the PR and the handoff log. Use the table above for the branch. After a
+   the PR. Use the table above for the branch. After a
    merge, confirm the ticket is done, fetch `origin`, and branch from the merge
    commit.
 4. **Choose the session.** Continue here when the next step stays inside the
@@ -122,8 +125,8 @@ At a boundary, the options are continue, clear, handoff, subagent, and compact. 
 
 A ticket ends with a reviewable PR. The implementer opens one PR, runs
 `code-review`, fixes the findings, and reports the PR URL, check state, what
-changed, what it unlocks, and the merge danger. The head SHA stays in the PR
-and the handoff log. The reply names the next ready work in plain words. The
+changed, what it unlocks, and the merge danger. The head SHA stays in the PR.
+The reply names the next ready work in plain words. The
 owner reviews and merges. The next ticket starts only after that merge, unless
 the owner explicitly asks for a stacked PR. When the owner asks the agent to
 merge, use a merge commit.

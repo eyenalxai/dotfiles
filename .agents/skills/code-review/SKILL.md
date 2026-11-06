@@ -16,11 +16,13 @@ The issue tracker should have been provided to you. If not, ask the owner for th
 
 ### 0. Check the authorizing gate
 
-Read the mission document and the owner's words. If the gate is pending, say the
+Read the mission document and the gate decision. If the gate is pending, say the
 diff is a proposal and this review is not the PR gate. If the gate is approved,
-quote the owner's words. The review does not grant the gate; the owner's merge
-does. Why: the prior PR looked approved because the review ran, and the review
-cannot replace the owner's decision.
+state that the gate is approved. Never reproduce the words, mention the user, or
+name who decided. State the current finding only, with no history of the issue
+or mission. The review does not grant the gate; the merge does. Why: the prior
+PR looked approved because the review ran, and the review cannot replace the
+decision.
 
 ### 1. Pin the fixed point
 
@@ -80,13 +82,13 @@ Issue both sub-agent calls together, in the foreground, and aggregate the report
 
 - The full diff command and commit list.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full (the sub-agent has no other access to it).
-- The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls: documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
+- The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and cite the hunk by file and line. Distinguish hard violations from judgement calls: documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Use neutral language and no history. Under 400 words."
 
 **Spec sub-agent prompt** should include:
 
 - The diff command and commit list.
 - The path or fetched contents of the spec.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
+- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Cite the spec line for each finding. Use neutral language and no history. Under 400 words."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 

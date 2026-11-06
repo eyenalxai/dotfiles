@@ -18,6 +18,12 @@ Every comment or issue posted to the issue tracker during triage **must** start 
 
 Why: the disclaimer makes the AI authorship visible, so the reporter can weigh the comment.
 
+Write every comment and issue in neutral, general language. Never reproduce the
+reporter's words directly, never mention the reporter, and never name who
+decided. State the current problem only, with no history of the issue or
+mission. Why: a quote turns one report into durable text the next person reads
+as authority.
+
 ## Reference docs
 
 - [AGENT-BRIEF.md](AGENT-BRIEF.md): how to write durable agent briefs

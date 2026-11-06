@@ -18,7 +18,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 ## Gate check
 
-Before the first edit, read the mission document and the owner's words. If the
+Before the first edit, read the mission document and the gate decision. If the
 spec gate or the ticket gate is pending, stop and ask. A feature has both gates;
 a draft spec or a proposed ticket graph is not an approval. Why: the feature path
 multiplies one unapproved decision across every ticket.

@@ -13,7 +13,7 @@ The issue tracker and triage label vocabulary should have been provided to you. 
 ## Gate check
 
 This skill runs only on the feature path, after the Spec gate is approved. Read
-the mission document and the owner's words. If the spec gate is pending, stop and
+the mission document and the gate decision. If the spec gate is pending, stop and
 ask. A ticket graph cut from an unapproved spec multiplies the unapproved
 decision. For a change, bug, or trivial, this skill is not used; the issue is the
 work item, not a ticket graph. Why: the prior newsletter thread asked the owner
@@ -62,9 +62,10 @@ Ask the owner:
 - Are the blocking edges correct: does each ticket only depend on tickets that genuinely gate it?
 - Should any tickets be merged or split further?
 
-Iterate until the owner approves the breakdown with their own words. Quote the
-words in the mission document's Tickets gate. Why: the ticket graph is the gate
-document; a summary written by the agent is a log, not the owner's approval.
+Iterate until the ticket graph is approved. Record the decision and date in the
+mission document's Tickets gate. Never reproduce the words, mention the user, or
+name who decided. Keep no history of the rounds. Why: the ticket graph is the
+gate document; a summary written by the agent is a log, not the approval.
 
 ### 5. Publish the tickets to the configured tracker
 

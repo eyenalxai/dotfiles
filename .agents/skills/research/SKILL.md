@@ -28,6 +28,10 @@ it wastes the context window.
 
 ## Rules for the findings
 
+- **No user words.** Never reproduce the user's words, mention the user, or name
+  who decided. State the decision in neutral language. The notes are current
+  state only: no prior attempts, sessions, issues, or versions. Why: the notes
+  are a durable reference, and a quote ties the reference to one message.
 - **One claim, one citation.** Each claim carries the exact URL, file path, or
   commit, and the section or line. Why: a citation to a whole site does not let
   the next session check the claim.
