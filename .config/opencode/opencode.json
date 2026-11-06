@@ -20,7 +20,6 @@
         "copyAll": true
       },
       "package": "github:anomalyco/rift#v0.0.13::path:plugins/opencode"
-    },
-    "./opencode-go-failover"
+    }
   ]
 }
