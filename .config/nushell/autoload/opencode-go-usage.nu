@@ -1,7 +1,8 @@
 # OpenCode Go usage for every saved account.
 #
-# Reads all OpenCode Go credentials from the OpenCode credential store and asks
-# the Go usage endpoint for each account's rolling / weekly / monthly usage,
+# Reads all OpenCode Go and OpenCode console credentials from the OpenCode
+# credential store and asks the Go usage endpoint for each account's rolling /
+# weekly / monthly usage,
 # then renders the same numbers the OpenCode console shows -- for all accounts
 # at once. Each window gets two bars: one for usage, one for how far the
 # window has elapsed, so you can see whether usage is keeping pace with time.
@@ -28,7 +29,9 @@
 #   opencode-go-usage -w 40 --no-color
 
 const GO_USAGE_URL = "https://opencode.ai/zen/go/v1/usage"
-const GO_INTEGRATION = "opencode-go"
+# Saved accounts live under the legacy `opencode-go` integration (API key) or
+# the `opencode` integration used by OpenCode console OAuth logins.
+const GO_INTEGRATIONS = ["opencode-go" "opencode"]
 
 # API-equivalent usage history for rolling windows, computed from the local
 # OpenCode database. Every completed assistant step stores its own cost (the
@@ -426,9 +429,22 @@ def opencode-go-usage [
   let endpoint = (if ($endpoint | is-not-empty) { $endpoint } else { $GO_USAGE_URL })
 
   let accounts = (try {
-    ^$bin auth export | from json | where {|row| $row.integrationID == $GO_INTEGRATION and (($row.value.type? | default "") == "key") } | sort-by label
+    ^$bin auth export | from json
+    | where {|row|
+        (($row.integrationID | default "") in $GO_INTEGRATIONS) and (($row.value.type? | default "") in ["key" "oauth"])
+      }
+    | each {|row|
+        let token = (if (($row.value.type? | default "") == "oauth") {
+          $row.value.access? | default ""
+        } else {
+          $row.value.key? | default ""
+        })
+        $row | upsert token $token
+      }
+    | where {|row| $row.token | is-not-empty }
+    | sort-by label
   } catch {|err|
-    error make { msg: ($"could not read OpenCode credentials with `($bin) auth export`: ($err.msg? | default 'unknown error')" + " (saved OpenCode Go accounts require the OpenCode v2 CLI, e.g. `opencode2`; or pass --binary)") }
+    error make { msg: ($"could not read OpenCode credentials with `($bin) auth export`: ($err.msg? | default 'unknown error')" + " (saved OpenCode accounts require the OpenCode v2 CLI, e.g. `opencode2`; or pass --binary)") }
   })
 
   if ($accounts | is-empty) {
@@ -439,7 +455,7 @@ def opencode-go-usage [
   let fetched = ($accounts | enumerate | par-each {|entry|
     let account = $entry.item
     let result = (try {
-      let body = (http get --max-time 20sec --headers { Authorization: $"Bearer ($account.value.key)" } $endpoint)
+      let body = (http get --max-time 20sec --headers { Authorization: $"Bearer ($account.token)" } $endpoint)
       if ($body.usage? | is-empty) {
         { ok: false, error: "unexpected response from the usage endpoint", usage: {} }
       } else {
