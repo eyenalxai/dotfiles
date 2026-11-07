@@ -1,5 +1,8 @@
 [tools]
 railway = "latest"
 
+[settings]
+disable_tools = ["gh", "node", "opencode", "uv"]
+
 [settings.upgrade]
 auto_prune = true
