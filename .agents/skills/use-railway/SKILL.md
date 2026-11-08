@@ -184,7 +184,7 @@ railway login --browserless   # ONLY for machines with genuinely no browser
 
 Forces the device-code flow (RFC 8628): prints a sign-in link and a short code for the user to open on any device. Reserve it for machines where no browser exists — SSH boxes, containers, remote VMs the auto-detection missed. When you do end up in a device-code flow, follow the relay procedure below: surface the sign-in link to the user the moment it prints.
 
-**Agent harness, human present**: when the CLI detects an agent harness (Claude Code, Codex, …) with a human at the keyboard, `railway up` opens the browser and skips the confirm prompt — the agent invocation is treated as consent. A real human still has to complete OAuth in the browser.
+**Agent harness, human present**: when the CLI detects an agent harness (Claude Code, Cursor, Codex, …) with a human at the keyboard, `railway up` opens the browser and skips the confirm prompt — the agent invocation is treated as consent. A real human still has to complete OAuth in the browser.
 
 **Device-code sign-in: relay the link immediately (CRITICAL):**
 
@@ -233,11 +233,13 @@ Install or update MCP and skills directly when the user names a target tool:
 ```bash
 railway mcp install                              # hosted MCP via CLI login
 railway mcp install --agent codex --oauth         # direct HTTP, editor OAuth
+railway mcp install --agent cursor --oauth
 railway skills
 railway skills update --agent codex
+railway skills remove --agent cursor
 ```
 
-Supported targets include `claude-code`, `codex`, `opencode`, `copilot`, and `factory-droid`.
+Supported targets include `claude-code`, `cursor`, `codex`, `opencode`, `copilot`, and `factory-droid`.
 
 | Install mode | Transport and authentication |
 |---|---|

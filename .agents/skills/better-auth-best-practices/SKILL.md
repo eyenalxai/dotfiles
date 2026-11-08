@@ -47,6 +47,7 @@ CLI looks for `auth.ts` in: `./`, `./lib`, `./utils`, or under `./src`. Use `--c
 ### CLI Commands
 - `npx auth@latest migrate` - Apply schema (built-in adapter)
 - `npx auth@latest generate` - Generate schema for Prisma/Drizzle
+- `npx auth@latest mcp --cursor` - Add MCP to AI tools
 
 **Re-run after adding/changing plugins.**
 

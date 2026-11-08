@@ -14,7 +14,7 @@ description: |
   readable", "write for non-native readers", or asks for docs that translate
   well. The same rules govern the reply: answer first, prose only.
 license: MIT
-compatibility: claude-code codex gemini-cli opencode
+compatibility: claude-code cursor codex gemini-cli opencode
 metadata:
   version: "2.1.1"
   standard: ASD-STE100 Issue 9 (2025-01-15)
