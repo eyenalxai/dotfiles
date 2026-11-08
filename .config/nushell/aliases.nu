@@ -6,6 +6,19 @@ alias n = nvim
 # Node / Package managers
 alias npx = bunx
 
+# Rust build engine
+# Cargo's build/check/run/test/bench (and the other commands blaze implements)
+# go to blaze; commands it does not implement (install, add, update, ...) stay
+# with the real cargo. `^cargo` bypasses blaze for any command.
+def --wrapped cargo [...rest] {
+    let cmd = if ($rest | is-empty) { "" } else { $rest.0 }
+    if $cmd in [build b check c run r test t bench doc d clean fmt lock] {
+        ^blaze ...$rest
+    } else {
+        ^cargo ...$rest
+    }
+}
+
 # 1Password shell plugins
 alias ngrok = op plugin run -- ngrok
 
