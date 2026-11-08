@@ -1,0 +1,65 @@
+# Maintainer: ulezot
+
+pkgname=jyoti
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Native control panel for Xiaomi light bulbs over the miIO protocol'
+arch=('x86_64' 'aarch64')
+url='https://github.com/eyenalxai/jyoti'
+license=('MIT' 'OFL-1.1')
+depends=(
+  'fontconfig'
+  'gcc-libs'
+  'glibc'
+  'hicolor-icon-theme'
+  'libdrm'
+  'libglvnd'
+  'libxkbcommon'
+  'mesa'
+  'wayland'
+)
+makedepends=('git' 'pkgconf' 'rust')
+optdepends=('gnome-keyring: Secret Service keyring for bulb tokens')
+source=(
+  "$pkgname-$pkgver.tar.gz::https://github.com/eyenalxai/jyoti/archive/refs/tags/v$pkgver.tar.gz"
+  'jyoti.desktop'
+  'dev.jyoti.Jyoti.svg'
+)
+sha256sums=(
+  '606744784a9391c995a11572ff6c69a10e5de2bbcf1e649f9bdcbeb4c90ea43d'
+  '5243a50c68f8bc54dee3ad855bf493e9c0348899856bdad33a8f545f8176f6cf'
+  '65cfd168708e60f1e31d0e3dd7fc67de53373b76727588b10f9dab663939dfd2'
+)
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  cargo fetch --locked
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  cargo build --release --locked --frozen
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  cargo test --release --locked --frozen
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+
+  install -Dm755 target/release/jyoti "$pkgdir/usr/bin/jyoti"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 assets/fonts/OFL-Inter.txt \
+    "$pkgdir/usr/share/licenses/$pkgname/OFL-Inter.txt"
+  install -Dm644 assets/fonts/OFL-Fraunces.txt \
+    "$pkgdir/usr/share/licenses/$pkgname/OFL-Fraunces.txt"
+  install -Dm644 assets/fonts/OFL-IBMPlexMono.txt \
+    "$pkgdir/usr/share/licenses/$pkgname/OFL-IBMPlexMono.txt"
+
+  install -Dm644 "$srcdir/jyoti.desktop" \
+    "$pkgdir/usr/share/applications/dev.jyoti.Jyoti.desktop"
+  install -Dm644 "$srcdir/dev.jyoti.Jyoti.svg" \
+    "$pkgdir/usr/share/icons/hicolor/scalable/apps/dev.jyoti.Jyoti.svg"
+}

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=jyoti
+GenericName=Light control
+Comment=Control Xiaomi light bulbs on the local network
+Exec=jyoti
+Icon=dev.jyoti.Jyoti
+Terminal=false
+Categories=Utility;Settings;
+Keywords=light;bulb;lamp;xiaomi;miio;colour;color;
+StartupNotify=true
+StartupWMClass=dev.jyoti.Jyoti
