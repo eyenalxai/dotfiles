@@ -1,0 +1,69 @@
+# Maintainer: ulezot
+#
+# blaze here is the Rust build engine (crates/blaze-engine). extra/blaze and
+# AUR blaze-git are the unrelated C++ math library, which installs no
+# executables, so this package neither provides nor conflicts with `blaze`.
+# `blaze-engine` is the name blaze's tooling and `cargo binstall` know the
+# program by, so the package provides and conflicts with that instead.
+
+pkgname=blaze-bin
+pkgver=0.20261105.4
+pkgrel=1
+pkgdesc='Incremental Rust build engine that rebuilds only what an edit changed'
+arch=('x86_64' 'aarch64')
+url='https://github.com/indexable-inc/blaze'
+license=('Apache-2.0' 'MIT')
+# blaze links every program by running `cc`; gcc provides /usr/bin/cc
+depends=('gcc')
+provides=('blaze-engine')
+conflicts=('blaze-engine')
+# prebuilt binaries: a debug split would only carry someone else's debug info
+options=('!debug')
+
+# Upstream's release CDN is what its installer downloads from; GitHub's release
+# CDN is much slower and serves the same archive with the same digest. The
+# checksums below are the release's published SHA256SUMS.
+source_x86_64=("blaze-${pkgver}-x86_64-unknown-linux-gnu.tar.gz::https://blaze-releases.ix.dev/v${pkgver}/blaze-v${pkgver}-x86_64-unknown-linux-gnu.tar.gz")
+source_aarch64=("blaze-${pkgver}-aarch64-unknown-linux-gnu.tar.gz::https://blaze-releases.ix.dev/v${pkgver}/blaze-v${pkgver}-aarch64-unknown-linux-gnu.tar.gz")
+sha256sums_x86_64=('a8b8f3b36b7397671d3a5bcf739e5e1407e5941ee2345aaf5dc2b0868d44d8e6')
+sha256sums_aarch64=('2393255bb983ba1b6df464601f774077f124f3d10c31c9898b1e6b78f4269603')
+
+check() {
+  cd "$srcdir/blaze-v${pkgver}-${CARCH}-unknown-linux-gnu"
+
+  local got
+  got=$(./blaze --version | awk 'NR == 1 { print $2 }')
+  [[ $got == "$pkgver" ]] || { error "blaze reports $got, expected $pkgver"; return 1; }
+}
+
+package() {
+  local dir="blaze-v${pkgver}-${CARCH}-unknown-linux-gnu"
+  cd "$srcdir/$dir"
+
+  # blaze runs the programs and reads the wasm it finds beside its own
+  # executable, so the release's layout stays together under /usr/lib.
+  install -dm755 "$pkgdir/usr/lib/blaze" "$pkgdir/usr/bin"
+
+  local f
+  for f in *; do
+    case "$f" in
+      LICENSE-*|README.md|CHANGELOG.md) continue ;;
+    esac
+    if [[ -x $f ]]; then
+      install -Dm755 "$f" "$pkgdir/usr/lib/blaze/$f"
+    else
+      install -Dm644 "$f" "$pkgdir/usr/lib/blaze/$f"
+    fi
+  done
+
+  local bin
+  for bin in blaze blaze-engine; do
+    [[ -e "$pkgdir/usr/lib/blaze/$bin" ]] || continue
+    ln -s "../lib/blaze/$bin" "$pkgdir/usr/bin/$bin"
+  done
+
+  install -Dm644 LICENSE-APACHE "$pkgdir/usr/share/licenses/$pkgname/LICENSE-APACHE"
+  install -Dm644 LICENSE-MIT "$pkgdir/usr/share/licenses/$pkgname/LICENSE-MIT"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 CHANGELOG.md "$pkgdir/usr/share/doc/$pkgname/CHANGELOG.md"
+}
