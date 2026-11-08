@@ -15,6 +15,16 @@
       "reui": {
         "type": "remote",
         "url": "https://mcp.reui.io/api/mcp"
+      },
+      "browse": {
+        "type": "local",
+        "command": [
+          "/home/ulezot/.local/bin/browse",
+          "mcp"
+        ],
+        "environment": {
+          "OPENCODE_BROWSER_RUNTIME": "auto-update"
+        }
       }
     }
   },

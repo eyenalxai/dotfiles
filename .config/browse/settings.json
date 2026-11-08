@@ -1,0 +1,9 @@
+{
+  "opencode": "/usr/bin/opencode",
+  "entry": "/home/ulezot/.local/bin/browse",
+  "version": "0.0.15",
+  "agents": [],
+  "opencodeConfigs": [
+    "/home/ulezot/.config/opencode/opencode.json"
+  ]
+}
