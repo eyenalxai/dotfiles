@@ -19,7 +19,9 @@ $env.config.history = {
 $env.config.completions = {
     case_sensitive: false
     quick: true
-    partial: true
+    # Tab opens the menu without inserting the shared absolute path of the
+    # zoxide candidates, which would collapse the menu to that one directory.
+    partial: false
     algorithm: "fuzzy"
     external: {
         enable: true
