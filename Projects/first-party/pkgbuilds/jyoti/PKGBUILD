@@ -2,7 +2,7 @@
 
 pkgname=jyoti
 pkgver=0.1.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Native control panel for Xiaomi light bulbs over the miIO protocol'
 arch=('x86_64' 'aarch64')
 url='https://github.com/eyenalxai/jyoti'
@@ -20,6 +20,7 @@ depends=(
 )
 makedepends=('git' 'pkgconf' 'rust')
 optdepends=('gnome-keyring: Secret Service keyring for bulb tokens')
+options=('!debug' 'strip')
 source=(
   "$pkgname-$pkgver.tar.gz::https://github.com/eyenalxai/jyoti/archive/refs/tags/v$pkgver.tar.gz"
   'jyoti.desktop'
