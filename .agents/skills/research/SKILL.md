@@ -1,6 +1,6 @@
 ---
 name: research
-description: Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the owner wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.
+description: Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the owner wants a topic researched, docs or API facts gathered, reading legwork delegated to a background agent, or several independent questions fanned out together.
 ---
 
 # Research
@@ -8,6 +8,15 @@ description: Investigate a question against high-trust primary sources and captu
 Spin up a **background agent** to do the research, so the main session keeps
 working while it reads. Why: research is I/O-bound; blocking the main session on
 it wastes the context window.
+
+## Fan out
+
+When two or more independent questions block the phase, start one background
+researcher per question. Inside a mission, stay within the mission's cap. Each
+researcher writes its own file. Collect the files before the gate that needs
+them. Why: independent questions do not wait on each other, and one file per
+question keeps the references separable. If the harness cannot run background
+agents, run the questions one at a time and say so.
 
 ## The agent's job
 
@@ -86,7 +95,27 @@ Status: answered | partial | conflict
 - Every missing fact is named, with what was checked.
 - The date and source versions are present.
 - The file is where the repo keeps research notes, or the location is stated.
+- For a fan-out, every question has its own file and the main session has
+  collected all files before the gate.
 
 Why: the research is a reference the next phase loads. A reference with an
 uncited claim is a lead, not a fact, and the next session cannot tell the
 difference.
+
+## Pushback
+
+When the owner challenges a finding, a recommendation, or a fact, name the claim
+and its check before you reply. A claim about the owner's position points to the
+owner's message; no source, no claim. A check is evidence that can fail: a
+command, a test, a doc line, a repro, or a measurement against an agreed
+threshold. A failed check stops the work: show it, keep the finding, and say what
+would change it, because an instruction cannot make a failing check pass. A
+direct instruction does not resolve a failed check. No check means a preference
+or a reversible judgment, and the owner decides it: state the tradeoff once, then
+follow the instruction, because the owner owns the decision and the agent owns
+the facts. When the challenge adds a new fact, change the position and name what
+changed it; keep the parts that were right. Never open with agreement or an
+apology; agreement needs a reason, and tone is not evidence.
+
+Why: a model reads disagreement as evidence and folds, which turns the owner's
+first guess into the final answer.

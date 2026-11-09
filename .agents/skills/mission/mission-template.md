@@ -1,6 +1,8 @@
 <!--
 This is the work item issue, not a separate mission issue. Create or claim it
-after the scope gate.
+after the first gate. A fog map is created by `wayfinder` before its decision
+gates and becomes the record; use the map body and add the gate status and next
+step there.
 
 Neutral language: never reproduce words directly, never mention the user, never
 name who decided, and never add history. State decisions in neutral, general
@@ -17,7 +19,7 @@ Status: active
 Scope: fog | feature | change | bug | trivial
 Phase: classify
 Goal: <one sentence>
-Exit: PR for review and merge
+Exit: PRs for review and merge
 
 ## Problem
 
@@ -30,9 +32,9 @@ Exit: PR for review and merge
 - [ ] decisions: <adr or issue>
 - [ ] spec: <issue or URL>
 - [ ] tickets: <urls>
-- [ ] implement <ticket>: <PR url>
-- [ ] code-review <PR>: <findings>
-- [ ] merge <PR>: <commit>
+- [ ] implement <ticket or frontier>: <PR urls>
+- [ ] code-review <PR or stack>: <findings>
+- [ ] merge <PR or stack>: <commit>
 
 ## Gates
 
@@ -41,26 +43,39 @@ Never use `skipped`.
 
 | Gate | Method | Document | Status | Date |
 | --- | --- | --- | --- | --- |
-| Scope and understanding | <grill method> | <notes or map> | pending | |
-| Spec | decision | <spec or issue> | <pending or not used> | |
+| Decisions | wayfinder | <map> | <pending or not used> | |
+| Scope and spec | <grill and spec draft> | <spec or notes> | pending | |
 | Tickets | decision | <tickets or issue> | <pending or not used> | |
 | PR | code-review | <PR> | pending | |
 
-`Status` is `pending`, `approved`, or `not used`. Set the spec and ticket gates
-to `pending` for a feature and `not used` for every other scope. Record the date
-of the decision. Never reproduce the words or name who decided. Why: the merge
-is the approval, and the agent writes the record, so a record can only check the
-agent against itself.
+`Status` is `pending`, `approved`, or `not used`. Set the decisions gate to
+`pending` for fog and `not used` for every other scope. For a fog, add one
+Decisions row per decision gate, or record each gate in the map. On a feature or
+fog path, the scope and spec gate is one row: the spec is the document, and the
+scope and the written design are approved together. On a change, bug, or trivial, rename
+that row to `Scope and understanding` and leave the spec out of the document. Set
+the ticket gate to `pending` for a feature or fog and `not used` for every other
+scope. Record the date of the decision. Never reproduce the words or name who
+decided. Why: the merge is the approval, and the agent writes the record, so a
+record can only check the agent against itself.
 
 ## Session plan
 
 | Session | Work | Why | Exit |
 | --- | --- | --- | --- |
-| 1 | classify, grill, choose the path, present the gate | the scope and the frontier decide the path | the gate decision |
-| 2 | implement the approved rule changes and file scope, review, PR | the gate is approved | PR for review and merge |
+| 1 | classify, grill, draft the spec and cut the tickets on a feature or fog, present the gate | the design gates decide the path | the gate decisions |
+| 2 | implement the frontier as a stack (up to the cap), review each PR | the gates are approved | the stack's PRs are open; the owner merges |
+| 3 | after merges unblock it, implement the next frontier | the merges unblocked it | the next stack's PRs are open |
 
-Replan when the scope changes. The whole flow and the handoff points are visible
-before the work starts. Do not narrate the old scope.
+For a change, bug, or trivial, the frontier is one ticket; use one implement
+row, and stop session 1 at the scope and understanding gate. There is no spec or
+ticket step. Row 3 is conditional: start a new session only when the current
+context cannot carry the next frontier. A session is a context boundary, not a
+phase boundary. The mission session runs the build with `implement` for one
+ticket or `implement-spec` workers for a frontier. Hand off only when the context
+is full, the work moves to a new directory or harness, a side task needs its own
+context, or the owner asks. Replan when the scope changes. The whole flow and the
+handoff points are visible before the work starts. Do not narrate the old scope.
 
 ## References
 

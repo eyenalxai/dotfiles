@@ -9,13 +9,18 @@ disable-model-invocation: true
 Implement the work the owner approved. The approved work is the rule changes and
 the file scope in the mission document, not a proposal and not a draft PR.
 
+This skill builds one ticket. A frontier of two or more ready tickets routes to
+`implement-spec` as the crew chief. Why: the crew chief owns the graph and the
+stack; one session per ticket would spread the graph across contexts.
+
 If the owner passes a ticket reference, fetch it from the issue tracker and state
 its title before starting. Use the title in replies, not the id. If the
 reference is ambiguous, ask.
 
 ## Check the gate before the first edit
 
-Read the mission document and the gate decision.
+Read the mission document and the gate decision. On a fog path, the decision
+gates must also be approved.
 
 - If the gate is pending, stop and ask. Do not start with a "small" edit; a small
   edit is still a build.
@@ -37,6 +42,12 @@ level the owner approved: a list for a small change, a pattern plus exceptions
 for a large one. The plan's length follows the number of decisions, not the
 number of files. Why: per-file approval is a chore and does not scale; the PR is
 the detailed review.
+
+One ticket, one PR. A stacked ticket branches from its blocker's branch, and its
+PR base is that branch. A ticket with several blockers stacks on the last one
+after the others merge. The owner merges bottom-up. Why: the stack is the
+approved model for dependent tickets, and a PR based on `main` would show the
+blocker's diff again.
 
 If the work needs a new decision, stop and ask. Do not add a file, a skill, a
 script, or a test harness the owner did not approve. Why: the prior session added
@@ -67,5 +78,23 @@ The handback report carries the PR URL, the check state, what changed, what it
 unlocks, and the merge danger. The head SHA stays in the PR.
 Why: a SHA is a machine identifier; the owner's decision is the merge.
 
-Commit your work to the current branch. Open one PR. The owner reviews and
-merges.
+Commit your work to the current branch. Open one PR. If the ticket is stacked,
+open it against its blocker's branch. The owner reviews and merges bottom-up.
+
+## Pushback
+
+When the owner challenges a finding, a recommendation, or a fact, name the claim
+and its check before you reply. A claim about the owner's position points to the
+owner's message; no source, no claim. A check is evidence that can fail: a
+command, a test, a doc line, a repro, or a measurement against an agreed
+threshold. A failed check stops the work: show it, keep the finding, and say what
+would change it, because an instruction cannot make a failing check pass. A
+direct instruction does not resolve a failed check. No check means a preference
+or a reversible judgment, and the owner decides it: state the tradeoff once, then
+follow the instruction, because the owner owns the decision and the agent owns
+the facts. When the challenge adds a new fact, change the position and name what
+changed it; keep the parts that were right. Never open with agreement or an
+apology; agreement needs a reason, and tone is not evidence.
+
+Why: a model reads disagreement as evidence and folds, which turns the owner's
+first guess into the final answer.

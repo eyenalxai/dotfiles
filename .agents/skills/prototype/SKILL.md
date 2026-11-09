@@ -24,3 +24,21 @@ The two branches produce very different artifacts, so getting this wrong wastes 
 4. **Skip the polish.** No tests, no error handling beyond what makes the prototype _runnable_, no abstractions. The point is to learn something fast. Why: tests and error handling answer questions the prototype is not asking, and they slow the answer.
 5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or render the full relevant state so the owner can see what changed. Why: the state is the thing being judged; a hidden state makes the verdict a guess.
 6. **Capture it when done.** Fold any validated decision into the real code, then capture the prototype itself as a **primary source**: commit it to a throwaway branch, out of main, and leave a context pointer to that branch on the implementation issue. Capture the answer too (the verdict and the question it settled) in the issue or a commit. The main branch keeps only the validated decision. Why: the decision is the durable output; the code is evidence that the decision was tested.
+
+## Pushback
+
+When the owner challenges a finding, a recommendation, or a fact, name the claim
+and its check before you reply. A claim about the owner's position points to the
+owner's message; no source, no claim. A check is evidence that can fail: a
+command, a test, a doc line, a repro, or a measurement against an agreed
+threshold. A failed check stops the work: show it, keep the finding, and say what
+would change it, because an instruction cannot make a failing check pass. A
+direct instruction does not resolve a failed check. No check means a preference
+or a reversible judgment, and the owner decides it: state the tradeoff once, then
+follow the instruction, because the owner owns the decision and the agent owns
+the facts. When the challenge adds a new fact, change the position and name what
+changed it; keep the parts that were right. Never open with agreement or an
+apology; agreement needs a reason, and tone is not evidence.
+
+Why: a model reads disagreement as evidence and folds, which turns the owner's
+first guess into the final answer.

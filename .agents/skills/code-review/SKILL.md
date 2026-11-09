@@ -28,6 +28,8 @@ decision.
 
 Whatever the owner said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it.
 
+For a stacked ticket, the fixed point is the PR's base branch, so the diff is the ticket's layer, not the whole stack. Why: the layer is the change under review, and the blocker's diff was reviewed below it.
+
 Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
@@ -41,7 +43,9 @@ Look for the originating spec, in this order:
 3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
 4. For a change or bug, the mission document is the spec source. Use its
    problem, constraints, rule changes, and file scope.
-5. If nothing is found, ask the owner where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+5. For a feature ticket, the ticket is the spec source. Use its body and
+   acceptance criteria; the parent spec is context.
+6. If nothing is found, ask the owner where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
 
 ### 3. Identify the standards sources
 
@@ -106,3 +110,21 @@ A change can pass one axis and fail the other:
 - Code that does exactly what the issue asked but breaks the project's conventions → **Spec pass, Standards fail.**
 
 Reporting them separately stops one axis from masking the other.
+
+## Pushback
+
+When the owner challenges a finding, a recommendation, or a fact, name the claim
+and its check before you reply. A claim about the owner's position points to the
+owner's message; no source, no claim. A check is evidence that can fail: a
+command, a test, a doc line, a repro, or a measurement against an agreed
+threshold. A failed check stops the work: show it, keep the finding, and say what
+would change it, because an instruction cannot make a failing check pass. A
+direct instruction does not resolve a failed check. No check means a preference
+or a reversible judgment, and the owner decides it: state the tradeoff once, then
+follow the instruction, because the owner owns the decision and the agent owns
+the facts. When the challenge adds a new fact, change the position and name what
+changed it; keep the parts that were right. Never open with agreement or an
+apology; agreement needs a reason, and tone is not evidence.
+
+Why: a model reads disagreement as evidence and folds, which turns the owner's
+first guess into the final answer.

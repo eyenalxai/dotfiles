@@ -13,15 +13,23 @@ can continue the work. Save it to the temporary directory of the owner's OS
 the document is a scratch artifact, not a deliverable; the repo should not carry
 session transport.
 
-Inside a mission, the mission skill uses this contract automatically at planned
-session boundaries. When a mission is active, the mission output contract owns
-the reply around the prompt.
+Inside a mission, the mission skill uses this contract at planned session
+boundaries. When a mission is active, the mission output contract owns the reply
+around the prompt.
 
-A next-ticket prompt waits until its blocking PRs are merged. If a blocking PR
-is open, the handoff is premature: report the PR URL, check state, what changed,
-what it unlocks, and the merge danger instead. Why: a handoff that starts the
-next ticket while its blocker is open creates a stacked PR the owner did not ask
-for.
+A handoff is for travel, not for a phase change. When the next step stays in the
+current session, use a subagent when the work is parallel or isolated, and keep
+the mission session as the crew chief. A subagent is a worker inside the session,
+not a handoff. Why: the worker keeps the approved context, and a handoff forces a
+copied prompt and a new gate confirmation.
+
+A stack handback reports the stack's open PRs and stops. The next frontier waits
+until merges unblock it. A stacked ticket may start when its blocker's branch
+has the interface it needs, even if the blocker's PR is open; the prompt carries
+the stack order and the merge order. A ticket with several blockers waits for
+all but one to merge, then stacks on the last. A ticket that cannot stack waits
+for all its blockers' PRs to merge. Why: a stack that is not reported as a stack
+looks like a queue, and the owner cannot see the merge order.
 
 Include a "suggested skills" section in the document, naming which skills the
 next agent should load with the Skill tool, in order.
@@ -51,20 +59,24 @@ approve, and the next agent treats the record as authority.
 The prompt may say that a gate was approved, pending, or not used. It reports
 the decision, never the words, never the user, and never the name of the person
 who decided. It may not turn that decision into a new approval. The next
-session presents the gate and waits for the owner's words, unless the owner
-explicitly says the earlier approval carries. Why: the prompt is written by the
-agent; if a prompt can grant a gate, the agent can approve its own work.
+session presents the gate with its recorded status and waits for the owner's
+words. The owner may confirm the earlier decision in their own words; the agent
+never assumes it. Why: the prompt is written by the agent; if a prompt can grant
+a gate, the agent can approve its own work.
 
-An approval does not survive a handoff. There is no exception. A fresh session
-is a fresh conversation, and the owner's words in the old conversation are not
-the owner's words in the new one. Mark the gate `pending` in the new session,
-state the decision to be made, and ask. Do not carry the old approval or the old
-words. Why: a prompt that says the earlier approval carries is still the agent's
-words, and the owner did not speak them in the new conversation.
+An approval does not carry on its own. A fresh session is a fresh conversation,
+and the owner's words in the old conversation are not the owner's words in the
+new one. If the record says a gate is approved, present it that way and ask the
+owner to confirm it still holds. If the gate is pending, state the decision to be
+made and ask. Do not write "the scope is approved" as a fact, and do not carry
+the old words. Why: a prompt that says the earlier approval carries is still the
+agent's words, and the owner did not speak them in the new conversation.
 
-If the gate is pending, say `Open gate: pending` and name the decision. Do not
-write "the scope is approved" or "decide this first." The first is a false
-record; the second is the agent delegating the owner's decision to itself.
+If the gate is pending, say `Open gate: pending` and name the decision. If the
+gate is approved, say `Open gate: approved, confirm it still holds` and name the
+decision. Do not write "the scope is approved" as a fact, and do not write
+"decide this first." The first is a false record; the second is the agent
+delegating the owner's decision to itself.
 
 ## What the prompt carries
 
@@ -75,8 +87,8 @@ The prompt is self-contained:
 - the goal, why the next step is next, and what it unlocks;
 - the mission flow, the decisions that constrain the work, and the session
   plan;
-- the fixed point (the merge commit), the next ready work in plain words, and
-  the blocking PRs, plus the blocking edges after it;
+- the base commit, the stack order, the open PRs, and the next frontier in plain
+  words, plus the blocking edges after it;
 - the current gate, the method that reached it, and whether it is approved or
   pending, stated neutrally and never with words or a name;
 - the current state only, with no prior attempts, sessions, issues, or versions;
@@ -91,9 +103,10 @@ The prompt is self-contained:
 - the output contract the next session must use: answer first, no status block,
   state in the mission document, one plain Next step sentence when the owner
   must act;
-- the handback: open one PR, run `code-review`, fix the findings, report the PR
-  URL, check state, what changed, what it unlocks, and the merge danger. Name
-  the next ready work in plain words. The owner reviews and merges.
+- the handback: the crew chief opens one PR per ticket, stacked by edge; run
+  `code-review` on each and fix the findings; report the stack bottom-up with
+  each PR URL, check state, what changed, what it unlocks, and the merge danger.
+  Name the next frontier in plain words. The owner merges bottom-up.
 
 The prompt is the one place that carries the full mission state. It names the
 work item issue by title and team, not by id or URL. The reply around it does not
@@ -102,8 +115,8 @@ the prose.
 
 Write the prompt in the owner's language and keep it positive: state the
 desired end state and the owner's merge step. Name the load chain in order, for
-example `wayfinder`, then `grilling` and `domain-modeling`, or `implement`, then
-`tdd` and `code-review`.
+example `wayfinder`, then `grilling` and `domain-modeling`, or `implement` for
+one ticket, or `implement-spec` for a frontier, then `tdd` and `code-review`.
 
 ## What the prompt must not carry
 
@@ -142,7 +155,27 @@ Read the prompt as the next session would.
    the human report carries the decision.
 7. Does it quote, mention the user, name who decided, or carry history? If yes,
    rewrite it as neutral current state.
+8. Does it treat a stack as a queue? If yes, state the stack order and the merge
+   order. Why: the owner merges bottom-up, and a queue hides the layers.
 
 This is a reading, not a program. There is no build command for a prompt. Why:
 the gate is the owner's words, and a program can only check the agent's text
 against itself.
+
+## Pushback
+
+When the owner challenges a finding, a recommendation, or a fact, name the claim
+and its check before you reply. A claim about the owner's position points to the
+owner's message; no source, no claim. A check is evidence that can fail: a
+command, a test, a doc line, a repro, or a measurement against an agreed
+threshold. A failed check stops the work: show it, keep the finding, and say what
+would change it, because an instruction cannot make a failing check pass. A
+direct instruction does not resolve a failed check. No check means a preference
+or a reversible judgment, and the owner decides it: state the tradeoff once, then
+follow the instruction, because the owner owns the decision and the agent owns
+the facts. When the challenge adds a new fact, change the position and name what
+changed it; keep the parts that were right. Never open with agreement or an
+apology; agreement needs a reason, and tone is not evidence.
+
+Why: a model reads disagreement as evidence and folds, which turns the owner's
+first guess into the final answer.
