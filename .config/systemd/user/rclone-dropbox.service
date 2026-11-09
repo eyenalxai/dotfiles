@@ -5,6 +5,9 @@ After=graphical-session-pre.target
 [Service]
 Type=notify
 ExecStartPre=/usr/bin/mkdir -p %h/Dropbox
+# A wrong clock at boot makes rclone cache a token expiry that is hours off,
+# so it never refreshes after NTP corrects the time. Wait (max 60s) for sync.
+ExecStartPre=/usr/bin/bash -c 'for i in $(seq 1 60); do [ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" = yes ] && break; sleep 1; done'
 ExecStart=%h/.config/rclone/with-dropbox-token.sh /usr/bin/rclone mount dropbox: %h/Dropbox \
     --cache-dir=%h/.cache/rclone \
     --vfs-cache-mode full \
