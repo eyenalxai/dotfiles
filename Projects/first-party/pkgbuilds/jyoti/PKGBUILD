@@ -1,7 +1,7 @@
 # Maintainer: ulezot
 
 pkgname=jyoti
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc='Native control panel for Xiaomi light bulbs over the miIO protocol'
 arch=('x86_64' 'aarch64')
@@ -26,7 +26,7 @@ source=(
   'dev.jyoti.Jyoti.svg'
 )
 sha256sums=(
-  '606744784a9391c995a11572ff6c69a10e5de2bbcf1e649f9bdcbeb4c90ea43d'
+  '1544260e12b88a09f8f11bea9e59480d692b9f97d06b7bc1f436556c04337fb6'
   '5243a50c68f8bc54dee3ad855bf493e9c0348899856bdad33a8f545f8176f6cf'
   '65cfd168708e60f1e31d0e3dd7fc67de53373b76727588b10f9dab663939dfd2'
 )
