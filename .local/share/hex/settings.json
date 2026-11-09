@@ -196,20 +196,6 @@
   "updates": {
     "channel": null
   },
-  "vocabulary": [
-    {
-      "term": "monorepo",
-      "sounds_like": [
-        "Monoriapo"
-      ]
-    },
-    {
-      "term": "real",
-      "sounds_like": [
-        "Radio"
-      ]
-    }
-  ],
   "vocabulary_boost": "normal",
   "migrations": [
     "streaming-english-model",
