@@ -80,3 +80,20 @@ source completions/vingroto-completions.nu
 
 # Aliases and custom commands
 source aliases.nu
+
+# opam (no native nushell support; parse its POSIX env output)
+def --env opam-reload [] {
+    let result = (^opam env --shell=sh | complete)
+    if $result.exit_code != 0 {
+        return
+    }
+    let vars = ($result.stdout
+        | lines
+        | parse -r "^(?<name>[A-Za-z_][A-Za-z0-9_]*)='(?<value>.*)'; export [A-Za-z_][A-Za-z0-9_]*;$"
+        | reduce -f {} {|row, acc| $acc | upsert $row.name $row.value })
+    load-env $vars
+}
+
+if (which opam | is-not-empty) {
+    opam-reload
+}
