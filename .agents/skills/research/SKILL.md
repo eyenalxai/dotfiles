@@ -18,11 +18,41 @@ them. Why: independent questions do not wait on each other, and one file per
 question keeps the references separable. If the harness cannot run background
 agents, run the questions one at a time and say so.
 
+## Start at the source
+
+When the question is about software, find the code before the web.
+
+1. **Locate the source on disk.** Read the manifest and lockfile for the version
+   in use. Then look in the repo's own code, its documentation and examples, the
+   installed dependency source, a vendored copy, and a checkout the owner names.
+   Why: the pinned source is the code that runs, and a docs site describes the
+   latest release.
+
+2. **Fetch the upstream source when no readable source is on disk.** Clone or
+   download the repository at the tag or commit for the pinned version. Why: an
+   installed dependency can be minified or incomplete, and the upstream tag is the
+   readable copy of the same code.
+
+3. **Follow each claim into the implementation.** Start at the entry point and
+   read the path that produces the behavior. Read the docs for intent, the types
+   and tests that define the behavior, and the changelog that dates it. Why: docs
+   state intent, types and tests state what happens, including the edge cases the
+   prose leaves out, and the changelog says when the behavior changed.
+
+4. **Cite the file and line with the version or commit.** Why: the next session
+   must be able to open the exact code path that proves the claim.
+
+A question with no code source, such as a pricing policy or a hosted API's terms,
+uses the official documentation and says so. Why: the docs own that fact, and the
+next session must know the answer rests on prose rather than code.
+
 ## The agent's job
 
-1. Investigate the question against **primary sources**: official docs, source
-   code, specs, first-party APIs. Follow every claim back to the source that owns
-   it. Treat a secondary write-up as a lead, not a source. Why: a secondary source
+1. Investigate the question against **primary sources**: official docs, specs, and
+   first-party APIs, plus the source code and its documentation at the pinned
+   version when the question is about software. For a software question, start
+   with the procedure above. Follow every claim back to the source that owns it.
+   Treat a secondary write-up as a lead, not a source. Why: a secondary source
    copies the primary one and adds its own errors; the citation must point at the
    owner of the fact.
 
@@ -91,6 +121,8 @@ Status: answered | partial | conflict
 ## Check before delivering
 
 - Every claim has a citation.
+- For a code fact, the pinned version's source was read, or its absence is
+  stated.
 - Every conflict is named, with a recommendation and a reason.
 - Every missing fact is named, with what was checked.
 - The date and source versions are present.
