@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+# Set up the Dropbox mount on a new Arch machine.
+# The OAuth token goes into the login keyring, never into yadm.
+set -euo pipefail
+
+readonly SERVICE_NAME="${RCLONE_KEYRING_SERVICE:-rclone-dropbox}"
+readonly UNIT_NAME="rclone-dropbox.service"
+readonly CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+readonly WRAPPER="$CONFIG_HOME/rclone/with-dropbox-token.sh"
+readonly UNIT="$CONFIG_HOME/systemd/user/$UNIT_NAME"
+readonly MOUNT_DIR="$HOME/Dropbox"
+
+TOKEN_VALUE=''
+
+if [[ -t 1 ]]; then
+  bold=$'\e[1m'
+  red=$'\e[31m'
+  green=$'\e[32m'
+  yellow=$'\e[33m'
+  reset=$'\e[0m'
+else
+  bold=''
+  red=''
+  green=''
+  yellow=''
+  reset=''
+fi
+
+info() { printf '%s==>%s %s\n' "$bold" "$reset" "$*"; }
+ok() { printf '%s==>%s %s\n' "$green" "$reset" "$*"; }
+warn() { printf '%s==>%s %s\n' "$yellow" "$reset" "$*" >&2; }
+die() {
+  printf '%s==>%s %s\n' "$red" "$reset" "$*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'EOF'
+Usage: setup-dropbox.sh
+
+Install rclone, libsecret, and fuse3. Store a Dropbox OAuth token in the login
+keyring. Enable the rclone-dropbox systemd user unit and mount ~/Dropbox. Run
+this after "yadm clone". It is safe to run again.
+EOF
+}
+
+confirm() {
+  local prompt=$1 default=${2:-y} reply
+  if [[ $default == y ]]; then
+    prompt+=' [Y/n] '
+  else
+    prompt+=' [y/N] '
+  fi
+  read -r -p "$prompt" reply
+  reply=${reply:-$default}
+  [[ $reply =~ ^[Yy]$ ]]
+}
+
+require_tty() {
+  [[ -t 0 ]] || die 'Run this from an interactive terminal.'
+}
+
+require_user() {
+  [[ $EUID -ne 0 ]] || die 'Run this as your user, not with sudo.'
+}
+
+require_arch() {
+  command -v pacman >/dev/null 2>&1 || die 'This script supports Arch Linux only (pacman is missing).'
+}
+
+require_systemd() {
+  systemctl --user show-environment >/dev/null 2>&1 ||
+    die 'No systemd user session. Log in to the desktop and try again.'
+}
+
+install_packages() {
+  local pkg
+  local -a missing=()
+  for pkg in rclone libsecret fuse3; do
+    if ! pacman -Qq "$pkg" >/dev/null 2>&1; then
+      missing+=("$pkg")
+    fi
+  done
+  if ((${#missing[@]} == 0)); then
+    ok 'Packages rclone, libsecret, and fuse3 are installed.'
+    return
+  fi
+  info "Missing packages: ${missing[*]}"
+  confirm 'Install them with pacman?' ||
+    die "Install ${missing[*]} and run this script again."
+  command -v sudo >/dev/null 2>&1 ||
+    die "sudo is missing. Install ${missing[*]} with pacman and run this script again."
+  sudo pacman -S --needed --noconfirm "${missing[@]}"
+}
+
+check_commands() {
+  local cmd
+  for cmd in rclone secret-tool fusermount3 mountpoint timeout; do
+    command -v "$cmd" >/dev/null 2>&1 || die "Missing command: $cmd"
+  done
+  [[ -e /dev/fuse ]] || die 'FUSE is not available (/dev/fuse is missing).'
+}
+
+check_files() {
+  [[ -x $WRAPPER ]] ||
+    die "Missing $WRAPPER. Restore it with: yadm checkout -- $WRAPPER"
+  [[ -f $UNIT ]] ||
+    die "Missing $UNIT. Restore it with: yadm checkout -- $UNIT"
+}
+
+keyring_token_present() {
+  local token
+  token=$(secret-tool lookup service "$SERVICE_NAME" 2>/dev/null || true)
+  [[ -n $token ]]
+}
+
+normalize_token() {
+  local raw=$1 token
+  raw=${raw//$'\r'/}
+  raw=${raw#*\{}
+  raw=${raw%\}*}
+  if [[ $raw == \"\"* ]]; then
+    raw=${raw//\"\"/\"}
+  fi
+  token="{${raw}}"
+  [[ $token == *'"refresh_token"'* ]] ||
+    die 'That value has no refresh_token. Paste the JSON token.'
+  TOKEN_VALUE=$token
+}
+
+read_token() {
+  local raw
+  printf 'Paste the rclone Dropbox token from the machine that already has access.\n' >&2
+  printf 'It is the JSON value with "access_token" and "refresh_token".\n\n' >&2
+  printf 'Token (input is hidden): ' >&2
+  IFS= read -r -s raw || die 'No token was read.'
+  printf '\n' >&2
+  normalize_token "$raw"
+}
+
+store_token() {
+  local token=$1 stored
+  printf '%s' "$token" | secret-tool store --label='rclone Dropbox' service "$SERVICE_NAME" ||
+    die 'secret-tool could not store the token. Is the login keyring unlocked?'
+  stored=$(secret-tool lookup service "$SERVICE_NAME" 2>/dev/null || true)
+  [[ $stored == "$token" ]] || die 'The keyring did not return the stored token.'
+}
+
+test_token() {
+  info 'Testing the token with rclone.'
+  if timeout 30 "$WRAPPER" rclone lsd dropbox: >/dev/null 2>&1; then
+    ok 'Dropbox accepted the token.'
+    return
+  fi
+  warn 'The token test failed. Check the network and the token.'
+  confirm 'Continue and start the service anyway?' n ||
+    die 'Stopped before starting the service.'
+}
+
+start_service() {
+  mkdir -p "$MOUNT_DIR"
+  systemctl --user daemon-reload
+  systemctl --user enable "$UNIT_NAME" >/dev/null
+  if systemctl --user is-active --quiet "$UNIT_NAME"; then
+    if confirm 'Restart the running service now?' y; then
+      systemctl --user restart "$UNIT_NAME"
+    fi
+  else
+    systemctl --user start "$UNIT_NAME"
+  fi
+}
+
+wait_for_mount() {
+  for _ in {1..20}; do
+    if mountpoint -q "$MOUNT_DIR"; then
+      ok "Dropbox is mounted at $MOUNT_DIR."
+      return
+    fi
+    sleep 1
+  done
+  systemctl --user status "$UNIT_NAME" --no-pager >&2 || true
+  die "The mount did not appear. Check: journalctl --user -u $UNIT_NAME -n 50"
+}
+
+main() {
+  require_tty
+  require_user
+  require_arch
+  require_systemd
+
+  info "Dropbox setup for $USER"
+  install_packages
+  check_commands
+  check_files
+
+  if keyring_token_present; then
+    if confirm 'A token already exists in the keyring. Keep it?' y; then
+      ok 'Using the existing token.'
+    else
+      read_token
+    fi
+  else
+    read_token
+  fi
+
+  if [[ -n $TOKEN_VALUE ]]; then
+    store_token "$TOKEN_VALUE"
+    ok 'Token stored in the login keyring.'
+    test_token
+  fi
+
+  start_service
+  wait_for_mount
+
+  printf '\n'
+  ok 'Setup complete.'
+  printf 'Status: systemctl --user status %s\n' "$UNIT_NAME"
+  printf 'Logs:   journalctl --user -u %s -f\n' "$UNIT_NAME"
+  printf 'Folder: %s\n' "$MOUNT_DIR"
+}
+
+case ${1:-} in
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  '') ;;
+  *) die "Unknown argument: $1" ;;
+esac
+
+main
