@@ -1,8 +1,8 @@
-# Good and Bad Tests
+# Test quality
 
-## Good Tests
+## Tests that survive refactors
 
-**Integration-style**: Test through real interfaces, not mocks of internal parts.
+**At the seam**: test through the real interface, not a mock of an internal part.
 
 ```typescript
 // GOOD: Tests observable behavior
@@ -16,15 +16,14 @@ test("user can checkout with valid cart", async () => {
 
 Characteristics:
 
-- Tests behavior users/callers care about
-- Uses public API only
+- Tests behavior users and callers care about
+- Uses the public API only
 - Survives internal refactors
-- Describes WHAT, not HOW
-- One logical assertion per test
+- Names behavior, not implementation
 
-## Bad Tests
+## Tests coupled to internals
 
-**Implementation-detail tests**: Coupled to internal structure.
+**Implementation-detail tests**: coupled to internal structure.
 
 ```typescript
 // BAD: Tests implementation details
@@ -37,12 +36,12 @@ test("checkout calls paymentService.process", async () => {
 
 Red flags:
 
-- Mocking internal collaborators
-- Testing private methods
-- Asserting on call counts/order
-- Test breaks when refactoring without behavior change
-- Test name describes HOW not WHAT
-- Verifying through external means instead of interface
+- Mocks internal collaborators
+- Tests private methods
+- Asserts on call counts or order
+- Breaks when refactoring without a behavior change
+- Names implementation, not behavior
+- Verifies through an external channel instead of the interface
 
 ```typescript
 // BAD: Bypasses interface to verify
@@ -60,7 +59,7 @@ test("createUser makes user retrievable", async () => {
 });
 ```
 
-**Tautological tests**: Expected value restates the implementation, so the test passes by construction.
+**Tautological tests**: the expected value restates the implementation, so the test passes by construction.
 
 ```typescript
 // BAD: Expected value is recomputed the way the code computes it

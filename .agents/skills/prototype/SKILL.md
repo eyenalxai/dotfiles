@@ -1,6 +1,6 @@
 ---
 name: prototype
-description: Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.
+description: Build a throwaway prototype to answer a design question. Use when the owner wants to sanity-check whether a state model or logic feels right, or explore what a UI looks like.
 ---
 
 # Prototype
@@ -9,36 +9,20 @@ A prototype is **throwaway code that answers a question**. The question decides 
 
 ## Pick a branch
 
-Identify which question is being answered, using the user's prompt, the surrounding code, or by asking if the user is around:
+Identify the question being answered, using the owner's prompt, the surrounding code, or a direct question when the owner is available:
 
-- **"Does this logic / state model feel right?"** → [LOGIC.md](LOGIC.md). Build a single shareable HTML file (free-play buttons plus tabbed guided walkthroughs) that pushes the state machine through cases that are hard to reason about on paper, and that a non-developer can drive.
-- **"What should this look like?"** → [UI.md](UI.md). Generate several radically different UI variations on a single route, switchable via a URL search param and a floating bottom bar.
+- **"Does this logic or state model feel right?"** → [LOGIC.md](LOGIC.md). Build a single shareable HTML file (free-play buttons plus tabbed guided walkthroughs) that pushes the state machine through cases that are hard to reason about on paper, and that a non-developer can drive.
+- **"What does this look like?"** → [UI.md](UI.md). Generate several radically different UI variations on a single route, switchable via a URL search param and a floating bottom bar.
 
-The two branches produce very different artifacts, so getting this wrong wastes the whole prototype. If the question is genuinely ambiguous and the user isn't reachable, default to whichever branch better matches the surrounding code (a backend module → logic; a page or component → UI) and state the assumption at the top of the prototype.
+The two branches produce different artifacts, so a wrong branch wastes the prototype. When the question is ambiguous and the owner is unreachable, default to the branch that matches the surrounding code: a backend module goes to logic; a page or component goes to UI. State the assumption at the top of the prototype.
 
 ## Rules that apply to both
 
-1. **Throwaway from day one, and clearly marked as such.** Locate the prototype code close to where it will actually be used (next to the module or page it's prototyping for) so context is obvious, but name it so a casual reader can see it's a prototype, not production. For throwaway UI routes, obey whatever routing convention the project already uses; don't invent a new top-level structure. Why: a prototype that looks production gets kept, and unowned code outlives the question.
-2. **Trivial to run.** A UI prototype starts from one command in the project's task runner: `pnpm <name>`, `python <path>`, `bun <path>`, etc. A logic demo is a single HTML file the owner double-clicks. Either way, no thinking required to start it. Why: friction is what stops the owner from running it, and an unrun prototype answers nothing.
-3. **No persistence by default.** State lives in memory. Persistence is the thing the prototype is _checking_, not something it should depend on. If the question explicitly involves a database, hit a scratch DB or a local file with a clear "PROTOTYPE, wipe me" name. Why: a database hides the state model behind setup, and the state model is the question.
-4. **Skip the polish.** No tests, no error handling beyond what makes the prototype _runnable_, no abstractions. The point is to learn something fast. Why: tests and error handling answer questions the prototype is not asking, and they slow the answer.
-5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or render the full relevant state so the owner can see what changed. Why: the state is the thing being judged; a hidden state makes the verdict a guess.
-6. **Capture it when done.** Fold any validated decision into the real code, then capture the prototype itself as a **primary source**: commit it to a throwaway branch, out of main, and leave a context pointer to that branch on the implementation issue. Capture the answer too (the verdict and the question it settled) in the issue or a commit. The main branch keeps only the validated decision. Why: the decision is the durable output; the code is evidence that the decision was tested.
+1. **Throwaway from day one, and marked.** Locate the prototype code next to the module or page it prototypes so context is clear, and name it so a casual reader sees it is a prototype, not production. For throwaway UI routes, follow the routing convention the project already uses; never invent a new top-level structure. Why: a prototype that looks production gets kept, and unowned code outlives the question.
+2. **Trivial to run.** A UI prototype starts from one command in the project's task runner: `pnpm <name>`, `python <path>`, `bun <path>`. A logic demo is a single HTML file the owner double-clicks. Starting it requires no thought. Why: friction stops the owner from running it, and an unrun prototype answers nothing.
+3. **No persistence by default.** State lives in memory. Persistence is the thing the prototype is _checking_, not something it depends on. If the question involves a database, hit a scratch DB or a local file with a clear "PROTOTYPE, wipe me" name. Why: a database hides the state model behind setup, and the state model is the question.
+4. **Skip the polish.** No tests, no error handling beyond what makes the prototype _runnable_, no abstractions. The point is to learn fast. Why: tests and error handling answer questions the prototype is not asking, and they slow the answer.
+5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or render the full relevant state so the owner sees what changed. Why: the state is the thing being judged; a hidden state makes the verdict a guess.
+6. **Capture it when done.** Fold any validated decision into the real code, then capture the prototype as a **primary source**: commit it to a throwaway branch, out of main, and leave a context pointer to that branch on the implementation issue. Capture the answer too (the verdict and the question it settled) in the issue or a commit. Main keeps only the validated decision. Why: the decision is the durable output; the code is evidence that the decision was tested.
 
-## Pushback
-
-When the owner challenges a finding, a recommendation, or a fact, name the claim
-and its check before you reply. A claim about the owner's position points to the
-owner's message; no source, no claim. A check is evidence that can fail: a
-command, a test, a doc line, a repro, or a measurement against an agreed
-threshold. A failed check stops the work: show it, keep the finding, and say what
-would change it, because an instruction cannot make a failing check pass. A
-direct instruction does not resolve a failed check. No check means a preference
-or a reversible judgment, and the owner decides it: state the tradeoff once, then
-follow the instruction, because the owner owns the decision and the agent owns
-the facts. When the challenge adds a new fact, change the position and name what
-changed it; keep the parts that were right. Never open with agreement or an
-apology; agreement needs a reason, and tone is not evidence.
-
-Why: a model reads disagreement as evidence and folds, which turns the owner's
-first guess into the final answer.
+When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

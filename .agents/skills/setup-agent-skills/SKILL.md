@@ -4,13 +4,13 @@ description: "Configure this repo for the agent skills: set up its issue tracker
 disable-model-invocation: true
 ---
 
-# Setup Agent Skills
+# Setup agent skills
 
 Scaffold the per-repo configuration that the agent skills assume:
 
-- **Issue tracker**: where issues live (GitHub by default; local markdown is also supported out of the box)
-- **Triage labels**: the strings used for the two category roles and the five state roles
-- **Domain docs**: where `GLOSSARY.md` and ADRs live, and the consumer rules for reading them
+- **Issue tracker**: where issues live, detected from the remote or chosen from GitHub, GitLab, local markdown, or another tracker.
+- **Triage labels**: the strings used for the two category roles and the five state roles.
+- **Domain docs**: where `GLOSSARY.md` and ADRs live, and the rules for reading them.
 
 This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the owner, then write. Why: the tracker and labels are owner decisions, and a script that guesses them writes a wrong config.
 
@@ -18,58 +18,60 @@ This is a prompt-driven skill, not a deterministic script. Explore, present what
 
 ### 1. Explore
 
-Look at the current repo to understand its starting state. Read whatever exists; don't assume:
+Look at the current repo and read what exists. Do not assume:
 
-- `git remote -v` and `.git/config`: is this a GitHub repo? Which one?
-- `AGENTS.md` at the repo root: does it exist? Is there already an `## Agent skills` section?
-- `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root, and the legacy `CONTEXT.md` / `CONTEXT-MAP.md`. If a legacy file exists, offer to `git mv` it to its `GLOSSARY` name and rewrite those names in `docs/agents/domain.md`.
-- `docs/adr/` and any `src/*/docs/adr/` directories
+- `git remote -v` and `.git/config`: which host and repo does this clone point at?
+- `AGENTS.md` at the repo root: does it exist? Does it already have an `## Agent skills` section?
+- `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root, plus the legacy `CONTEXT.md` and `CONTEXT-MAP.md`. If a legacy file exists, offer to `git mv` it to its GLOSSARY name and rewrite those names in `docs/agents/domain.md`.
+- `docs/adr/` and any `src/*/docs/adr/` directories.
 - `docs/agents/`: does this skill's prior output already exist?
-- `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
-- Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
-- Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These are present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
+- `.scratch/`: a sign that a local-markdown issue tracker convention is already in use.
+- Is the `triage` skill installed? Look for a `triage` skill folder alongside this one, or `triage` in the available skills. This decides whether Section B runs.
+- Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These appear only in a large multi-package repo; their absence means single-context, which is almost every repo.
 
 ### 2. Present findings and ask
 
-Summarise what's present and what's missing. Then take the sections in order. One section, one answer, then the next. Why: a batch of questions hides which answer changed the config.
+Summarize what is present and what is missing. Then take the sections in order. One section, one answer, then the next. Why: a batch of questions hides which answer changed the config.
 
-Lead each section with the recommended answer so the user can accept it in a word. Give a one-line explainer only when the choice genuinely branches; skip the section entirely when exploration already settled it (Section B when `triage` isn't installed, Section C when there's no monorepo).
+Lead each section with the recommended answer so the owner can accept it in a word. Give a one-line explainer only when the choice branches. Skip the questions in a section when exploration already settled it: Section B when `triage` is not installed, Section C when there is no monorepo. Section C still writes the single-context default; Section B writes nothing when skipped.
 
 **Section A: Issue tracker.**
 
-> Explainer: The "issue tracker" is where issues live for this repo. Skills like `mission`, `to-spec`, `to-tickets`, and `triage` read from and write to it. They need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
+> Explainer: The issue tracker is where issues live for this repo. Skills such as `mission`, `to-spec`, `to-tickets`, and `triage` read from and write to it. They need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow another workflow the owner describes. Pick the place where work is tracked for this repo.
 
-Default posture: these skills were designed for GitHub. If a `git remote` points at GitHub, propose that. If a `git remote` points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. Otherwise (or if the user prefers), offer:
+Tracker precedence: detect the host from the remote, then offer the choices.
 
-- **GitHub**: issues live in the repo's GitHub Issues (uses the `gh` CLI)
-- **GitLab**: issues live in the repo's GitLab Issues (uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI)
-- **Local markdown**: issues live as files under `.scratch/<feature>/` in this repo (good for solo projects or repos without a remote)
-- **Other** (Jira, Linear, etc.): ask the user to describe the workflow in one paragraph; the skill will record it as freeform prose
+1. Run `git remote -v`. If a remote points at GitHub, propose GitHub. If it points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab.
+2. If no remote points at either host, or the owner declines the detected tracker, offer all four:
+   - **GitHub**: issues live in the repo's GitHub Issues. Uses the `gh` CLI.
+   - **GitLab**: issues live in the repo's GitLab Issues. Uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI.
+   - **Local markdown**: issues live as files under `.scratch/<feature>/` in this repo. Fits solo projects or repos without a remote.
+   - **Other** (Jira, Linear, and so on): ask the owner to describe the workflow in one paragraph; record it as freeform prose.
 
-Record the choice in `docs/agents/issue-tracker.md`. The GitHub and GitLab templates carry a "PRs as a request surface" flag, defaulted **off**. Leave it off and don't raise it: a user who wants external PRs in the triage queue can flip the flag in the file later.
+Record the choice in `docs/agents/issue-tracker.md`. The GitHub and GitLab templates carry a "PRs as a request surface" flag, defaulted **off**. Leave it off and do not raise it: an owner who wants external PRs in the triage queue can flip the flag in the file later.
 
-A GitHub or GitLab tracker needs a reachable repo. When the user picks one and no `git remote` points at that host, get the repo URL from them and wire it up (`git init` if needed, `git remote add origin <url>`) before going further. Done when `gh repo view` / `glab repo view` prints the project from inside this directory; if it can't, stop and tell the user what's missing.
+A GitHub or GitLab tracker needs a reachable repo. When the owner picks one and no `git remote` points at that host, get the repo URL and wire it up (`git init` if needed, `git remote add origin <url>`) before going further. Done when `gh repo view` or `glab repo view` prints the project from inside this directory. If it cannot, stop and tell the owner what is missing.
 
-**Section B: Triage label vocabulary.** Skip this section entirely if the `triage` skill isn't installed (exploration told you), since an uninstalled skill needs no labels.
+**Section B: Triage label vocabulary.** Skip this section when the `triage` skill is not installed; an uninstalled skill needs no labels.
 
 If it is installed, ask exactly one question:
 
 > Do you want to keep the default triage labels? (recommended: **yes**)
 
-The defaults are the two category roles and the five state roles, with each label string equal to its name: `bug`, `enhancement`, `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On **yes**, write them as-is. Only if the user says no, usually because their tracker already uses other names (e.g. `bug:triage` for `needs-triage`), collect the overrides so `triage` applies existing labels instead of creating duplicates.
+The defaults are the two category roles and the five state roles, with each label string equal to its name: `bug`, `enhancement`, `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On yes, write them as-is. Only when the owner says no, usually because the tracker already uses other names (for example `bug:triage` for `needs-triage`), collect the overrides so `triage` applies existing labels instead of creating duplicates.
 
-**Section C: Domain docs.** Default to **single-context** (one `GLOSSARY.md` + `docs/adr/` at the repo root). This fits almost every repo; write it without asking.
+**Section C: Domain docs.** Default to **single-context**: one `GLOSSARY.md` plus `docs/adr/` at the repo root. This fits almost every repo; write it without asking.
 
-Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSSARY.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
+Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSSARY.md` files) only when exploration finds monorepo signals. Then confirm the layout with the owner.
 
 ### 3. Confirm and edit
 
-Show the user a draft of:
+Show the owner a draft of:
 
-- The `## Agent skills` block to add to `AGENTS.md`
-- The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed)
+- The `## Agent skills` block to add to `AGENTS.md`.
+- The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed).
 
-Let them edit before writing. Why: the config is durable, and the owner is the one who reads it later.
+Let the owner edit before writing. Why: the config is durable, and the owner reads it later.
 
 ### 4. Write
 
@@ -77,8 +79,7 @@ Let them edit before writing. Why: the config is durable, and the owner is the o
 
 - If `AGENTS.md` exists, edit it.
 - If it does not exist, create it.
-
-If an `## Agent skills` block already exists, update its contents in place. Keep the surrounding user edits.
+- If an `## Agent skills` block already exists, update its contents in place. Keep the surrounding edits.
 
 The block:
 
@@ -98,38 +99,22 @@ The block:
 [one-line summary of layout: "single-context" or "multi-context"]. See `docs/agents/domain.md`.
 ```
 
-Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. When it isn't, both are omitted.
+Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. Otherwise omit both.
 
-When Section B ran on GitHub or GitLab, create each configured label the tracker lacks (`gh label create` / `glab label create`).
+When Section B ran on GitHub or GitLab, create each configured label the tracker lacks (`gh label create` or `glab label create`).
 
-Then write the docs files using the seed templates in this skill folder as a starting point:
+Then write the docs files from the seed templates in this skill folder:
 
 - [issue-tracker-github.md](./issue-tracker-github.md): GitHub issue tracker
 - [issue-tracker-gitlab.md](./issue-tracker-gitlab.md): GitLab issue tracker
 - [issue-tracker-local.md](./issue-tracker-local.md): local-markdown issue tracker
-- [triage-labels.md](./triage-labels.md): label mapping (only if `triage` is installed)
-- [domain.md](./domain.md): domain doc consumer rules + layout
+- [triage-labels.md](./triage-labels.md): label mapping (only when `triage` is installed)
+- [domain.md](./domain.md): domain doc consumer rules and layout
 
-For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
+For other issue trackers, write `docs/agents/issue-tracker.md` from scratch using the owner's description.
 
 ### 5. Done
 
-Tell the user the setup is complete and which skills will now read from these files. Mention they can edit `docs/agents/*.md` directly later; re-running this skill is only necessary if they want to switch issue trackers or restart from scratch.
+Tell the owner the setup is complete and which skills read from these files. Mention that the owner can edit `docs/agents/*.md` directly later; re-run this skill only to switch issue trackers or restart from scratch.
 
-## Pushback
-
-When the owner challenges a finding, a recommendation, or a fact, name the claim
-and its check before you reply. A claim about the owner's position points to the
-owner's message; no source, no claim. A check is evidence that can fail: a
-command, a test, a doc line, a repro, or a measurement against an agreed
-threshold. A failed check stops the work: show it, keep the finding, and say what
-would change it, because an instruction cannot make a failing check pass. A
-direct instruction does not resolve a failed check. No check means a preference
-or a reversible judgment, and the owner decides it: state the tradeoff once, then
-follow the instruction, because the owner owns the decision and the agent owns
-the facts. When the challenge adds a new fact, change the position and name what
-changed it; keep the parts that were right. Never open with agreement or an
-apology; agreement needs a reason, and tone is not evidence.
-
-Why: a model reads disagreement as evidence and folds, which turns the owner's
-first guess into the final answer.
+When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.
