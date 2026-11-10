@@ -4,17 +4,44 @@
 
 - `<ref>` is an identifier (`ABC-42`), a UUID, or a `linear.app` URL.
 - `--json` is a global flag: it works before or after the subcommand and prints
-  one stable JSON document. `--fields` selects dotted paths from the supported
-  read commands and needs `--json`.
+  one stable JSON document. A read of one resource prints the resource object. A
+  list prints `{ <plural>, pageInfo }`. A context document keeps its named
+  sections. A write prints its result object.
+- `--fields` selects dotted paths from the supported read commands and needs
+  `--json`. The paths start at the resource for a read and at each row for a
+  list. Write commands reject the flag.
 - List commands return one page: `--limit` is the page size (default 50,
   maximum 250) and `--after <cursor>` continues the list. Add `--all` to drain
-  every page. JSON is `{ <plural>, pageInfo }`.
+  every page.
 - `--body-file -` reads the value from stdin; `--body-file <path>` reads a file.
 - The default team and project come from the repository config, written by
   `rata link` and removed by `rata unlink`. List commands default to the linked
   team; without a link they fail and ask for `--team` or `rata link`.
 - Exit code 0 on success; a failure exits with the code of its class, from 1 to 6. With `--json`, a failure writes one JSON object to stderr. A bulk write
   reports its results on stdout and exits with the first failed result's code.
+  `issue update --comment` writes its partial result only to stdout when the
+  comment fails.
+
+## One way per operation
+
+Each operation has one canonical form. The other spellings fail with one
+`validation` hint that names it.
+
+| Operation           | Canonical form                                               | Rejected form                |
+| ------------------- | ------------------------------------------------------------ | ---------------------------- |
+| Read one issue      | `rata issue show <ref>`                                      | `rata issue <ref>`           |
+| Read the summary    | `rata issue show <ref> --summary`                            |                              |
+| Read the status     | `rata issue status <ref>`                                    |                              |
+| List issues         | `rata issue list <filters>`                                  |                              |
+| Comment on an issue | `rata issue comment create <ref> --body-file -`              | `rata issue comment <ref>`   |
+| Assign an issue     | `rata issue assign <ref> --assignee <me\|none\|id>`          | `rata issue assign <ref> me` |
+| Assign every child  | `rata issue assign --parent <ref> --assignee <me\|none\|id>` |                              |
+| Change an issue     | `rata issue update <ref> <flags>`                            |                              |
+| Edit one section    | `rata issue section replace <ref> "<heading>" --body-file -` |                              |
+
+`issue view` is the only alias, and it means `issue show`. There is no positional
+assignee, no direct `issue comment <ref>` form, and no bare `issue <ref>`
+execution. A rejected form exits 2 and writes no data.
 
 ## Global flags and errors
 
@@ -24,8 +51,10 @@ rata issue list --json --fields identifier,title,state.name
 ```
 
 With `--json`, a failure writes one object to stderr and exits with the code of
-its class. A bulk write is the exception: it reports one result per issue on
-stdout and exits with the first failed result's code.
+its class. Two cases write only to stdout instead: a bulk write reports one
+result per issue and exits with the first failed result's code, and a failed
+`issue update --comment` reports the issue update, `"comment": null` and the
+`error` object and exits with the error's code.
 
 ```json
 {
@@ -42,11 +71,17 @@ stdout and exits with the first failed result's code.
 `conflict`, `rate_limited`, `network` and `internal`. In human mode the error
 prints `error: <message>` and, when present, `hint: <hint>` on stderr.
 
-`--fields` applies to the command's own object: the `issue` of `issue show`,
-the whole object of `issue status`, the `section` of `issue section get`, each
-item of `issues`, `teams`, `labels` or `projects`, the `team` of `team show`,
-the `defaults` object of `config show`, or the whole `status` document. The
-wrapper key stays. It is valid on `status`, `issue show`, `issue status`,
+`--fields` applies to the command's own resource: the issue object of
+`issue show`, `issue status`, `next` or `why`, the team object of `team show`,
+the section object of `issue section get`, each item of `issues`, `teams`,
+`labels` or `projects`, the `defaults` object of `config show`, or the whole
+`status` document. A list result keeps its `pageInfo`. A path through a null
+object returns `null`; for example `assignee.name` on an unassigned issue gives
+`{"assignee": null}`. An array is selectable as a whole, such as `labels`, but a
+path into an array is `validation` with a hint that names the array. An unknown
+path is `validation` and the hint lists the valid keys at the failing level.
+
+`--fields` is valid on `status`, `issue show`, `issue status`, `next`, `why`,
 `issue section get`, `issue list`, `search`, `team show`, `team list`,
 `label list`, `project list` and `config show`. Other commands reject it with
 `validation`.
@@ -79,6 +114,14 @@ selects that profile directly, also when `LINEAR_API_KEY` is set. With
 `LINEAR_API_KEY` set, `rata link` ignores the stored profiles but keeps the
 recorded `workspace`.
 
+`status` exits 0 when the stored team key is stale. `team` and `defaults` become
+`null`, and `warning` names the key and the repair: run `rata team list`, then
+`rata link --team <key>`. Human output prints the warning on stderr.
+
+On first use, rata imports a legacy `.rata.json` into the database and removes
+the file. A failed remove prints a warning on stderr and the command proceeds. A
+missing file is success.
+
 ## Teams, projects, labels
 
 | Command                                                                                          | Description                                                                                                                                    |
@@ -97,58 +140,96 @@ recorded `workspace`.
 
 ## Issues
 
-| Command                                               | Description                                                                   |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `rata issue list [flags]`                             | List issues. One page per call.                                               |
-| `rata next --parent <ref>`                            | Show the next ready child of a parent: priority, then oldest `createdAt`.     |
-| `rata why <ref>`                                      | Show one level of the blocking graph: `blocked` and `blockedBy`.              |
-| `rata search <text> [flags]`                          | Full-text search. Keeps relevance ranking; paging is best effort.             |
-| `rata issue show <ref> [--comments] [--no-comments]`  | Show one issue. `view` aliases `show`. `--summary` reads headers only.        |
-| `rata issue status <ref> [--json] [--fields <paths>]` | Read the summary, blockers, GitHub PRs and next unblocked child in one call.  |
-| `rata issue create --title <title> [flags]`           | Create an issue.                                                              |
-| `rata issue update <ref> [flags]`                     | Update an issue.                                                              |
-| `rata issue section get <ref> <heading>`              | Print one section of the body. `--with-heading` adds the heading line.        |
-| `rata issue section append <ref> <heading>`           | Append to a section, or create it at the end. `--level` sets a new heading.   |
-| `rata issue section replace <ref> <heading>`          | Replace a section and keep its heading.                                       |
-| `rata issue comment create <ref> [--body <text>]`     | Comment on an issue. `--dedupe-key` makes a retry idempotent.                 |
-| `rata issue comment update <comment-id>`              | Replace one comment body. `--dry-run` prints the diff.                        |
-| `rata issue comment delete <comment-id> [--yes]`      | Move one comment to the trash. JSON mode needs `--yes`.                       |
-| `rata issue label add [<ref>] <label...>`             | Add labels. `--parent` targets every child; then every positional is a label. |
-| `rata issue label remove [<ref>] <label...>`          | Remove labels. The same `--parent` rule.                                      |
-| `rata issue assign [<ref>] --assignee <value>`        | Assign an issue, or every child with `--parent`. `me`, a user id, or `none`.  |
-| `rata issue unassign <ref>`                           | Clear the assignee.                                                           |
-| `rata issue close <ref> [--comment <text>]`           | Close with an optional comment. `--comment-file -` reads stdin.               |
-| `rata issue reopen <ref>`                             | Reopen.                                                                       |
-| `rata issue link <ref> [flags]`                       | Create relations.                                                             |
-| `rata issue unlink <ref> [flags]`                     | Remove relations.                                                             |
+| Command                                               | Description                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `rata issue list [flags]`                             | List issues. One page per call. `--include relations` adds the blocking edges. |
+| `rata next --parent <ref>`                            | Show the next ready child: priority, then oldest `createdAt`.                  |
+| `rata why <ref>`                                      | Show one level of the blocking graph: `blocked` and `blockedBy`.               |
+| `rata search <text> [flags]`                          | Full-text search. Keeps relevance ranking; paging is best effort.              |
+| `rata issue show <ref> [--comments] [--no-comments]`  | Show one issue. `view` aliases `show`. `--summary` reads headers only.         |
+| `rata issue status <ref> [--json] [--fields <paths>]` | Read the summary, blockers, GitHub PRs and next unblocked child in one call.   |
+| `rata issue create --title <title> [flags]`           | Create an issue.                                                               |
+| `rata issue update <ref> [flags]`                     | Update an issue.                                                               |
+| `rata issue section get <ref> <heading>`              | Print one section of the body. `--with-heading` adds the heading line.         |
+| `rata issue section append <ref> <heading>`           | Append to a section, or create it at the end. `--level` sets a new heading.    |
+| `rata issue section replace <ref> <heading>`          | Replace a section and keep its heading.                                        |
+| `rata issue comment create <ref> [--body <text>]`     | Comment on an issue. `--dedupe-key` makes a retry idempotent.                  |
+| `rata issue comment update <comment-id>`              | Replace one comment body. `--dry-run` prints the diff.                         |
+| `rata issue comment delete <comment-id> [--yes]`      | Move one comment to the trash. JSON mode needs `--yes`.                        |
+| `rata issue label add [<ref>] <label...>`             | Add labels. `--parent` targets every child; then every positional is a label.  |
+| `rata issue label remove [<ref>] <label...>`          | Remove labels. The same `--parent` rule.                                       |
+| `rata issue assign [<ref>] --assignee <value>`        | Assign an issue, or every child with `--parent`. `me`, a user id, or `none`.   |
+| `rata issue unassign <ref>`                           | Clear the assignee.                                                            |
+| `rata issue close <ref> [--comment <text>]`           | Close with an optional comment. `--comment-file -` reads stdin.                |
+| `rata issue reopen <ref>`                             | Reopen.                                                                        |
+| `rata issue link <ref> [flags]`                       | Create relations.                                                              |
+| `rata issue unlink <ref> [flags]`                     | Remove relations.                                                              |
+
+### Read shapes
+
+A read of one resource prints the resource object. A collection prints
+`{ <plural>, pageInfo }`. A context document keeps its named sections.
+
+| Command                                   | JSON                                                                                                |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `issue show <ref>`                        | The issue object with `description`, `children`, `relations`, `attachments` and `comments`          |
+| `issue show <ref> --summary`              | The summary object                                                                                  |
+| `issue status <ref>`                      | The summary plus `blocked`, `blockedBy`, `prs` and `nextChild`                                      |
+| `next --parent <ref>`                     | The summary of the ready child, or `null`                                                           |
+| `why <ref>`                               | The summary plus `blocked` and `blockedBy`                                                          |
+| `team show [<ref>]`                       | The team object                                                                                     |
+| `issue section get <ref> <heading>`       | The section object: `heading`, `level`, `content`                                                   |
+| `issue list`, `search`                    | `{ issues, pageInfo }`                                                                              |
+| `team list`, `project list`, `label list` | `{ <plural>, pageInfo }`                                                                            |
+| `status`                                  | The named sections `repository`, `workspace`, `viewer`, `team`, `project`, `defaults` and `warning` |
+| `config show`                             | `{ defaults }`                                                                                      |
+| A write                                   | The write result object                                                                             |
+
+Every issue read carries `createdAt` and `updatedAt`, and `--fields createdAt`
+selects the creation time. `--fields` starts at the object in the table: the
+resource for a read, each row for a list. For `config show`, it starts at the
+`defaults` object. Write commands reject the flag.
 
 ### `issue show` flags
 
 `--comments` adds comments; `--no-comments` skips the fetch and omits the key.
 `--summary` reads the header fields only and rejects `--comments`. `--no-body`,
 `--no-relations`, `--no-children` and `--no-attachments` drop those parts and
-skip their fetches. JSON is `{ "issue": ... }`; `--summary` returns the lean
-summary object.
+skip their fetches. JSON is the issue object; `--summary` returns the lean
+summary object at the top level.
 
 ### `issue list` flags
 
-| Flag           | Meaning                                                                  |
-| -------------- | ------------------------------------------------------------------------ |
-| `--team`       | Team key or id.                                                          |
-| `--state`      | Workflow state name, for example `In Progress`.                          |
-| `--state-type` | `triage`, `backlog`, `unstarted`, `started`, `completed`, or `canceled`. |
-| `--priority`   | `none`, `urgent`, `high`, `medium`, `low`, or `0`-`4`.                   |
-| `--label`      | Label name.                                                              |
-| `--assignee`   | `me`, or a user id.                                                      |
-| `--project`    | Project id or name.                                                      |
-| `--parent`     | Parent issue reference.                                                  |
-| `--text`       | Text in the title or the description.                                    |
-| `--unblocked`  | Only open issues with no open blocker.                                   |
-| `--unassigned` | Only issues with no assignee.                                            |
-| `--sort`       | `priority`: urgent first and none last; ties go to the oldest.           |
-| `--limit`      | Page size. Default: 50, maximum: 250.                                    |
-| `--after`      | Continue after a cursor from a previous page.                            |
-| `--all`        | Drain every page. `--limit` stays the page size.                         |
+| Flag           | Meaning                                                                                                                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--team`       | Team key or id.                                                                                                                                                                                                                                    |
+| `--state`      | Workflow state name, for example `In Progress`.                                                                                                                                                                                                    |
+| `--state-type` | `triage`, `backlog`, `unstarted`, `started`, `completed`, or `canceled`.                                                                                                                                                                           |
+| `--priority`   | `none`, `urgent`, `high`, `medium`, `low`, or `0`-`4`.                                                                                                                                                                                             |
+| `--label`      | Label name.                                                                                                                                                                                                                                        |
+| `--assignee`   | `me`, or a user id.                                                                                                                                                                                                                                |
+| `--project`    | Project id or name.                                                                                                                                                                                                                                |
+| `--parent`     | Parent issue reference.                                                                                                                                                                                                                            |
+| `--text`       | Text in the title or the description.                                                                                                                                                                                                              |
+| `--unblocked`  | Only open issues with no open blocker.                                                                                                                                                                                                             |
+| `--unassigned` | Only issues with no assignee.                                                                                                                                                                                                                      |
+| `--sort`       | `priority`: urgent first and none last; ties go to the oldest.                                                                                                                                                                                     |
+| `--include`    | `relations` adds `blocks`, `blockedBy`, `duplicates`, `duplicatedBy`, `related` and `similar` to every row. One list request per page and no per-child read; up to 250 per outgoing or inverse connection, and `related` and `similar` merge both. |
+| `--limit`      | Page size. Default: 50, maximum: 250.                                                                                                                                                                                                              |
+| `--after`      | Continue after a cursor from a previous page.                                                                                                                                                                                                      |
+| `--all`        | Drain every page. `--limit` stays the page size.                                                                                                                                                                                                   |
+
+`--include` accepts `relations` only. Another value is `validation` and the hint
+lists the valid value. Without the flag, a row has no `relations` key. Each
+outgoing or inverse connection holds up to 250 relations; `related` and
+`similar` merge both. Read a row with more relations with `issue show`.
+
+### `next` and `why` flags
+
+`next --parent <ref>` takes `--parent` and `--fields`; `why <ref>` takes
+`--fields`. Both accept the global `--json`. The JSON of `next` is the summary or
+`null`; the JSON of `why` is the summary plus `blocked` and `blockedBy`. The
+paths start at that object.
 
 ### `search` flags
 
@@ -211,8 +292,8 @@ end of the description with a blank separator. `--if-unchanged <updatedAt>`
 fails with `conflict` when the issue changed since that read. `--comment`
 validates first, applies the issue update, then creates the comment; when the
 comment fails, the issue update stays, the JSON carries `"comment": null` and
-the `error` object, and the command exits 1. `--dry-run` prints the update
-action, the diff for `--append`, and the comment action.
+the `error` object, and the command exits with the error's code. `--dry-run`
+prints the update action, the diff for `--append`, and the comment action.
 
 ### `issue comment` flags
 
@@ -233,7 +314,9 @@ and prints `{ "deleted": true, "id": ... }`.
 `--body-file -`, `--dry-run` and `--if-unchanged`; `append` also takes
 `--level` (default 2). A missing heading read or replace is `not_found` and
 lists the available headings. A duplicate heading is `ambiguous` and lists the
-line numbers. `--dry-run` prints a unified diff. JSON dry runs are
+line numbers. JSON of `get` is the section object
+`{ "heading", "level", "content" }` at the top level. `--dry-run` prints a
+unified diff. JSON dry runs are
 `{ "dryRun": true, "action": "section-append", "target", "heading", "diff" }`;
 a write returns `{ "issue": { "identifier", "updatedAt" }, "section": { "heading", "level" } }`.
 
@@ -296,7 +379,7 @@ targets every child of the parent, open and closed, in creation order.
 
 Rata validates every target and label before the first write: a bad reference or
 a missing label aborts the batch with zero changes. The writes then run
-best-effort and the command exits 1 when any result failed. JSON is:
+best-effort and the command exits with the first failed result's code. JSON is:
 
 ```json
 {

@@ -12,6 +12,66 @@ Read `docs/agents/issue-tracker.md` in the repository first: it names the team,
 the label vocabulary, and the publishing conventions for that repository. This
 skill covers the CLI itself.
 
+## One way per operation
+
+Each operation has one canonical form. A different spelling fails with one hint
+that names the canonical form. Read the hint and retry; do not guess a second
+form.
+
+| Operation           | Canonical form                                               | Rejected form                |
+| ------------------- | ------------------------------------------------------------ | ---------------------------- |
+| Read one issue      | `rata issue show <ref>`                                      | `rata issue <ref>`           |
+| Read the summary    | `rata issue show <ref> --summary`                            |                              |
+| Read the status     | `rata issue status <ref>`                                    |                              |
+| List issues         | `rata issue list <filters>`                                  |                              |
+| Comment on an issue | `rata issue comment create <ref> --body-file -`              | `rata issue comment <ref>`   |
+| Assign an issue     | `rata issue assign <ref> --assignee <me\|none\|id>`          | `rata issue assign <ref> me` |
+| Assign every child  | `rata issue assign --parent <ref> --assignee <me\|none\|id>` |                              |
+| Change an issue     | `rata issue update <ref> <flags>`                            |                              |
+| Edit one section    | `rata issue section replace <ref> "<heading>" --body-file -` |                              |
+
+`issue view` is the only alias, and it means `issue show`. There is no positional
+assignee, no direct `issue comment <ref>` form, and no bare `issue <ref>`
+execution.
+
+## Read shapes
+
+One rule: a read of one resource prints that resource. A collection prints
+`{ <plural>, pageInfo }`. A context document keeps its named sections.
+
+| Command                                   | JSON                                                                                                   |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `issue show <ref>`                        | The issue object: its fields plus `description`, `children`, `relations`, `attachments` and `comments` |
+| `issue show <ref> --summary`              | The summary object                                                                                     |
+| `issue status <ref>`                      | The summary plus `blocked`, `blockedBy`, `prs` and `nextChild`                                         |
+| `next --parent <ref>`                     | The summary of the ready child, or `null`                                                              |
+| `why <ref>`                               | The summary plus `blocked` and `blockedBy`                                                             |
+| `team show [<ref>]`                       | The team object                                                                                        |
+| `issue section get <ref> "<heading>"`     | The section object: `heading`, `level`, `content`                                                      |
+| `issue list`, `search`                    | `{ issues, pageInfo }`                                                                                 |
+| `team list`, `project list`, `label list` | `{ <plural>, pageInfo }`                                                                               |
+| `status`                                  | The named sections `repository`, `workspace`, `viewer`, `team`, `project`, `defaults` and `warning`    |
+| `config show`                             | `{ defaults }`                                                                                         |
+| A write                                   | The write result object                                                                                |
+
+`--fields` starts at that object: the resource for a read, each row for a list.
+For `config show`, it starts at the `defaults` object. Write commands reject the
+flag. `pageInfo` stays in a list result. A path through a null object returns
+`null`; `assignee.name` on an unassigned issue gives `{"assignee": null}`. An
+array is selectable as a whole, such as `labels`, but a path into an array is a
+validation error. An unknown path is a validation error whose hint lists the
+valid keys at the failing level. The flag needs `--json`, and it is valid on
+`status`, `issue show`, `issue status`, `next`, `why`, `issue section get`,
+`issue list`, `search`, `team show`, `team list`, `label list`, `project list`
+and `config show`.
+
+`issue list --include relations` adds the six relation groups to every row:
+`blocks`, `blockedBy`, `duplicates`, `duplicatedBy`, `related` and `similar`.
+The flag sends one list request per page and no per-child read. Each outgoing or
+inverse connection holds up to 250 relations; `related` and `similar` merge
+both. Read a larger row with `issue show`. The flag accepts `relations` only,
+and another value fails with a hint that lists it.
+
 ## Set up a repository
 
 Link the repository to its team once:
@@ -26,6 +86,16 @@ command knows the team from any subdirectory, and every worktree shares it. Use
 `link` asks for the workspace first, then the team. When the key exists in more
 than one stored workspace, pass `--workspace <name>` to choose one.
 
+On first use, rata imports a legacy `.rata.json` into the database and removes
+the file. When the remove fails, rata prints a warning on standard error and
+keeps the file; the command still succeeds. A file that is already gone is not an
+error.
+
+When the stored team key no longer exists, `status` exits 0 and still reports
+the rest of the context. `team` and `defaults` are `null`, and `warning` names
+the stale key and the repair. Run `rata team list`, then
+`rata link --team <key>`.
+
 ## Read before you write
 
 ```bash
@@ -33,10 +103,12 @@ rata status --json                        # repo, workspace, team, defaults, vie
 rata config show --json                   # issue defaults for this repository
 rata team show --json                     # states, labels, members and priorities
 rata issue list --json                    # list issues; returns one page
+rata issue list --json --fields identifier,title,state.name  # select fields per row
 rata issue list --all --json              # drain every page
 rata issue list --after <cursor> --json   # read the next page
+rata issue list --parent ABC-50 --include relations --json  # rows with blocking edges
 rata issue show ABC-42 --json             # comments, children, relations, attachments
-rata issue status ABC-42 --json           # header, blockers, PRs and the next child
+rata issue status ABC-42 --json           # summary, blockers, PRs and the next child
 rata issue view ABC-42 --summary --json   # lean header read; `view` aliases `show`
 rata issue section get ABC-42 "Handoff log"  # one heading section of the body
 rata search "flaky test" --json
@@ -47,30 +119,31 @@ another team. Do not guess a workflow state name: read it from `team show`.
 
 An issue reference is an identifier (`ABC-42`), a UUID, or a `linear.app` URL.
 `--json` is global: it works before or after the subcommand. Parse that, not the
-human output. `--fields` trims a read to dotted paths, for example
-`rata issue list --json --fields identifier,title,state.name`. A failed `--json`
-command writes one `error` object (`code`, `message`, `hint`) to stderr and
-exits with the code of its class: 2 validation, 3 not found, 4 conflict, 5 auth,
-6 retryable, 1 internal. List commands return one page with `pageInfo`: see
+human output. A read of one resource prints the resource object. A failed
+`--json` command writes one `error` object (`code`, `message`, `hint`) to stderr
+and exits with the code of its class: 2 validation, 3 not found, 4 conflict, 5
+auth, 6 retryable, 1 internal. List commands return one page with `pageInfo`: see
 **Paging lists**.
 
 `issue show` has `--summary`, `--no-body`, `--no-relations`, `--no-children` and
 `--no-attachments`. `--summary` reads the header fields only and rejects
 `--comments`. The `--no-*` flags drop those parts and skip their fetches. `view`
-is an alias for `show`.
+is an alias for `show`. JSON is the issue object, not a wrapper.
 
-Every issue carries `updatedAt`. Pass it to `--if-unchanged <updatedAt>` on
-`issue update` or `issue section append|replace` to fail with `conflict` when
-the issue changed since that read. Linear has no compare-and-swap, so the check
-is best effort.
+Every issue carries `createdAt` and `updatedAt`. `createdAt` is the Linear
+creation time; it is in every issue read (`issue list`, `issue show` and its
+summary, `issue status`, `search`, `next`, `why`). `--fields createdAt` selects
+it. Pass `updatedAt` to `--if-unchanged <updatedAt>` on `issue update` or
+`issue section append|replace` to fail with `conflict` when the issue changed
+since that read. Linear has no compare-and-swap, so the check is best effort.
 
-`issue status` is the one read for a session start. It returns the issue
-summary, `blocked`, `blockedBy`, `prs` and `nextChild`. The PR projection reads
-the Linear `github` attachments: each PR carries its number, repo, url, status,
-draft flag, reviews, conflict flag, `mergedAt` and `closedAt`. `checks` and
-`mergeCommit` are `null`, and each PR says `source: "linear"`, so the command
-needs no GitHub token. `nextChild` is the first open, unblocked child ordered by
-priority, then creation time; it ignores the assignee, unlike `next`.
+`issue status` is the one read for a session start. It returns the issue summary
+as one flat object, plus `blocked`, `blockedBy`, `prs` and `nextChild`. The PR
+projection reads the Linear `github` attachments: each PR carries its number,
+repo, url, status, draft flag, reviews, conflict flag, `mergedAt` and `closedAt`.
+`checks` and `mergeCommit` are `null`, and each PR says `source: "linear"`, so the
+command needs no GitHub token. `nextChild` is the first open, unblocked child
+ordered by priority, then creation time; it ignores the assignee, unlike `next`.
 
 Edit one section of the body with `issue section replace`. It is the safe body
 write: it replaces the content under one heading and keeps the rest of the body.
@@ -229,11 +302,12 @@ rata issue create --title "Switch billing to Stripe" --label ready-for-agent --p
 rata issue create --title "Add the Stripe client" --parent ABC-50 --label ready-for-agent --priority medium --body-file -
 rata issue create --title "Switch the webhooks" --parent ABC-50 --label ready-for-agent --priority medium --body-file -
 rata issue link ABC-52 --blocked-by ABC-51
-rata issue list --parent ABC-50 --all --json
+rata issue list --parent ABC-50 --all --json --include relations
 ```
 
-`issue show <spec-ref> --json` also lists the child issues. A wayfinding map
-stays an issue with child issues; a map is not a spec.
+Each list row then carries its blocking edges, so the frontier needs no
+per-child read. `issue show <spec-ref> --json` also lists the child issues. A
+wayfinding map stays an issue with child issues; a map is not a spec.
 
 ## Wayfinding
 
@@ -268,15 +342,17 @@ unassigned. Read the first ready ticket with:
 rata next --parent ABC-50
 ```
 
-The JSON is `{ issue }`. `issue` is the summary, or `null` when the frontier is
+The JSON is the summary of the ready child, or `null` when the frontier is
 empty. Human output prints the ticket line, or `No ready ticket.`; both exit 0.
 `next` reads every matching page before it picks: priority first (urgent
-first), then the oldest `createdAt`.
+first), then the oldest `createdAt`. `next` accepts `--fields`; the paths start
+at the summary.
 
-Check why a ticket is not ready with `rata why ABC-51`. The JSON carries
-`blocked`, which is true when any blocker is open, and `blockedBy`, where each
-blocker names its state and whether it is `closed`. Human output prints
-`ABC-51 is ready.` when nothing blocks.
+Check why a ticket is not ready with `rata why ABC-51`. The JSON is the summary
+plus `blocked`, which is true when any blocker is open, and `blockedBy`, where
+each blocker names its state and whether it is `closed`. Human output prints
+`ABC-51 is ready.` when nothing blocks. `why` accepts `--fields`; the paths
+start at the same object.
 
 ## Reference
 
