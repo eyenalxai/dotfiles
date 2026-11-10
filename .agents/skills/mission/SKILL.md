@@ -55,7 +55,7 @@ say which one failed. Never simulate its output.
    `diagnosing-bugs`. When the work is a full architecture pass, also load
    `improve-codebase-architecture`.
 5. Run the survey and the grill. On a full architecture pass, run the survey
-   first and carry its report and candidate index into the grill. The grill
+   first and carry its plan and candidate index into the grill. The grill
    builds the fact base, asks the question frontier, and ends when the owner
    confirms shared understanding. When an existing spec, ticket, or direct
    instruction already holds the understanding, run a short grill to confirm the
@@ -203,7 +203,7 @@ the detailed review.
 | Classify | `mission` | scope and flow | Scope and understanding | grill |
 | Map | `wayfinder` | decision map | Decision gates | spec or research |
 | Research | `research` | cited markdown | Scope and understanding | spec or implement |
-| Architecture survey | `improve-codebase-architecture` | HTML report and candidate index | Scope and understanding | grill |
+| Architecture survey | `improve-codebase-architecture` | improvement plan and candidate index | Scope and understanding | grill |
 | Grill | `grilling` and `domain-modeling` | shared understanding, GLOSSARY, ADR when warranted | Scope and understanding | spec or implement |
 | Prototype | `prototype` | answer to a runnable question | Scope and understanding | spec or implement |
 | Spec | `to-spec` | spec draft | Scope and spec | tickets |
@@ -314,7 +314,7 @@ At each phase:
 - show the top references for the current phase;
 - at session start, check each path or URL and mark stale entries.
 
-The `research` output, the `improve-codebase-architecture` report and candidate
+The `research` output, the `improve-codebase-architecture` plan and candidate
 index, and the `domain-modeling` ADRs are references. The next phase's top
 references go into the handoff prompt; `handoff` owns the prompt contract.
 

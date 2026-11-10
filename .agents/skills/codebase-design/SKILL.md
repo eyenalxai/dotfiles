@@ -112,7 +112,7 @@ Design interfaces that make testing natural:
 
 ## Going deeper
 
-- **Survey a codebase for deepening candidates**: [improve-codebase-architecture](../improve-codebase-architecture/SKILL.md). A read-only pass that also models state machines and unenforced invariants.
+- **Survey a codebase for deepening candidates**: [improve-codebase-architecture](../improve-codebase-architecture/SKILL.md). A planning pass that deepens modules, simplifies interfaces, finds implicit state machines and unenforced invariants, then returns an executable plan with steps, tests, and dependency order.
 - **Deepen a cluster given its dependencies**: [DEEPENING.md](DEEPENING.md). Dependency categories, seam discipline, and tests that replace rather than layer.
 - **Explore alternative interfaces**: [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md). Run parallel subagents that design the interface several different ways, then compare depth, locality, and seam placement.
 
