@@ -151,6 +151,9 @@ hl.unbind("F9")
 hl.unbind("SUPER + CTRL + X")
 -- F1 has no modifier, so Hyprland delivers both the press and the release.
 hl.bind("F1", hl.dsp.global("anomaly.hex:dictation-F1"), { description = "Dictation (push-to-talk)" })
+
+-- Annotate on F2: tap to start and stop, hold to draw
+hl.bind("F2", hl.dsp.global("anomaly.hex:capture-F2"), { description = "Annotate (tap to start/stop, hold to draw)" })
 {% if yadm.hostname == "bijibendiannao" %}
 
 -- Laptop-only: open the Omarchy menu with CTRL + SPACE instead of SUPER + SPACE.

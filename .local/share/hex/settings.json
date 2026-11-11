@@ -115,16 +115,8 @@
     "hotkey": {
       "keys": [
         {
-          "modifier": "control",
-          "side": "any"
-        },
-        {
-          "modifier": "option",
-          "side": "any"
-        },
-        {
           "code": 0,
-          "label": "S"
+          "label": "F2"
         }
       ]
     },
