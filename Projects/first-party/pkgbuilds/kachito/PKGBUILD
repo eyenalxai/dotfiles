@@ -1,0 +1,62 @@
+# Maintainer: ulezot
+
+pkgname=kachito
+pkgver=0.0.1
+pkgrel=1
+pkgdesc='Local video player built with Rune and libmpv'
+arch=('x86_64' 'aarch64')
+url='https://github.com/eyenalxai/kachito'
+license=('MIT')
+depends=(
+  'ffmpeg'
+  'fontconfig'
+  'freetype2'
+  'gcc-libs'
+  'glibc'
+  'glib2'
+  'hicolor-icon-theme'
+  'libx11'
+  'libxkbcommon'
+  'mpv'
+  'vulkan-icd-loader'
+  'wayland'
+)
+makedepends=('git' 'pkgconf' 'rust')
+options=('!debug' 'strip')
+
+source=(
+  "$pkgname::git+ssh://git@github.com/eyenalxai/kachito.git#tag=v$pkgver"
+  'kachito.desktop'
+  'kachito.svg'
+)
+sha256sums=(
+  '0185427664dd8bc6894fd831e3f2c79b15fa396352390258186a1502b6e43527'
+  'f11ce53adb1c39ec3410354df9ae503ca2e670843d740e522416fde3b8338866'
+  '1c9ded5532368ab7032abfbde797c4d28fa270b46650c0d44e9d4b40fd40fa96'
+)
+
+prepare() {
+  cd "$pkgname"
+  cargo fetch --locked
+}
+
+build() {
+  cd "$pkgname"
+  cargo build --release --locked --offline
+}
+
+check() {
+  cd "$pkgname"
+  cargo test --release --locked --offline --lib
+}
+
+package() {
+  cd "$pkgname"
+
+  install -Dm755 target/release/kachito "$pkgdir/usr/bin/kachito"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$srcdir/kachito.desktop" \
+    "$pkgdir/usr/share/applications/kachito.desktop"
+  install -Dm644 "$srcdir/kachito.svg" \
+    "$pkgdir/usr/share/icons/hicolor/scalable/apps/kachito.svg"
+}

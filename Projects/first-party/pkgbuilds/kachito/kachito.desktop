@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Kachito
+GenericName=Video Player
+Comment=Play local video and export clips
+Exec=kachito %F
+Icon=kachito
+Terminal=false
+Categories=AudioVideo;Video;Player;
+MimeType=video/mp4;video/x-matroska;video/quicktime;video/webm;video/x-msvideo;application/x-matroska;
+Keywords=video;player;mpv;subtitle;clip;export;
+StartupNotify=true
+StartupWMClass=kachito
