@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Scaffold the per-repo configuration that the agent skills assume:
 
-- **Issue tracker**: where issues live, detected from the remote or chosen from GitHub, GitLab, local markdown, or another tracker.
+- **Issue tracker**: where issues live, detected from the remote or chosen from GitHub, GitLab, Linear, local markdown, or another tracker.
 - **Triage labels**: the strings used for the two category roles and the five state roles.
 - **Domain docs**: where `GLOSSARY.md` and ADRs live, and the rules for reading them.
 
@@ -26,6 +26,7 @@ Look at the current repo and read what exists. Do not assume:
 - `docs/adr/` and any `src/*/docs/adr/` directories.
 - `docs/agents/`: does this skill's prior output already exist?
 - `.scratch/`: a sign that a local-markdown issue tracker convention is already in use.
+- `.rata.json`, or `rata status --json` when `rata` is installed: a sign that this repository already uses Linear with rata.
 - Is the `triage` skill installed? Look for a `triage` skill folder alongside this one, or `triage` in the available skills. This decides whether Section B runs.
 - Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These appear only in a large multi-package repo; their absence means single-context, which is almost every repo.
 
@@ -41,16 +42,19 @@ Lead each section with the recommended answer so the owner can accept it in a wo
 
 Tracker precedence: detect the host from the remote, then offer the choices.
 
-1. Run `git remote -v`. If a remote points at GitHub, propose GitHub. If it points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab.
-2. If no remote points at either host, or the owner declines the detected tracker, offer all four:
+1. Run `git remote -v`. If a remote points at GitHub, propose GitHub. If it points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. If `.rata.json` exists, or `rata status --json` names a team when `rata` is installed, propose Linear.
+2. If no remote points at a host, or the owner declines the detected tracker, offer all five:
    - **GitHub**: issues live in the repo's GitHub Issues. Uses the `gh` CLI.
    - **GitLab**: issues live in the repo's GitLab Issues. Uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI.
+   - **Linear**: issues live in a Linear team. Uses the `rata` CLI.
    - **Local markdown**: issues live as files under `.scratch/<feature>/` in this repo. Fits solo projects or repos without a remote.
-   - **Other** (Jira, Linear, and so on): ask the owner to describe the workflow in one paragraph; record it as freeform prose.
+   - **Other** (Jira, and so on): ask the owner to describe the workflow in one paragraph; record it as freeform prose.
 
-Record the choice in `docs/agents/issue-tracker.md`. The GitHub and GitLab templates carry a "PRs as a request surface" flag, defaulted **off**. Leave it off and do not raise it: an owner who wants external PRs in the triage queue can flip the flag in the file later.
+Record the choice in `docs/agents/issue-tracker.md`. The GitHub, GitLab and Linear templates carry a "PRs as a request surface" flag, defaulted **off**. Leave it off and do not raise it: an owner who wants external PRs in the triage queue can flip the flag in the file later.
 
 A GitHub or GitLab tracker needs a reachable repo. When the owner picks one and no `git remote` points at that host, get the repo URL and wire it up (`git init` if needed, `git remote add origin <url>`) before going further. Done when `gh repo view` or `glab repo view` prints the project from inside this directory. If it cannot, stop and tell the owner what is missing.
+
+A Linear tracker needs an authenticated `rata` and a team. Run `rata team list` and choose the team key. From the repository root, run `rata link --team <key>`. Pass `--workspace <name>` when the key exists in more than one stored workspace. Done when `rata status --json` prints the team. If it cannot, stop and tell the owner what is missing. The tracker doc must name the `rata` skill: `rata status` warns when it does not.
 
 **Section B: Triage label vocabulary.** Skip this section when the `triage` skill is not installed; an uninstalled skill needs no labels.
 
@@ -101,15 +105,18 @@ The block:
 
 Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. Otherwise omit both.
 
-When Section B ran on GitHub or GitLab, create each configured label the tracker lacks (`gh label create` or `glab label create`).
+When Section B ran on GitHub, GitLab or Linear, create each configured label the tracker lacks (`gh label create`, `glab label create`, or `rata label create --team <key> --name <label> --if-not-exists`). List the Linear team labels with `rata label list --team <key>`.
 
 Then write the docs files from the seed templates in this skill folder:
 
 - [issue-tracker-github.md](./issue-tracker-github.md): GitHub issue tracker
 - [issue-tracker-gitlab.md](./issue-tracker-gitlab.md): GitLab issue tracker
+- [issue-tracker-linear.md](./issue-tracker-linear.md): Linear issue tracker
 - [issue-tracker-local.md](./issue-tracker-local.md): local-markdown issue tracker
 - [triage-labels.md](./triage-labels.md): label mapping (only when `triage` is installed)
 - [domain.md](./domain.md): domain doc consumer rules and layout
+
+On Linear, fill the team key, the team name, the workspace, the label strings and the pull request convention in the template. Keep the `rata` skill pointer.
 
 For other issue trackers, write `docs/agents/issue-tracker.md` from scratch using the owner's description.
 
