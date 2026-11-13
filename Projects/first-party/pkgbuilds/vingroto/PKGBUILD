@@ -17,19 +17,19 @@ makedepends=('bun>=1.4.0' 'git')
 options=('!strip' '!debug')
 install="$pkgname.install"
 
-source=("$pkgname::git+ssh://git@github.com/eyenalxai/vingroto.git#tag=v$pkgver"
+source=("$pkgname-$pkgver.tar.gz::https://github.com/eyenalxai/vingroto/archive/refs/tags/v$pkgver.tar.gz"
         "vingroto.service")
-sha256sums=('934a63883cde2805ac7324e3b3af1682ae37013cb6a2c81a2717235476773e19'
+sha256sums=('75a1c64d3b2407dadeacac3df0b92a730d0317d2af30b1726d8253defb773c99'
             '953d6fa785b4b61f6775ee83c31579119b2a1d4e24d09126001d505513246b27')
 
 build() {
-  cd "$srcdir/$pkgname"
+  cd "$srcdir/$pkgname-$pkgver"
   bun install --frozen-lockfile
   bun run build
 }
 
 package() {
-  cd "$srcdir/$pkgname"
+  cd "$srcdir/$pkgname-$pkgver"
   install -Dm755 packages/client/dist/vingroto "$pkgdir/usr/bin/vingroto"
   install -Dm755 packages/server/dist/vingroto-server "$pkgdir/usr/bin/vingroto-server"
   install -Dm644 packages/client/completions/vingroto.bash \

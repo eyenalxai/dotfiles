@@ -2,10 +2,10 @@
 # Run from this directory: nvchecker -c .nvchecker.toml
 # Docs: https://nvchecker.readthedocs.io/
 #
-# The repository is private, so the SSH remote is queried instead of the GitHub
-# API. The git source returns every tag and nvchecker picks the highest one.
+# The repository is public; the git source returns every tag and nvchecker
+# picks the highest one.
 
 [kachito]
 source = "git"
-git = "git@github.com:eyenalxai/kachito.git"
+git = "https://github.com/eyenalxai/kachito.git"
 prefix = "v"
