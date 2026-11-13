@@ -1,7 +1,7 @@
 # Maintainer: ulezot
 
 pkgname=kachito
-pkgver=0.0.1
+pkgver=0.0.2
 pkgrel=1
 pkgdesc='Local video player built with Rune and libmpv'
 arch=('x86_64' 'aarch64')
@@ -30,7 +30,7 @@ source=(
   'kachito.svg'
 )
 sha256sums=(
-  '0185427664dd8bc6894fd831e3f2c79b15fa396352390258186a1502b6e43527'
+  'SKIP'
   'f11ce53adb1c39ec3410354df9ae503ca2e670843d740e522416fde3b8338866'
   '1c9ded5532368ab7032abfbde797c4d28fa270b46650c0d44e9d4b40fd40fa96'
 )
