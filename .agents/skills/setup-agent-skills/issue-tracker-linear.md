@@ -9,13 +9,14 @@ forms, the read loop and the write loop. This file holds the repository facts.
 
 ## Repository link
 
-Run `rata link --team <TEAM>` once from the repository root. The link lives in
-rata's local database, so every subdirectory and worktree finds it. Run
-`rata status --json` to read the team, the issue defaults and the viewer.
+Run `rata link --team <TEAM> --workspace <WORKSPACE>` once from the repository
+root. The link lives in rata's local database, so every subdirectory and worktree
+finds it. Run `rata status --json` to read the team, the issue defaults and the
+viewer.
 
 When the stored team key is stale, a read warns and repairs the link. When the
 key no longer exists, the read fails with `not_found`; run `rata team list`, then
-`rata link --team <key>`.
+`rata link --team <key> --workspace <WORKSPACE>`.
 
 ## Labels
 
