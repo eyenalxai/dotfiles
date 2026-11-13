@@ -15,9 +15,9 @@ pkgbase = vingroto
 	optdepends = xdg-utils: open links from the reader in a browser
 	options = !strip
 	options = !debug
-	source = vingroto::git+ssh://git@github.com/eyenalxai/vingroto.git#tag=v0.15.1
+	source = vingroto-0.15.1.tar.gz::https://github.com/eyenalxai/vingroto/archive/refs/tags/v0.15.1.tar.gz
 	source = vingroto.service
-	sha256sums = 934a63883cde2805ac7324e3b3af1682ae37013cb6a2c81a2717235476773e19
+	sha256sums = 75a1c64d3b2407dadeacac3df0b92a730d0317d2af30b1726d8253defb773c99
 	sha256sums = 953d6fa785b4b61f6775ee83c31579119b2a1d4e24d09126001d505513246b27
 
 pkgname = vingroto
