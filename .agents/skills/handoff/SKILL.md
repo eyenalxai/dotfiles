@@ -80,8 +80,8 @@ the agent.
 
 The prompt is self-contained:
 
-- the work item issue title and team, never its id or URL, or that no record
-  exists yet and the next session must not create one before the gate;
+- the work item issue ref and title, and its team, or that no record exists yet
+  and the next session must not create one before the gate;
 - the goal, why the next step is next, and what it unlocks;
 - the mission flow, the decisions that constrain the work, and the session plan;
 - the base commit, the stack order, the open PRs, and the next frontier in plain
@@ -108,9 +108,11 @@ The prompt is self-contained:
   Name the next frontier in plain words. The owner merges bottom-up.
 
 The prompt is the one place that carries the full mission state. It names the
-work item issue by title and team, never by id or URL. The reply around it does
+work item issue by ref and title, and names its team. The reply around it does
 not repeat the state, and it does not print a ticket id, mission id, or issue key
-in the prose.
+in the prose: the no-bare-id rule covers the owner-facing reply, not the prompt.
+Why: a title-only prompt costs one search per session and can find the wrong
+issue.
 
 Write the prompt in the owner's language and keep it positive. State the desired
 end state and the owner's merge step. Name the load chain in order. For a fog
@@ -125,7 +127,7 @@ do not create one before the gate. Add the grill ledger and the open questions.
 A starting shape:
 
 ```text
-Find the work item issue in team <team> by its title: <title>. Run /mission
+Read the work item issue <ref> in team <team>: <title>. Run /mission
 continue. The goal is <goal>. The current gate is <gate>, reached with <method>.
 Open gate: <pending | approved, confirm it still holds | not used>. The
 approved rule changes are <list or pattern>. The file scope is <list or pattern>, and <what is
@@ -176,9 +178,10 @@ Read the prompt as the next session would.
    with the rule and the file scope.
 6. Does it say `head SHA` in the reply? If yes, move the SHA to the PR; the
    reply carries the decision.
-7. Does it quote, name the person who decided, or carry history? If yes, rewrite
+7. Does it name the work item only by title? If yes, add its ref.
+8. Does it quote, name the person who decided, or carry history? If yes, rewrite
    it as neutral current state.
-8. Does it treat a stack as a queue? If yes, state the stack order and the merge
+9. Does it treat a stack as a queue? If yes, state the stack order and the merge
    order. Why: the owner merges bottom-up, and a queue hides the layers.
 
 This is a reading, not a program. There is no build command for a prompt. Why:

@@ -34,14 +34,19 @@ they are missing, ask the owner for the tracker.
 
 3. Write the spec using the template below. Inside a mission, the spec is a draft
    until the scope and spec gate is approved. Present it with the scope in the
-   conversation. Never publish it before the gate. After approval, publish it to
-   the project issue tracker and apply the `ready-for-agent` triage label; no
-   additional triage is needed. When the mission uses the spec as its record, add
-   the record sections from the mission template to the same issue; never create
-   a second issue. On a fog, the map is the record: publish the spec as a
-   separate issue and link it from the map. Why: the spec is the gate document,
-   and it is a draft until the scope and spec gate. Standalone, the owner's
-   request to write and publish the spec is the approval.
+   conversation. Never publish it before the gate. After approval, publish it in
+   one create call that carries the body, the `ready-for-agent` label, a priority,
+   and the assignee. Use the create form from the repo's tracker doc. Take the
+   priority from the owner's decision: `medium` unless the owner named another
+   value. Set the assignee to the authenticated user. Never create the issue and
+   then label it or set its priority in a second call. No additional triage is
+   needed. When the mission uses the spec as its record, add the record sections
+   from the mission template to the same issue; never create a second issue. On a
+   fog, the map is the record: publish the spec as a separate issue and link it
+   from the map. Why: the spec is the gate document, and it is a draft until the
+   scope and spec gate. A create-then-label pair costs an extra call and leaves
+   the issue unready in between. Standalone, the owner's request to write and
+   publish the spec is the approval.
 
 ## The spec template
 

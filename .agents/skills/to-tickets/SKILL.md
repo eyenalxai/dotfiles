@@ -89,6 +89,7 @@ Present the proposed breakdown as a numbered list. For each ticket, show:
 - Title: short descriptive name
 - Blocked by: which other tickets (if any) must complete first
 - What it delivers: the end-to-end behavior this ticket makes work
+- Priority: the priority the ticket carries, or `medium` when none applies
 
 Ask the owner:
 
@@ -116,13 +117,19 @@ same either way, and only the shape of the blocking edges changes:
   file, never a single combined file.
 - A real issue tracker (GitHub, Linear, and so on): publish one issue per ticket
   in dependency order (blockers first) so each ticket's blocking edges reference
-  real identifiers. Use the platform's native blocking relationship where it has
-  one; otherwise set each ticket's "Blocked by" to the blocking issues. If the
-  source was an existing issue, make each ticket its sub-issue (tracker doc's
-  operation). Apply the `ready-for-agent` triage label unless instructed
-  otherwise; the tickets are agent-grabbable by construction. Record the surface
+  real identifiers. Use one create call per ticket that carries the body, the
+  `ready-for-agent` label, the priority, and the assignee. Use the create form
+  from the repo's tracker doc. Take the priority from the ticket graph; default
+  to `medium` when the owner named none. Set the assignee to the authenticated
+  user. Never create the ticket and then label it or set its priority in a second
+  call. Use the platform's native blocking relationship where it has one;
+  otherwise set each ticket's "Blocked by" to the blocking issues. If the source
+  was an existing issue, make each ticket its sub-issue (tracker doc's
+  operation). The tickets are agent-grabbable by construction. Record the surface
   and the stack order in the ticket body. The native blocking edges carry the
-  graph; the stack order is the order the owner merges.
+  graph; the stack order is the order the owner merges. Why: a create-then-label
+  or create-then-priority pair costs an extra write per ticket and leaves the
+  ticket unready in between.
 
 Work the frontier. A frontier ticket has all its blockers done. Use the stack
 rule above for a blocker that is not merged. For a purely linear chain, that
@@ -143,6 +150,8 @@ ready tickets that share a surface are stacked, not run side by side.
 
 **Blocked by:** the numbers or titles of the tickets that gate this one, or "None
 (can start immediately)".
+
+**Priority:** the priority the graph assigns, or `medium`.
 
 **Status:** ready-for-agent
 

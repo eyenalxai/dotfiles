@@ -38,6 +38,10 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 
 ### 2. Identify the spec source
 
+When the calling session holds the ticket and its parent spec, it passes their
+text. Fetch only the parts the caller did not pass. Why: the caller already paid
+for the read, and a ref alone makes the reviewer read both again.
+
 Look for the originating spec, in this order:
 
 1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`), fetched with the workflow in the tracker doc.
@@ -94,8 +98,14 @@ The **Standards sub-agent prompt** must include:
 The **Spec sub-agent prompt** must include:
 
 - The diff command and commit list.
-- The path or fetched contents of the spec.
+- The ticket text and the spec text the caller passed. When the caller passed
+  none, use the parent context that holds them, or the path or fetched contents.
+  Never send a ref alone.
 - The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behavior in the diff that was not asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Cite the spec line for each finding. Use neutral language and no history. Under 400 words."
+
+When the prompt carries the text, say that the sub-agent must not re-read the
+tracker. Why: the caller already holds both, and a second read can see a newer
+issue than the one under review.
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
