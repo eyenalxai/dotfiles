@@ -63,11 +63,12 @@ one unapproved decision across every ticket.
    implementation, and one set of notes is cheaper than the same search in every
    worker.
 
-3. Claim the frontier. For each ready ticket, assign it to yourself in the
-   tracker before spawning its worker. An open, unassigned ticket is available
-   to another session. Release a claim if a worker fails before it opens a PR.
-   Why: the assignee is the reservation, and a claimed ticket with no worker
-   blocks the frontier.
+3. Claim the frontier. For each ready ticket, claim it with the tracker doc's
+   assign form before spawning its worker. For rata, the claim is
+   `rata issue assign <ref> --assignee me`; a positional assignee is a validation
+   error. An open, unassigned ticket is available to another session. Release a
+   claim if a worker fails before it opens a PR. Why: the assignee is the
+   reservation, and a claimed ticket with no worker blocks the frontier.
 
 4. Create the stack bases. For a ticket with no blockers, branch from the current
    base (`main`, or the merge commit the mission names). For a ticket with one
@@ -79,22 +80,24 @@ one unapproved decision across every ticket.
 
 5. Spawn one worker per frontier ticket, up to the cap. Each worker:
    - confirms its checkout is based on its stack base before starting;
-   - gets only its ticket body, the spec section it needs, and the context
-     pointers, not the whole graph;
+   - gets the ticket text and the spec text it needs in the prompt, not the
+     whole graph and never a ref alone;
    - calls the Skill tool with `tdd` when the ticket has a code seam;
    - commits to its layer and rebases onto its base before reporting done;
    - opens one PR against its base, with `Closes <ticket>`.
    A worker with no code seam runs the check the ticket names, or reports that it
    names none. A worker that cannot open a PR reports the branch and the blocker.
-   Why: a silent failure leaves the frontier stalled.
+   Why: a silent failure leaves the frontier stalled, and a worker that starts
+   from refs re-reads the tracker.
 
 6. Review each PR as it opens. Call the Skill tool with `code-review` on the PR,
-   using the ticket as the spec source and the PR's base as the fixed point. Fix
-   the findings in the worker or a fix worker. Run the reviews for a wave
-   together when the harness supports concurrent subagents; otherwise run them
-   one at a time and say so. Never nest a review inside a worker that is still
-   implementing. Why: the crew chief owns the review, and a worker reviewing its
-   own diff is not an independent check.
+   passing the ticket text and the spec text in the review prompt, and using the
+   PR's base as the fixed point. Fix the findings in the worker or a fix worker.
+   Run the reviews for a wave together when the harness supports concurrent
+   subagents; otherwise run them one at a time and say so. Never nest a review
+   inside a worker that is still implementing. Why: the crew chief owns the
+   review, and a worker reviewing its own diff is not an independent check.
+   Passing the text saves the reviewer two tracker reads.
 
 7. Clean up the worker worktrees after the branches are pushed and the PRs are
    open. Keep the branches until the owner merges. Why: deleting a base branch
@@ -104,6 +107,29 @@ one unapproved decision across every ticket.
    what it unlocks, and the merge danger. Name the merge order and the next
    frontier in plain words. Stop. The owner merges bottom-up.
 
+## The worker prompt
+
+The prompt carries the context, not only the refs:
+
+- the ticket text: identifier, title, state, body, and acceptance criteria;
+- the spec text: identifier, title, and the sections that constrain the ticket,
+  such as problem, solution, decisions, and testing;
+- the relations: the tickets that block this one and the tickets it blocks;
+- the stack base, the check command, and the PR base;
+- the write scope: update, comment on, or close this ticket only; never edit the
+  parent spec; stop and ask the parent when a fact is missing.
+
+When the harness cannot inline the text, name the parent context that holds it
+and the one read that returns it. Never send a bare ref. Why: the parent already
+holds the ticket and the spec, and a worker that starts from refs pays two
+tracker reads and may read a newer issue than the parent approved.
+
+For rata, a ticket write is `rata issue update <ref> <flags>`, a comment is
+`rata issue comment create <ref> --body-file -`, and a claim is
+`rata issue assign <ref> --assignee me`. Never use a positional assignee or the
+direct comment form. Why: the CLI has one canonical form per operation, and a
+guessed form costs a failed call.
+
 ## After the merge
 
 After a merge, retarget the next layer to `main` and rebase it on the merge
@@ -111,17 +137,19 @@ commit. Continue in the current session when the context holds. Run
 `/mission continue` when a merge unblocks a new frontier. If the owner asks the
 crew chief to merge, use a merge commit.
 
-When every ticket is merged, close the spec with a comment that points at the
-stack. Why: the spec is the parent issue, and the stack's PRs close the tickets,
-not the spec.
+When every ticket is merged, close the spec in one call that carries the stack
+comment. For rata, that is `rata issue close <spec> --comment "..."`. Never post
+the comment and close in two calls. Why: the spec is the parent issue, and the
+stack's PRs close the tickets, not the spec. A separate comment leaves the spec
+open with no result in between.
 
 ## Integration branch
 
 When the owner asks for one integration PR, the crew chief merges each worker's
 branch into the integration branch with a merger subagent, runs `code-review` on
-the integration branch, opens one PR, and reports it. The review uses the spec as
-the spec source and the integration branch's base as the fixed point. The owner
-merges the one PR.
+the integration branch, opens one PR, and reports it. The review passes the spec
+text and the ticket text for the layer in the prompt, and uses the integration
+branch's base as the fixed point. The owner merges the one PR.
 
 ## The frontier is dynamic
 
