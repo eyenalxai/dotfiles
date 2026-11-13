@@ -340,9 +340,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/rata.git",
       "skillPath": "skills/rata/SKILL.md",
-      "skillFolderHash": "6837996be6f883f371caee5a078360a53ea80cef",
+      "skillFolderHash": "3c0cbf6889104d14879b52993bfc5727cdb26838",
       "installedAt": "2026-10-05T11:45:07.275Z",
-      "updatedAt": "2026-11-10T10:39:48.231Z"
+      "updatedAt": "2026-11-13T09:03:04.189Z"
     },
     "improve": {
       "source": "shadcn/improve",
