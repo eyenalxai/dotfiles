@@ -159,9 +159,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/jakubkrehel/skills.git",
       "skillPath": "skills/better-ui/SKILL.md",
-      "skillFolderHash": "6067ef3ae11c7f467cf32016741dd2591a6325f5",
+      "skillFolderHash": "41277f622e45af4c7487e9f4a4e25dc8f361962b",
       "installedAt": "2026-09-15T10:46:45.365Z",
-      "updatedAt": "2026-10-29T09:15:52.361Z"
+      "updatedAt": "2026-11-13T09:09:13.704Z"
     },
     "effect": {
       "source": "kitlangton/skills",
@@ -358,9 +358,9 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/AminBlg/SimpleEnglish.git",
       "skillPath": "skills/simple-english/SKILL.md",
-      "skillFolderHash": "dc4493623b0648588e02a0062bed8bcaa535b1de",
+      "skillFolderHash": "eba2e47f10a70079f422226a70102d50e259102a",
       "installedAt": "2026-10-09T12:43:59.543Z",
-      "updatedAt": "2026-10-09T12:43:59.543Z"
+      "updatedAt": "2026-11-13T09:09:13.733Z"
     },
     "frontend-design": {
       "source": "anthropics/skills",
