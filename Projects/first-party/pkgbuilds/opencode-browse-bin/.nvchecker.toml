@@ -1,0 +1,11 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+#
+# The npm registry's `latest` dist-tag of @opencode/browse is what the PKGBUILD
+# pins: upstream publishes the release binaries as @opencode/browse-<target>
+# from the same release run, so its version is the version to package.
+
+[opencode-browse-bin]
+source = "npm"
+npm = "@opencode/browse"

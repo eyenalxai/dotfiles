@@ -1,0 +1,28 @@
+post_install() {
+  cat <<'EOF'
+browse is installed at /usr/bin/browse; the relay binary lives in
+/usr/lib/opencode-browse.
+
+The Chrome extension is not part of this package. Install it from the Chrome
+Web Store:
+  https://chromewebstore.google.com/detail/mfnicocicmmlkpjnaffgihfjhdgjkdjg
+Each browser profile pairs once with `browse pair`.
+
+To use browse as an MCP server, add it to your agent's configuration, for
+example in ~/.config/opencode/opencode.json:
+
+  "browse": { "type": "local", "command": ["browse", "mcp"] }
+
+Do not run `browse install`: for a binary install it copies itself to
+~/.local/bin, and that copy updates itself outside pacman. If a copy from the
+install script is still there, delete ~/.local/bin/browse and point your MCP
+configuration at /usr/bin/browse.
+
+The wrapper disables browse's automatic updates because pacman owns this
+install. Update with `pacman -Syu`.
+EOF
+}
+
+post_upgrade() {
+  post_install
+}

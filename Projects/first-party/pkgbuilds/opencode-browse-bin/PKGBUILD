@@ -1,0 +1,41 @@
+# Maintainer: ulezot
+
+pkgname=opencode-browse-bin
+pkgver=0.1.1
+pkgrel=1
+pkgdesc='MCP server and relay for the browse Chrome extension: agents drive your real browser'
+arch=('x86_64' 'aarch64')
+url='https://opencode.ai/product/browse'
+license=('MIT')
+depends=('glibc')
+provides=('browse')
+conflicts=('browse')
+options=('!strip' '!debug')
+install="$pkgname.install"
+
+# Upstream ships one prebuilt binary per target twice: as the npm package
+# @opencode/browse-<target> and from its release service, with the same bytes.
+# The npm tarballs are versioned and immutable, so they are the source here.
+# @opencode/browse itself only holds the Node launcher and is of no use to us.
+source=('browse')
+source_x86_64=("browse-linux-x64-$pkgver.tgz::https://registry.npmjs.org/@opencode/browse-linux-x64/-/browse-linux-x64-$pkgver.tgz")
+source_aarch64=("browse-linux-arm64-$pkgver.tgz::https://registry.npmjs.org/@opencode/browse-linux-arm64/-/browse-linux-arm64-$pkgver.tgz")
+sha256sums=('ff8472444d7672df1d6b3e03172746b641785552b2a65743f49234ff1e30e421')
+sha256sums_x86_64=('883b5af5bbf7f741de1eb11543d2da576c626629edcad97a58eb561feaa9de7')
+sha256sums_aarch64=('2797ef0f80ba707ce96608252a3a11c409c2d1d239bf3e21beb3861a1d2d0b5f')
+
+check() {
+  # The tarball is the machine's own build, so it runs here. This catches a
+  # release that was tagged but not published to npm.
+  "$srcdir/package/bin/browse" --version | grep -qx "$pkgver"
+}
+
+package() {
+  # The release binary is already stripped; the wrapper is /usr/bin/browse so
+  # agents and terminals get one browse, and it can turn the self-updater off.
+  install -Dm755 "$srcdir/package/bin/browse" \
+    "$pkgdir/usr/lib/opencode-browse/browse"
+  install -Dm755 "$srcdir/browse" "$pkgdir/usr/bin/browse"
+  install -Dm644 "$srcdir/package/LICENSE" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

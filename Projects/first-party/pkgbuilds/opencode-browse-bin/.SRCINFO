@@ -1,0 +1,22 @@
+pkgbase = opencode-browse-bin
+	pkgdesc = MCP server and relay for the browse Chrome extension: agents drive your real browser
+	pkgver = 0.1.1
+	pkgrel = 1
+	url = https://opencode.ai/product/browse
+	install = opencode-browse-bin.install
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	depends = glibc
+	provides = browse
+	conflicts = browse
+	options = !strip
+	options = !debug
+	source = browse
+	sha256sums = ff8472444d7672df1d6b3e03172746b641785552b2a65743f49234ff1e30e421
+	source_x86_64 = browse-linux-x64-0.1.1.tgz::https://registry.npmjs.org/@opencode/browse-linux-x64/-/browse-linux-x64-0.1.1.tgz
+	sha256sums_x86_64 = 883b5af5bbf7f741de1eb11543d2da576c626629edcad97a58eb561feaa9de7
+	source_aarch64 = browse-linux-arm64-0.1.1.tgz::https://registry.npmjs.org/@opencode/browse-linux-arm64/-/browse-linux-arm64-0.1.1.tgz
+	sha256sums_aarch64 = 2797ef0f80ba707ce96608252a3a11c409c2d1d239bf3e21beb3861a1d2d0b5f
+
+pkgname = opencode-browse-bin
