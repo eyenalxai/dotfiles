@@ -19,7 +19,7 @@
       "browse": {
         "type": "local",
         "command": [
-          "/home/ulezot/.local/bin/browse",
+          "/usr/bin/browse",
           "mcp"
         ],
         "environment": {
