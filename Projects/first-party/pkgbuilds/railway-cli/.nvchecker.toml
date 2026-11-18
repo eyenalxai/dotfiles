@@ -1,0 +1,12 @@
+# nvchecker configuration file.
+# Run from this directory: nvchecker -c .nvchecker.toml
+# Docs: https://nvchecker.readthedocs.io/
+#
+# The git source reads the tags with `git ls-remote`, so it needs no GitHub
+# API token. Upstream tags releases as v<version> and also keeps a non-version
+# "push" tag, which the prefix drops.
+
+[railway-cli]
+source = "git"
+git = "https://github.com/railwayapp/cli.git"
+prefix = "v"

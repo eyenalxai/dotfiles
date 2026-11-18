@@ -1,0 +1,20 @@
+pkgbase = railway-cli
+	pkgdesc = Deploy and manage Railway projects and services from the terminal
+	pkgver = 5.75.0
+	pkgrel = 1
+	url = https://github.com/railwayapp/cli
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	makedepends = rust
+	depends = ca-certificates
+	depends = gcc-libs
+	depends = glibc
+	optdepends = xdg-utils: open the login page and links in a browser
+	conflicts = railwayapp-cli
+	options = !debug
+	options = !lto
+	source = railway-cli-5.75.0.tar.gz::https://github.com/railwayapp/cli/archive/refs/tags/v5.75.0.tar.gz
+	sha256sums = 7a9775338cfc6965a770ee9af18f3309b92d7591e6744c8d0f3e766c5d68a8d9
+
+pkgname = railway-cli

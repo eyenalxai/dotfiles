@@ -1,0 +1,49 @@
+# Maintainer: ulezot
+
+pkgname=railway-cli
+pkgver=5.75.0
+pkgrel=1
+pkgdesc='Deploy and manage Railway projects and services from the terminal'
+arch=('x86_64' 'aarch64')
+url='https://github.com/railwayapp/cli'
+license=('MIT')
+depends=('ca-certificates' 'gcc-libs' 'glibc')
+optdepends=('xdg-utils: open the login page and links in a browser')
+makedepends=('rust')
+conflicts=('railwayapp-cli')
+# !lto: makepkg adds -flto=auto to CFLAGS, which turns the bundled SQLite and
+# ring objects into GCC bitcode. rustc links with LLVM's lld, which cannot read
+# GCC bitcode, and the link fails with undefined sqlite3_* and ring_core_* symbols.
+# !debug: a release Rust build ships no debug info to split out.
+options=('!debug' '!lto')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/railwayapp/cli/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('7a9775338cfc6965a770ee9af18f3309b92d7591e6744c8d0f3e766c5d68a8d9')
+
+prepare() {
+  cd "cli-$pkgver"
+  cargo fetch --locked
+}
+
+build() {
+  cd "cli-$pkgver"
+  cargo build --release --locked --frozen
+}
+
+check() {
+  cd "cli-$pkgver"
+  ./target/release/railway --version | grep -qx "railway $pkgver"
+}
+
+package() {
+  cd "cli-$pkgver"
+
+  install -Dm755 target/release/railway "$pkgdir/usr/bin/railway"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
+  ./target/release/railway completion bash > railway.bash
+  ./target/release/railway completion zsh > _railway
+  ./target/release/railway completion fish > railway.fish
+  install -Dm644 railway.bash "$pkgdir/usr/share/bash-completion/completions/railway"
+  install -Dm644 _railway "$pkgdir/usr/share/zsh/site-functions/_railway"
+  install -Dm644 railway.fish "$pkgdir/usr/share/fish/vendor_completions.d/railway.fish"
+}
