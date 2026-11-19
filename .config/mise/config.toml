@@ -2,7 +2,7 @@
 railway = "latest"
 
 [settings]
-disable_tools = ["gh", "node", "opencode", "uv"]
+disable_tools = ["gh", "node", "opencode", "uv", "cursor-agent"]
 
 [settings.upgrade]
 auto_prune = true
