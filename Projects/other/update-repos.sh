@@ -15,6 +15,7 @@
 #   ./update-repos.sh -t 300              # per-repo timeout (default 180s)
 #   ./update-repos.sh --trim              # pull + keep only last 3 months, one branch
 #   ./update-repos.sh --trim --months 6   # same, with a 6-month window
+#   ./update-repos.sh -v                  # plus one result line per repo
 #
 # Exit codes: 0 = everything fine, 1 = at least one repo failed or stalled.
 
@@ -28,6 +29,7 @@ MATCH=""
 LIST_ONLY=0
 TRIM=0
 JOBS=8
+VERBOSE=0
 
 usage() {
   cat <<'EOF'
@@ -40,14 +42,16 @@ Usage: update-repos.sh [options]
   -j, --jobs N        Update N repos at once (default: 8)
   -m, --match TEXT    Only pull repos whose path contains TEXT
   -l, --list          List matching repos and exit
+  -v, --verbose       Print a result line for every repo (failures always show)
       --trim          Keep at most the last N months of commits and only the
                       remote's default branch (destructive to other branches,
                       tags, and unpushed work)
       --months N      History window for --trim (default: 3; implies --trim)
   -h, --help          Show this help
 
-Normal output per repo: a live block with one spinner per running repo (name,
-elapsed time, last git progress line), then a result line as each one finishes.
+Normal output is a single progress bar, updated in place. Failures and stalls
+are reported as they happen and listed again at the end; skipped repos are
+listed at the end. Use -v to print one result line per repo as well.
 
 --trim detects the default branch from refs/remotes/origin/HEAD (falling
 back to git ls-remote). It then fetches only that branch, drops other
@@ -63,6 +67,7 @@ while [ $# -gt 0 ]; do
     -j|--jobs)    JOBS="${2:?--jobs needs a value}"; shift 2 ;;
     -m|--match)   MATCH="${2:?--match needs a value}"; shift 2 ;;
     -l|--list)    LIST_ONLY=1; shift ;;
+    -v|--verbose) VERBOSE=1; shift ;;
     --trim)       TRIM=1; shift ;;
     --months)     MONTHS="${2:?--months needs a value}"; TRIM=1; shift 2 ;;
     -h|--help)    usage; exit 0 ;;
@@ -176,6 +181,11 @@ term_cols() {
   printf '%s' "$c"
 }
 
+fmt_dur() {
+  local s="$1"
+  if (( s >= 60 )); then printf '%dm %02ds' $((s/60)) $((s%60)); else printf '%ds' "$s"; fi
+}
+
 plural() {
   if [ "$1" -eq 1 ]; then printf '%s' "$2"; else printf '%s' "$3"; fi
 }
@@ -231,11 +241,14 @@ OK=0; UPDATED=0; TRIMMED=0; FAILED=0; STALLED=0; SKIPPED=0
 TOTAL_SAVED_KB=0
 RUN_START=$SECONDS
 declare -a PID=() RUNNING=() STATUS=() DETAIL=()
-declare -a STARTED=() LAST_SIZE=() LAST_CHANGE=() NAMES=() COUNTERS=()
-DIGITS=${#TOTAL}
+declare -a STARTED=()
 COLS=$(term_cols)
-LIVE=0
-TICK=0
+NAME_COL=30
+(( NAME_COL > COLS - 24 )) && NAME_COL=$(( COLS - 24 ))
+(( NAME_COL < 12 )) && NAME_COL=12
+export NAME_COL
+DONE=0
+LAST_STATUS=""
 
 # run a command, capturing its output in the given log; sets JOB_CHILD while it runs
 run_logged() {
@@ -261,11 +274,7 @@ pull_one() {
   local name="${repo#"$ROOT"/}"
   local start dur rc before after status detail="" col="" label=""
 
-  if [ "$IS_TTY" -eq 1 ]; then
-    label="[$idx/$TOTAL] $name "
-  else
-    printf '[%d/%d] %s ... ' "$idx" "$TOTAL" "$name"
-  fi
+  label="$(printf '%-*s ' "$NAME_COL" "$(shorten "$name" "$NAME_COL")")"
 
   # bare repo: nothing to pull
   if [ "$(git -C "$repo" rev-parse --is-bare-repository 2>/dev/null)" = "true" ]; then
@@ -324,11 +333,7 @@ trim_one() {
   local fetch_shallow=1 boundary_ts=0 shallow_note="" cerr="" chk_rc=0
   local -a fetch_args
 
-  if [ "$IS_TTY" -eq 1 ]; then
-    label="[$idx/$TOTAL] $name "
-  else
-    printf '[%d/%d] %s ... ' "$idx" "$TOTAL" "$name"
-  fi
+  label="$(printf '%-*s ' "$NAME_COL" "$(shorten "$name" "$NAME_COL")")"
 
   if [ -n "$(git -C "$repo" status --porcelain -uno 2>/dev/null)" ]; then
     printf '%s–%s %s%sskipped (uncommitted changes)%s\n' "$DIM" "$RST" "$label" "$DIM" "$RST"
@@ -524,89 +529,54 @@ worker() {
   if [ "$TRIM" -eq 1 ]; then trim_one "$repo" "$idx"; else pull_one "$repo" "$idx"; fi
 }
 
-# ---------- live dashboard ----------
-# The dashboard always sits at the bottom of the screen. To print a result
-# line, move back to the top of the block, wipe everything from there down,
-# and print; the next draw starts right below the result.
-live_erase() {
-  (( IS_TTY == 1 && LIVE > 0 )) || { LIVE=0; return 0; }
-  printf '\r\e[%dA\e[J' "$LIVE"
-  LIVE=0
+# ---------- progress bar ----------
+# One line, rewritten in place. Success lines are not printed (unless -v), so
+# a 57-repo run stays a few lines long instead of scrolling for screens.
+status_clear() {
+  (( IS_TTY == 1 )) || return 0
+  printf '\r\e[K'
+  LAST_STATUS=""
 }
 
-live_draw() {
+status_draw() {
   (( IS_TTY == 1 )) || return 0
-  local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-  local i el quiet size line elcol qcol progw namew fixed n=0 name
-  local fr="${frames[TICK % ${#frames[@]}]}"
-  fixed=$(( 2 * DIGITS + 13 )) # spinner, counter, padding, elapsed
-  namew=$(( COLS - fixed - 12 ))
-  (( namew > 30 )) && namew=30
-  (( namew < 10 )) && namew=10
-  progw=$(( COLS - fixed - namew ))
-  if (( progw < 1 )); then
-    namew=$(( namew + progw - 1 ))
-    (( namew < 1 )) && namew=1
-    progw=$(( COLS - fixed - namew ))
-    (( progw < 1 )) && progw=1
-  fi
+  local elapsed=$((SECONDS - RUN_START))
+  local dur barw fillw emptyw fill empty line
+  dur=$(fmt_dur "$elapsed")
+  barw=$(( COLS - 34 ))
+  (( barw > 60 )) && barw=60
+  (( barw < 10 )) && barw=10
+  fillw=$(( barw * DONE / TOTAL ))
+  (( fillw > barw )) && fillw=barw
+  emptyw=$(( barw - fillw ))
+  printf -v fill '%*s' "$fillw" ''
+  fill="${fill// /█}"
+  printf -v empty '%*s' "$emptyw" ''
+  empty="${empty// /░}"
 
-  (( LIVE > 0 )) && printf '\r\e[%dA' "$LIVE"
-  for ((i=1; i<=TOTAL; i++)); do
-    (( ${RUNNING[i]:-0} == 1 )) || continue
-    el=$((SECONDS - ${STARTED[i]:-$SECONDS}))
-    size=0
-    [ -f "$WORK/$i.log" ] && size=$(wc -c <"$WORK/$i.log" 2>/dev/null)
-    if [ "$size" != "${LAST_SIZE[i]:-0}" ]; then
-      LAST_SIZE[i]=$size
-      LAST_CHANGE[i]=$SECONDS
-    fi
-    quiet=$((SECONDS - ${LAST_CHANGE[i]:-$SECONDS}))
+  line="[$fill$empty] $DONE/$TOTAL · $RUNNING_COUNT running · $dur"
+  [ "$line" = "$LAST_STATUS" ] && return 0
+  LAST_STATUS="$line"
 
-    elcol=$CYN
-    (( el * 2 > TIMEOUT )) && elcol=$YEL
-    (( el * 10 > TIMEOUT * 8 )) && elcol=$RED
-
-    if (( quiet >= 10 )); then
-      line="silent ${quiet}s"
-      qcol=$YEL
-    else
-      line=$(last_log_line "$WORK/$i.log")
-      [ -z "$line" ] && line="waiting for output"
-      qcol=$DIM
-    fi
-    line=$(shorten "$line" "$progw")
-    name=$(shorten "${NAMES[i]}" "$namew")
-
-    printf '\e[K%s%s%s %s%s%s %s%-*s%s %s%3ds%s  %s%s%s\n' \
-      "$CYN" "$fr" "$RST" \
-      "$DIM" "${COUNTERS[i]}" "$RST" \
-      "$B" "$namew" "$name" "$RST" \
-      "$elcol" "$el" "$RST" \
-      "$qcol" "$line" "$RST"
-    n=$((n+1))
-  done
-  LIVE=$n
+  printf '\r\e[K%s[%s%s%s%s]%s %s%d/%d%s %s· %d running · %s%s%s' \
+    "$DIM" "$GRN" "$fill" "$DIM" "$empty" "$RST" \
+    "$B" "$DONE" "$TOTAL" "$RST" \
+    "$DIM" "$RUNNING_COUNT" "$dur" "$RST"
 }
 
 start_job() {
   local idx="$1" repo="$2"
-  local name="${repo#"$ROOT"/}"
-  NAMES[idx]="$name"
-  COUNTERS[idx]=$(printf '[%*d/%d]' "$DIGITS" "$idx" "$TOTAL")
   ( worker "$repo" "$idx" ) >"$WORK/$idx.out" 2>&1 &
   PID[idx]=$!
   PIDS+=("$!")
   RUNNING[idx]=1
   STARTED[idx]=$SECONDS
-  LAST_CHANGE[idx]=$SECONDS
-  LAST_SIZE[idx]=0
   RUNNING_COUNT=$((RUNNING_COUNT+1))
 }
 
 complete_job() {
   local idx="$1" rc=0
-  local status dur saved detail name
+  local status dur saved detail name show=0
   local res="$WORK/$idx.res"
   name="${REPOS[$((idx-1))]#"$ROOT"/}"
 
@@ -618,8 +588,12 @@ complete_job() {
     detail="worker exited unexpectedly (status $rc)"
   fi
 
-  live_erase
-  [ -s "$WORK/$idx.out" ] && cat "$WORK/$idx.out"
+  status_clear
+  (( VERBOSE == 1 )) && show=1
+  case "$status" in failed|stalled) show=1 ;; esac
+  if (( show == 1 )) && [ -s "$WORK/$idx.out" ]; then
+    cat "$WORK/$idx.out"
+  fi
   if [ ! -f "$res" ]; then
     printf '%s✗%s %s%sfailed%s · %s\n' "$RED" "$RST" "$B" "$name" "$RST" "$detail"
   fi
@@ -628,6 +602,7 @@ complete_job() {
   DETAIL[idx]="$detail"
   RUNNING[idx]=0
   RUNNING_COUNT=$((RUNNING_COUNT-1))
+  DONE=$((DONE+1))
 
   case "$status" in
     "up to date") OK=$((OK+1)) ;;
@@ -648,7 +623,6 @@ fi
 if (( JOBS > 1 )); then
   echo "${DIM}$JOBS at a time${RST}"
 fi
-echo
 (( IS_TTY == 1 )) && printf '\e[?25l'
 
 while (( NEXT <= TOTAL || RUNNING_COUNT > 0 )); do
@@ -664,19 +638,15 @@ while (( NEXT <= TOTAL || RUNNING_COUNT > 0 )); do
     fi
   done
 
-  if (( RUNNING_COUNT > 0 )); then
-    TICK=$((TICK+1))
-    live_draw
-    sleep 0.15
-  fi
+  status_draw
+  sleep 0.2
 done
-live_erase
+status_clear
 (( IS_TTY == 1 )) && printf '\e[?25h'
 
 # ---------- summary ----------
 elapsed=$((SECONDS-RUN_START))
-mins=$((elapsed/60)); secs=$((elapsed%60))
-[ "$mins" -gt 0 ] && dur_txt="${mins}m ${secs}s" || dur_txt="${secs}s"
+dur_txt=$(fmt_dur "$elapsed")
 
 echo
 printf '%s────────────────────────────────────────%s\n' "$DIM" "$RST"
