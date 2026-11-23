@@ -150,6 +150,32 @@ last_log_line() {
   tail -c 4000 "$1" 2>/dev/null | tr '\r' '\n' | awk 'NF { line=$0 } END { print line }'
 }
 
+# git's progress updates arrive as \r-separated chatter; drop them so only
+# real messages (errors, hints) remain.
+clean_log() {
+  tr '\r' '\n' <"$1" 2>/dev/null |
+    awk 'NF && $0 !~ /^(remote: )?(Counting|Compressing|Receiving|Resolving|Enumerating|Writing|Unpacking|Checking|Updating|Delta compression) [a-z]/'
+}
+
+# the most useful error line from a git log, if any
+log_error() {
+  local log="$1" err=""
+  err=$(clean_log "$log" | awk '/^(fatal|error):/ { print; exit }')
+  if [ -z "$err" ]; then
+    err=$(clean_log "$log" | awk 'NF && $0 !~ /^(warning|hint):/ { print; exit }')
+  fi
+  printf '%s' "$err"
+}
+
+term_cols() {
+  local c=""
+  c=$(tput cols 2>/dev/null) || c=""
+  case "$c" in ''|*[!0-9]*) c="${COLUMNS:-80}" ;; esac
+  case "$c" in ''|*[!0-9]*) c=80 ;; esac
+  (( c < 30 )) && c=30
+  printf '%s' "$c"
+}
+
 plural() {
   if [ "$1" -eq 1 ]; then printf '%s' "$2"; else printf '%s' "$3"; fi
 }
@@ -192,6 +218,7 @@ PIDS=()
 
 cleanup_children() {
   local p
+  (( IS_TTY == 1 )) && printf '\e[?25h'
   for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null; done
   rm -rf "$WORK"
 }
@@ -204,7 +231,9 @@ OK=0; UPDATED=0; TRIMMED=0; FAILED=0; STALLED=0; SKIPPED=0
 TOTAL_SAVED_KB=0
 RUN_START=$SECONDS
 declare -a PID=() RUNNING=() STATUS=() DETAIL=()
-declare -a STARTED=() LAST_SIZE=() LAST_CHANGE=() LABELS=()
+declare -a STARTED=() LAST_SIZE=() LAST_CHANGE=() NAMES=() COUNTERS=()
+DIGITS=${#TOTAL}
+COLS=$(term_cols)
 LIVE=0
 TICK=0
 
@@ -264,14 +293,11 @@ pull_one() {
   elif [ "$rc" -ne 0 ]; then
     status="failed"; col=$RED
     local err
-    err=$(tr '\r' '\n' <"$JOB_LOG" | awk '/^(fatal|error):/ { print; exit }')
-    if [ -z "$err" ]; then
-      err=$(tr '\r' '\n' <"$JOB_LOG" | awk 'NF && $0 !~ /^(warning|hint):/ { print; exit }')
-    fi
+    err=$(log_error "$JOB_LOG")
     [ -z "$err" ] && err="git pull exited with status $rc"
     detail=$(shorten "$err" 200)
     printf '%s✗%s %s%sfailed%s · %ss\n' "$col" "$RST" "$label" "$col" "$RST" "$dur"
-    tr '\r' '\n' <"$JOB_LOG" | awk 'NF' | tail -n 12 | sed 's/^/    /'
+    clean_log "$JOB_LOG" | tail -n 12 | sed 's/^/    /'
   elif [ "$before" = "$after" ]; then
     status="up to date"; col=$DIM
     detail=""
@@ -378,11 +404,10 @@ trim_one() {
     return
   elif [ "$rc" -ne 0 ]; then
     local err
-    err=$(tr '\r' '\n' <"$JOB_LOG" | awk '/^(fatal|error):/ { print; exit }')
-    [ -z "$err" ] && err=$(last_log_line "$JOB_LOG")
+    err=$(log_error "$JOB_LOG")
     [ -z "$err" ] && err="git fetch exited with status $rc"
     printf '%s✗%s %s%sfailed%s · %ss\n' "$RED" "$RST" "$label" "$RED" "$RST" "$(shorten "$err" 160)"
-    tr '\r' '\n' <"$JOB_LOG" | awk 'NF' | tail -n 8 | sed 's/^/    /'
+    clean_log "$JOB_LOG" | tail -n 8 | sed 's/^/    /'
     job_done "failed" 0 "$(shorten "$err" 200)"
     return
   fi
@@ -396,10 +421,10 @@ trim_one() {
   timeout 60 git -C "$repo" checkout -q -B "$branch" "origin/$branch" >"$JOB_LOG" 2>&1
   chk_rc=$?
   if [ "$chk_rc" -ne 0 ]; then
-    cerr=$(tr '\r' '\n' <"$JOB_LOG" | awk 'NF { print; exit }')
+    cerr=$(log_error "$JOB_LOG")
     [ -z "$cerr" ] && cerr="git checkout exited with status $chk_rc"
     printf '%s✗%s %s%sfailed%s · checkout: %s\n' "$RED" "$RST" "$label" "$RED" "$RST" "$(shorten "$cerr" 140)"
-    tr '\r' '\n' <"$JOB_LOG" | awk 'NF' | tail -n 8 | sed 's/^/    /'
+    clean_log "$JOB_LOG" | tail -n 8 | sed 's/^/    /'
     job_done "failed" 0 "checkout: $(shorten "$cerr" 180)"
     return
   fi
@@ -500,21 +525,32 @@ worker() {
 }
 
 # ---------- live dashboard ----------
+# The dashboard always sits at the bottom of the screen. To print a result
+# line, move back to the top of the block, wipe everything from there down,
+# and print; the next draw starts right below the result.
 live_erase() {
   (( IS_TTY == 1 && LIVE > 0 )) || { LIVE=0; return 0; }
-  local i
-  printf '\r\e[%dA' "$LIVE"
-  for ((i=0; i<LIVE; i++)); do printf '\e[K\n'; done
+  printf '\r\e[%dA\e[J' "$LIVE"
   LIVE=0
 }
 
 live_draw() {
   (( IS_TTY == 1 )) || return 0
   local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-  local i el quiet size maxw line elcol q n=0
+  local i el quiet size line elcol qcol progw namew fixed n=0 name
   local fr="${frames[TICK % ${#frames[@]}]}"
-  maxw=$(( ${COLUMNS:-80} - 46 ))
-  (( maxw < 20 )) && maxw=20
+  fixed=$(( 2 * DIGITS + 13 )) # spinner, counter, padding, elapsed
+  namew=$(( COLS - fixed - 12 ))
+  (( namew > 30 )) && namew=30
+  (( namew < 10 )) && namew=10
+  progw=$(( COLS - fixed - namew ))
+  if (( progw < 1 )); then
+    namew=$(( namew + progw - 1 ))
+    (( namew < 1 )) && namew=1
+    progw=$(( COLS - fixed - namew ))
+    (( progw < 1 )) && progw=1
+  fi
+
   (( LIVE > 0 )) && printf '\r\e[%dA' "$LIVE"
   for ((i=1; i<=TOTAL; i++)); do
     (( ${RUNNING[i]:-0} == 1 )) || continue
@@ -526,15 +562,28 @@ live_draw() {
       LAST_CHANGE[i]=$SECONDS
     fi
     quiet=$((SECONDS - ${LAST_CHANGE[i]:-$SECONDS}))
-    line=$(shorten "$(last_log_line "$WORK/$i.log")" "$maxw")
+
     elcol=$CYN
     (( el * 2 > TIMEOUT )) && elcol=$YEL
     (( el * 10 > TIMEOUT * 8 )) && elcol=$RED
-    q=""
-    (( quiet >= 10 )) && q="  silent ${quiet}s"
-    printf '\e[K%s%s%s %s%s%s %s%3ds%s%s %s%s%s\n' \
-      "$CYN" "$fr" "$RST" "$B" "${LABELS[i]}" "$RST" \
-      "$elcol" "$el" "$RST" "$q" "$DIM" "$line" "$RST"
+
+    if (( quiet >= 10 )); then
+      line="silent ${quiet}s"
+      qcol=$YEL
+    else
+      line=$(last_log_line "$WORK/$i.log")
+      [ -z "$line" ] && line="waiting for output"
+      qcol=$DIM
+    fi
+    line=$(shorten "$line" "$progw")
+    name=$(shorten "${NAMES[i]}" "$namew")
+
+    printf '\e[K%s%s%s %s%s%s %s%-*s%s %s%3ds%s  %s%s%s\n' \
+      "$CYN" "$fr" "$RST" \
+      "$DIM" "${COUNTERS[i]}" "$RST" \
+      "$B" "$namew" "$name" "$RST" \
+      "$elcol" "$el" "$RST" \
+      "$qcol" "$line" "$RST"
     n=$((n+1))
   done
   LIVE=$n
@@ -542,7 +591,9 @@ live_draw() {
 
 start_job() {
   local idx="$1" repo="$2"
-  LABELS[idx]="[$idx/$TOTAL] ${repo#"$ROOT"/} "
+  local name="${repo#"$ROOT"/}"
+  NAMES[idx]="$name"
+  COUNTERS[idx]=$(printf '[%*d/%d]' "$DIGITS" "$idx" "$TOTAL")
   ( worker "$repo" "$idx" ) >"$WORK/$idx.out" 2>&1 &
   PID[idx]=$!
   PIDS+=("$!")
@@ -598,6 +649,7 @@ if (( JOBS > 1 )); then
   echo "${DIM}$JOBS at a time${RST}"
 fi
 echo
+(( IS_TTY == 1 )) && printf '\e[?25l'
 
 while (( NEXT <= TOTAL || RUNNING_COUNT > 0 )); do
   while (( RUNNING_COUNT < JOBS && NEXT <= TOTAL )); do
@@ -619,6 +671,7 @@ while (( NEXT <= TOTAL || RUNNING_COUNT > 0 )); do
   fi
 done
 live_erase
+(( IS_TTY == 1 )) && printf '\e[?25h'
 
 # ---------- summary ----------
 elapsed=$((SECONDS-RUN_START))
@@ -627,15 +680,26 @@ mins=$((elapsed/60)); secs=$((elapsed%60))
 
 echo
 printf '%s────────────────────────────────────────%s\n' "$DIM" "$RST"
+parts=()
 if [ "$TRIM" -eq 1 ]; then
-  printf '%s%d %s in %s:%s %d trimmed, %d failed, %d stalled, %d skipped\n' \
-    "$B" "$TOTAL" "$REPO_NOUN" "$dur_txt" "$RST" "$TRIMMED" "$FAILED" "$STALLED" "$SKIPPED"
-  if (( TOTAL_SAVED_KB > 0 )); then
-    printf '%sreclaimed %s%s\n' "$DIM" "$(human_kb "$TOTAL_SAVED_KB")" "$RST"
-  fi
+  (( TRIMMED > 0 )) && parts+=("$TRIMMED trimmed")
 else
-  printf '%s%d %s in %s:%s %d up to date, %d updated, %d failed, %d stalled, %d skipped\n' \
-    "$B" "$TOTAL" "$REPO_NOUN" "$dur_txt" "$RST" "$OK" "$UPDATED" "$FAILED" "$STALLED" "$SKIPPED"
+  (( OK > 0 )) && parts+=("$OK up to date")
+  (( UPDATED > 0 )) && parts+=("$UPDATED updated")
+fi
+(( FAILED > 0 )) && parts+=("$FAILED failed")
+(( STALLED > 0 )) && parts+=("$STALLED stalled")
+(( SKIPPED > 0 )) && parts+=("$SKIPPED skipped")
+summary=""
+for p in "${parts[@]}"; do
+  [ -n "$summary" ] && summary+=", "
+  summary+="$p"
+done
+[ -n "$summary" ] || summary="nothing to do"
+printf '%s%d %s in %s%s · %s%s%s\n' \
+  "$B" "$TOTAL" "$REPO_NOUN" "$dur_txt" "$RST" "$DIM" "$summary" "$RST"
+if [ "$TRIM" -eq 1 ] && (( TOTAL_SAVED_KB > 0 )); then
+  printf '%sreclaimed %s%s\n' "$DIM" "$(human_kb "$TOTAL_SAVED_KB")" "$RST"
 fi
 
 if (( FAILED + STALLED > 0 )); then
