@@ -1,44 +1,37 @@
 # Design it twice
 
-Use this parallel subagent pattern when the owner wants to explore alternative interfaces for a chosen deepening candidate. It comes from "Design It Twice" (Ousterhout): a first idea is rarely the strongest.
+Parallel worker pattern for comparing competing interfaces on a chosen deepening candidate (Ousterhout's "Design It Twice": the first interface is rarely the deepest). Uses the exact vocabulary in [SKILL.md](SKILL.md): **module**, **interface**, **seam**, **adapter**, **leverage**, **locality**.
 
-This file uses the vocabulary in [SKILL.md](SKILL.md): **module**, **interface**, **seam**, **adapter**, **leverage**.
+## Roles
+
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: frames the problem space for the owner, spawns competing DeepSeek workers in parallel, critiques their designs on depth, locality, and seam placement, and delivers one strong recommendation (or hybrid).
+- **Workers (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`, 3+ parallel `general` subagents)**: each designs one radically different interface under a distinct constraint and returns a compact proposal (under 400 words).
 
 ## Process
 
-### 1. Frame the problem space
+### 1. Frame the problem for the owner
 
-Before spawning subagents, write an explanation of the problem space for the chosen candidate that the owner can read:
+Write a concise problem-space brief the owner can read while workers run:
+- Constraints any valid interface must satisfy.
+- Dependencies and their category from [DEEPENING.md](DEEPENING.md).
+- A rough code sketch grounding the constraints (not a proposal).
 
-- The constraints any new interface must satisfy.
-- The dependencies it relies on, and their category in [DEEPENING.md](DEEPENING.md).
-- A rough code sketch that grounds the constraints. It is not a proposal; it makes the constraints concrete.
+### 2. Spawn competing workers in parallel
 
-Show it to the owner, then continue to step 2. The owner reads and thinks while the subagents work in parallel. Why: the explanation gives the owner a frame for the comparison, and the subagents do not wait on it.
+Launch 3 (or 4) `general` subagents simultaneously on `openrouter/deepseek/deepseek-v4.1-flash-1017#max`. Give every worker the technical pointers (file paths, coupling, dependency category, what sits behind the seam), plus both [SKILL.md](SKILL.md) and `GLOSSARY.md` vocabulary. Assign each a distinct constraint:
 
-### 2. Spawn subagents
+- **Worker 1:** Minimize the interface (1 to 3 entry points; maximize leverage per entry point).
+- **Worker 2:** Maximize flexibility and extension across callers.
+- **Worker 3:** Optimize for the 80% caller so the default call is trivial.
+- **Worker 4 (when cross-seam IO applies):** Design around explicit ports and adapters.
 
-Spawn three or more subagents in parallel. Each must produce a **radically different** interface for the deepened module.
+Require each worker to return:
+1. Interface: types, methods, parameters, invariants, ordering rules, error modes.
+2. Realistic caller usage example.
+3. Complexity hidden behind the seam.
+4. Dependency/adapter strategy ([DEEPENING.md](DEEPENING.md)).
+5. Honest tradeoffs (where leverage is high vs. thin).
 
-Prompt each subagent with a separate technical brief: file paths, coupling details, dependency category from [DEEPENING.md](DEEPENING.md), and what sits behind the seam. The brief is independent of the owner-facing explanation in step 1. Give each agent a different design constraint:
+### 3. Critique and recommend (orchestrator)
 
-- Agent 1: "Minimize the interface: one to three entry points. Maximize leverage per entry point."
-- Agent 2: "Maximize flexibility: support many use cases and extension."
-- Agent 3: "Optimize for the most common caller: make the default case trivial."
-- Agent 4, when applicable: "Design around ports and adapters for cross-seam dependencies."
-
-Include both [SKILL.md](SKILL.md) vocabulary and `GLOSSARY.md` vocabulary in the brief, so each subagent names things consistently with the architecture language and the project's domain language.
-
-Each subagent outputs:
-
-1. Interface: types, methods, parameters, plus invariants, ordering, and error modes.
-2. A usage example that shows how callers use it.
-3. What the implementation hides behind the seam.
-4. Dependency strategy and adapters. See [DEEPENING.md](DEEPENING.md).
-5. Trade-offs: where leverage is high and where it is thin.
-
-### 3. Present and compare
-
-Present designs sequentially so the owner can absorb each one, then compare them in prose. Contrast by **depth** (leverage at the interface), **locality** (where change concentrates), and **seam placement**. Why: a side-by-side dump invites skimming, and the comparison is the point.
-
-After comparing, recommend one design: name the strongest and why. If elements from different designs combine well, propose a hybrid. The owner wants a strong read, not a menu.
+If a worker produced a shallow pass-through or ignored constraints, follow up on its `sessionID` or discard it. Present the viable designs sequentially in prose (side-by-side tables invite skimming), contrast them by **depth**, **locality**, and **seam placement**, and end with **one concrete recommendation** (or hybrid) and why. Never hand the owner an unranked menu.

@@ -5,40 +5,36 @@ description: Test-driven development. Use when the owner wants to build features
 
 # Test-driven development
 
-TDD is the red → green loop. This skill is the reference that makes the loop produce tests worth keeping: what a test must do, where tests go, the anti-patterns, and the rules of the loop.
+Strict red-to-green loop executed inside the implementation worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`). Read before and during every cycle; checking test quality after the code is written cannot fix a wrong seam or tautological assertion.
 
-## When to use
+## When to run
 
-Use TDD when the change has a pre-agreed seam and the behavior is testable through it. Use the seam approved in the spec, the ticket, or the scope and understanding gate. If no seam is approved, stop and ask; a test at an unconfirmed seam tests the wrong boundary. A markdown or prose change has no code seam and skips the loop; use the review check instead. Why: the red-green loop can only test the seam it runs at, and a wrong seam makes a green test meaningless.
+```text
+Does this change have an approved code seam (spec Testing Decisions, ticket criteria, or gate)?
+├── No (prose/markdown only) → Skip TDD; verify against the repo's writing standard.
+├── Missing or ambiguous     → Stop and report to the orchestrator; never invent a seam.
+└── Yes                      → Run the red-green loop at that seam.
+```
 
-For a code change, every section applies on every cycle: consult them before and during the loop, not after. Why: the reference shapes the test you write, and reading it after the loop cannot repair a wrong seam or a tautological assertion.
+Read `GLOSSARY.md` (if present) so test names match domain terms, and respect local ADRs. See [tests.md](tests.md) for concrete good/bad examples and [mocking.md](mocking.md) for mocking rules. If the seam's interface shape itself is unclear, consult `codebase-design`.
 
-When exploring the codebase, read `GLOSSARY.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you touch.
+## What makes a test worth keeping
 
-## What a test must do
+Tests exercise **public behavior through the approved seam**, never internal structure. If you refactor the internals without changing behavior, every test must still pass untouched.
 
-Tests verify behavior through public interfaces, not implementation details. Code can change entirely; tests stay unchanged. A test reads like a specification: "user can checkout with valid cart" names the capability, and it survives refactors because it does not depend on internal structure.
+Reject these three anti-patterns on sight:
 
-See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
+- **Implementation-coupled:** mocks internal collaborators, calls private methods, or asserts on side channels (querying a DB directly instead of calling the interface). Breaks on refactors.
+- **Tautological:** recomputes the expected result with the same formula as the code (`expect(add(a, b)).toBe(a + b)` or hand-mirrored snapshots). Expected values must come from an independent source: fixed literals, worked examples, or the spec.
+- **Horizontal slicing:** writing all tests first, then all code. Bulk tests test imagined shapes instead of real behavior and lock in structure before you understand the problem.
 
-## Seams: where tests go
+## The loop
 
-A **seam** is the public boundary you test at: the interface where you observe behavior without reaching inside. Tests live at seams, never against internals.
+Work in **vertical slices**, one behavior at a time:
 
-**Test only at pre-agreed seams.** The approved seam is in the spec's Testing Decisions, the ticket's acceptance criteria, or the scope and understanding gate's rule changes. Before writing any test, read the approved seam. Do not ask for a separate seam approval; the scope and understanding gate or the ticket gate already approved it. Never write a test at an unconfirmed seam. If the seam is missing or wrong, stop and ask. Why: you cannot test everything, and the approved seam is where testing effort belongs.
-
-When the shape of that interface is itself in question (how deep the module is, where the seam belongs, what the interface exposes), call the Skill tool with "codebase-design" for the vocabulary. It is the shared source of the module, interface, depth, seam, adapter, leverage, and locality terms, and it is a reference to consult, not a session to run.
-
-## Anti-patterns
-
-- **Implementation-coupled**: mocks internal collaborators, tests private methods, or verifies through a side channel (querying the database instead of using the interface). The tell is that the test breaks when you refactor but behavior has not changed.
-- **Tautological**: the assertion recomputes the expected value the way the code does (`expect(add(a, b)).toBe(a + b)`, a snapshot derived by hand the same way, a constant asserted equal to itself), so it passes by construction and can never disagree with the code. Expected values must come from an independent source of truth: a fixed literal, a worked example, or the spec.
-- **Horizontal slicing**: writing all tests first, then all implementation. Bulk tests verify _imagined_ behavior: you test the _shape_ of things rather than user-facing behavior, the tests go insensitive to real changes, and you commit to test structure before understanding the implementation. Work in **vertical slices** instead: one test → one implementation → repeat, each test a **tracer bullet** that responds to what the last cycle taught you.
-
-## Rules of the loop
-
-- **Red before green.** Write the failing test first, then only enough code to pass it. Do not anticipate future tests or add speculative features. Why: a test that passes before the code is not testing the change.
-- **One slice at a time.** One seam, one test, one minimal implementation per cycle. Why: a batch of tests verifies imagined behavior, and the tests go blind to the real change.
-- **Refactoring is not part of the loop.** It belongs to the review stage (see the `code-review` skill), not the red → green implementation cycle. Why: a refactor and a behavior change in one step hides which one broke the test.
+1. **Red.** Write one failing test at the approved seam for the next slice of behavior. Run it and confirm it fails for the right reason (a test that passes immediately proves nothing).
+2. **Green.** Write the smallest implementation that makes that test pass. Do not anticipate later tests or add speculative abstractions.
+3. **Repeat** for the next vertical slice until every acceptance criterion is green.
+4. **Leave refactoring for review.** Do not mix refactoring into a red-green cycle; mixing behavior changes and structure changes hides which one broke a test. Structural cleanup happens in `code-review`.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

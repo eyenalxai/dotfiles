@@ -6,176 +6,93 @@ disable-model-invocation: true
 
 # To tickets
 
-Break a plan, spec, or conversation into a set of tickets: tracer-bullet vertical
-slices, each declaring the surface it owns and the tickets that block it.
+Cut an approved spec into tracer-bullet vertical slices, each declaring the surface it owns and its blocking edges, then publish to the configured tracker.
 
-The issue tracker and triage label vocabulary come from the repo's agent docs. If
-they are missing, ask the owner for the tracker.
+## Roles
+
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: designs the slice breakdown, blocking graph, and surface ownership; quizzes the owner at the Tickets gate; writes every ticket body; publishes after approval.
+- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: explores affected surfaces, call-site blast radius (for wide refactors), and prefactoring opportunities via `explore` so the orchestrator does not scan the repo directly.
+
+Read the tracker doc and triage-label mapping first. If missing, ask the owner.
 
 ## Gate check
 
-This skill runs on a spec. Inside a mission, it runs only on the feature or fog
-path, after the scope and spec gate is approved. Read the mission document and
-the gate decision. If the scope and spec gate is pending, stop and ask. On a fog
-path, the decision gates must also be approved. Standalone, the owner's request
-to cut the tickets is the approval; the published spec is the source. Never cut a
-ticket graph from an unapproved spec. Why: the graph multiplies the unapproved
-decision. A change, bug, or trivial never uses this skill; the issue is the work
-item, not a ticket graph.
+- **Inside a mission:** runs only on Feature or Fog, **after** the scope and spec gate is approved (plus Fog decision gates). If pending, stop and ask. Cutting tickets from an unapproved spec multiplies unapproved work. Change, Bug, and Trivial never use `to-tickets`.
+- **Standalone:** the owner's request is the approval; the published spec is the source.
 
 ## Process
 
-### 1. Gather context
+### 1. Gather context and surfaces
 
-Work from what is already in the conversation context. When the owner passes a
-reference (a spec path, an issue number or URL), fetch it and read its full body
-and comments.
+Work from the conversation or fetch the named spec/issue. If affected surfaces are not yet mapped, dispatch an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to list the modules, routes, schemas, commands, and prefactoring seams involved (under 400 words). Use `GLOSSARY.md` terms and respect ADRs.
 
-### 2. Explore the codebase
+### 2. Cut the slices
 
-If the codebase is not already explored, explore it to understand the current
-state of the code. Use the project's domain glossary vocabulary in ticket titles
-and descriptions, and respect ADRs in the area you touch.
+Follow these rules unless the work is a wide refactor:
 
-Look for opportunities to prefactor the code to make the implementation easier.
-Make the change easy, then make the easy change.
+- **Vertical, never horizontal.** Each slice cuts a thin, working path across all layers (schema, logic, API/UI, tests) so it is demoable and verifiable on its own.
+- **One fresh worker context.** Size each ticket so one worker session can build, test, and verify it cleanly.
+- **Disjoint surface ownership.** Name the module, route, schema, or command each ticket owns. If two ready tickets edit the same surface, add a blocking edge and stack them; parallel edits to one surface create merge conflicts.
+- **Prefactor first.** Put enabling refactors in an earlier blocking ticket so behavior changes stay legible.
+- **Honest blocking edges.** Add an edge only when one ticket genuinely needs another's interface or surface. A ticket with one blocker stacks on the blocker's branch; a ticket with multiple blockers waits until all but one merge, then stacks on the last. Stack order equals merge order.
 
-### 3. Draft vertical slices
+**Exception: wide refactors.** When one mechanical change (renaming a column, retyping a shared symbol) breaks too many call sites for any vertical slice to stay green, use **expand, migrate, contract**:
 
-Break the work into tracer-bullet tickets.
+1. **Expand**: add the new form beside the old so CI stays green.
+2. **Migrate**: move callers in batches sized by blast radius (package or directory), each ticket blocked by Expand.
+3. **Contract**: delete the old form once zero callers remain, blocked by every Migrate batch.
 
-### Vertical slice rules
+If batches cannot stay green individually, share one integration branch blocking a final integrate-and-verify ticket.
 
-- Each slice cuts a narrow but complete path through every layer (schema, API,
-  UI, tests): vertical, never a horizontal slice of one layer. Why: a horizontal
-  slice lands no user-visible behavior, so the owner cannot verify it.
-- A completed slice is demoable or verifiable on its own. Why: a slice the owner
-  cannot see is a slice the owner cannot approve.
-- Each slice fits in a single fresh context window. Why: a ticket that does not
-  fit a session forces a handoff in the middle of the build.
-- Each slice names the surface it owns: the module, route, schema, or command it
-  changes. Two ready tickets that own the same surface get a blocking edge and
-  stack; the one that lands the surface first blocks the other. Why: parallel
-  branches that edit one surface conflict, and a stack keeps the second change
-  reviewable as a layer.
-- Do prefactoring first. Why: a prefactor mixed into a slice hides the behavior
-  change.
+### 3. Present the graph (Tickets gate)
 
-Give each ticket its blocking edges: the other tickets that must complete before
-it can start. A ticket with no blockers can start immediately. A ticket with one
-blocker stacks on the blocker's branch; a ticket with several blockers waits for
-all but one to merge, then stacks on the last. The stack order is the merge
-order. Why: a missing edge starts a ticket before its prerequisite, and an
-invented edge keeps a ready ticket off the frontier. A stack lets dependent work
-start before the blocker merges without a PR with several bases.
+Show the owner a numbered list with:
+- **Title**: short plain name
+- **Surface owned**: module, route, schema, or command
+- **Blocked by**: prerequisites (or none)
+- **Delivers**: end-to-end verifiable behavior
 
-**Wide refactors are the exception to vertical slicing.** A wide refactor is one
-mechanical change (rename a column, retype a shared symbol) whose blast radius
-fans across the codebase, so a single edit breaks thousands of call sites at once
-and no vertical slice can land green. Never force it into a tracer bullet;
-sequence it as expand, then contract. First expand: add the new form beside the
-old so nothing breaks. Then migrate the call sites over in batches sized by blast
-radius (per package, per directory), each batch its own ticket blocked by the
-expand, keeping CI green batch to batch because the old form still exists.
-Finally contract: delete the old form once no caller remains, in a ticket blocked
-by every migrate batch. When even the batches cannot stay green alone, keep the
-sequence but let them share an integration branch that all block a final
-integrate-and-verify ticket; green is promised only there.
+Ask whether granularity, blocking edges, surface splits, and stack/merge order look right. Iterate until the owner approves the graph. Record the approval date and neutral decision in the mission record's Tickets gate (never quote words, name deciders, or add history).
 
-### 4. Quiz the owner
+### 4. Publish
 
-Present the proposed breakdown as a numbered list. For each ticket, show:
+Publish in dependency order (blockers first) so real IDs exist before wiring edges. Never modify or close the parent spec issue.
 
-- Title: short descriptive name
-- Blocked by: which other tickets (if any) must complete first
-- What it delivers: the end-to-end behavior this ticket makes work
-- Priority: the priority the ticket carries, or `medium` when none applies
+- **Local markdown tracker:** one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md` (never one combined file).
+- **Issue tracker (Linear, GitHub, GitLab):** create each ticket as a child/sub-issue of the spec with `ready-for-agent` (unless instructed otherwise), wiring native blocking edges where supported.
 
-Ask the owner:
+Never include specific file paths or code snippets in ticket bodies (they go stale). One exception: a trimmed prototype snippet capturing a decision sharper than prose, marked as coming from a prototype.
 
-- Is the granularity right? Too coarse or too fine?
-- Are the blocking edges correct: does each ticket depend only on tickets that
-  genuinely gate it?
-- Do any tickets need to merge or split?
-- Does the stack order match the merge order, and are the surfaces disjoint for
-  the tickets that run together?
+### Templates
 
-Iterate until the owner approves the ticket graph. Record the decision and date
-in the mission document's Tickets gate. Never reproduce the owner's words or
-name the person who decided. Keep no history of the rounds. Why: the ticket graph
-is the gate document, and an agent summary is a log, not the approval.
-
-### 5. Publish the tickets to the configured tracker
-
-Publish the approved tickets. The tracker decides the form; the tickets are the
-same either way, and only the shape of the blocking edges changes:
-
-- Local files: write one file per ticket under
-  `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` in
-  dependency order (blockers first). Each file's "Blocked by" lists the numbers or
-  titles it depends on. Use the per-ticket file template below: one ticket per
-  file, never a single combined file.
-- A real issue tracker (GitHub, Linear, and so on): publish one issue per ticket
-  in dependency order (blockers first) so each ticket's blocking edges reference
-  real identifiers. Use one create call per ticket that carries the body, the
-  `ready-for-agent` label, the priority, and the assignee. Use the create form
-  from the repo's tracker doc. Take the priority from the ticket graph; default
-  to `medium` when the owner named none. Set the assignee to the authenticated
-  user. Never create the ticket and then label it or set its priority in a second
-  call. Use the platform's native blocking relationship where it has one;
-  otherwise set each ticket's "Blocked by" to the blocking issues. If the source
-  was an existing issue, make each ticket its sub-issue (tracker doc's
-  operation). The tickets are agent-grabbable by construction. Record the surface
-  and the stack order in the ticket body. The native blocking edges carry the
-  graph; the stack order is the order the owner merges. Why: a create-then-label
-  or create-then-priority pair costs an extra write per ticket and leaves the
-  ticket unready in between.
-
-Work the frontier. A frontier ticket has all its blockers done. Use the stack
-rule above for a blocker that is not merged. For a purely linear chain, that
-means top to bottom.
-
-Never close or modify a parent issue. Why: the parent is the spec, and closing it hides the work item.
-
-### Local ticket template
+**Local file:**
 
 ```markdown
 # <NN>: <Ticket title>
 
-**What to build:** the end-to-end behavior this ticket makes work, from the
-owner's perspective, not a layer-by-layer implementation list.
-
-**Surface owned:** the module, route, schema, or command this ticket changes. Two
-ready tickets that share a surface are stacked, not run side by side.
-
-**Blocked by:** the numbers or titles of the tickets that gate this one, or "None
-(can start immediately)".
-
-**Priority:** the priority the graph assigns, or `medium`.
-
+**What to build:** <end-to-end behavior from the owner's perspective>
+**Surface owned:** <module, route, schema, or command>
+**Blocked by:** <numbers/titles, or "None (can start immediately)">
 **Status:** ready-for-agent
 
 - [ ] Acceptance criterion 1
 - [ ] Acceptance criterion 2
 ```
 
-### Issue template
+**Tracker issue:**
 
 ```markdown
 ## Parent
 
-A reference to the parent issue on the tracker (if the source was an existing
-issue, otherwise omit this section).
+<Link to parent spec issue; omit if standalone.>
 
 ## What to build
 
-The end-to-end behavior this ticket makes work, from the owner's perspective, not
-layer-by-layer implementation.
+<End-to-end behavior from the owner's perspective.>
 
 ## Surface owned
 
-The module, route, schema, or command this ticket changes. Two ready tickets that
-share a surface are stacked, not run side by side.
+<Module, route, schema, or command.>
 
 ## Acceptance criteria
 
@@ -184,13 +101,7 @@ share a surface are stacked, not run side by side.
 
 ## Blocked by
 
-- A reference to each blocking ticket, or "None (can start immediately)". Omit
-  this section when blockers were set as native edges.
+<Blocking ticket refs, or "None (can start immediately)". Omit when native blocking edges are set.>
 ```
-
-Never use specific file paths or code snippets in either form; they go stale
-fast. The one exception is a prototype snippet that encodes a decision more
-precisely than prose can (state machine, reducer, schema, type shape). Inline it
-and note that it came from a prototype. Trim to the decision, not a working demo.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

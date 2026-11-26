@@ -11,102 +11,66 @@ metadata:
 
 # PR
 
-## The authorizing gate
+Write a crisp, high-signal PR body that lets the owner review and decide the merge fast.
 
-Before writing the body, read the mission document and the gate decision. On a
-feature or fog path, the authorizing gates are the scope and spec gate and the
-ticket gate. On a fog path, the decision gates also authorize the build. On a
-change, bug, or trivial, the authorizing gate is the scope and understanding.
-State each decision, or say which are pending.
+## Roles
 
-- If every authorizing gate is approved, state the decisions in neutral, general
-  language. Never reproduce the owner's words or name the person who decided.
-  The merge approves the PR gate.
-- If an authorizing gate is pending, open the PR as a draft and say it is a
-  proposal, not a decision. Do not write "approved" anywhere.
-- If the scope is a rule plus a file pattern, the body names the rule and the
-  pattern, not a per-file list. Why: the rule is the decision; the file list is
-  the current instance.
-- State the current problem, the route, and the alternative rejected. Do not
-  carry history of the issue or mission.
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: always writes the PR body and owner handback. The owner reads the PR directly to decide the merge, so it must carry orchestrator-grade clarity.
+- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: if diff stats, test outputs, screenshots, or check states need gathering, have a worker collect them and return a compact summary.
 
-Why: the body cannot grant a gate; it can only make the decision visible.
+## Check the authorizing gate first
 
-Use this template for the PR body:
+Read the mission document (if one exists) and determine which gates authorize this change:
+
+- **Feature / Fog**: Scope and spec gate + Tickets gate (+ Fog decision gates).
+- **Change / Bug / Trivial**: Scope and understanding gate.
+
+Branch on status:
+- **All authorizing gates approved:** state the decisions neutrally in `## Why`. Merge approves the PR gate.
+- **Any authorizing gate pending:** open the PR as a **draft**, label it a **proposal** in `## Why`, never write "approved", and note in Merge Danger that merging acts as a decision rather than a second approval.
+
+Rules for every PR body:
+- Neutral current state only: never quote conversation words, name deciders, or carry issue/mission history.
+- For large changes governed by a rule plus file pattern, state the rule and pattern rather than a per-file list.
+- Use `GLOSSARY.md` terms. Skip preambles.
+- End with `Closes <issue>` if the PR finishes the issue, or `Refs <issue>` if it stays open.
+
+## Template
 
 ```markdown
 ## Why
 
-<the problem, the route taken, and the alternative rejected. State the authorizing gates and the decisions in neutral language, or say which gates are pending and that this is a proposal. Never quote the owner's words or name the person who decided. Do not add history.>
+<Problem in plain terms, route taken, alternative rejected (or `no alternative: <reason>`), link to issue/mission, and neutral gate status.>
 
 ## Summary
 
-<diagram, diff-sketch, or tree>
+<Smallest visual that makes the change obvious: diagram, tree, or diff sketch. See VISUALS.md.>
 
 ## Evidence
 
-- **Before:** <screenshot/output/failing test run>
-  **After:** <screenshot/output/passing test run>
+- **Before:** <screenshot, command output, or failing test>
+- **After:** <screenshot, command output, or passing test>
 
 ## What this unlocks
 
-<the next capability or decision this makes possible>
+<Concrete next capability, ticket, or decision.>
 
 ## Merge Danger
 
-**Door:** <one-way or two-way>
+**Door:** <one-way | two-way>
+<Optional one-line note on rollback cost.>
 
-<optional: description>
-
-**Blast Radius:** <one-word description>
-
-<optional: potential ramifications of merge>
+**Blast Radius:** <one-word scope, e.g. Local | API | Schema | Consumers>
+<Potential ramifications plus gate risk: second approval vs unapproved decision.>
 ```
 
-## Sections
+See [VISUALS.md](VISUALS.md) for diagram, tree, and diff-sketch shapes.
 
-Skip all preambles and keep prose brief. Use the project's domain language from `GLOSSARY.md` when it exists.
+- **Evidence:** use screenshots for visual changes when supported; otherwise paste concise execution output or before/after test results.
+- **Door:** two-way = cheap to revert; one-way = destructive, schema/data migration, or hard-to-reverse contract change.
 
-### Why
+## Owner handback
 
-State the problem in plain terms, the route taken, and the alternative
-rejected. When there was no real alternative, write `no alternative: <reason>`
-in one clause. Link the originating issue or mission document. State the
-authorizing gates and the decisions in neutral language, or say which gates are
-pending and that the PR is a proposal. Never quote the owner's words or name
-the person who decided. Do not add history.
-
-### Summary
-
-Pick the smallest view that makes the key point clear. See [VISUALS.md](VISUALS.md) for the diagram, tree, and diff shapes.
-
-### Evidence
-
-Show a before and after. When the change is visual and the environment supports it, use a screenshot. Otherwise show execution output: test results, console output, or the exact test that failed before and passes after, shown as pseudocode.
-
-### What this unlocks
-
-Name the next capability, ticket, or decision this makes possible. Keep it
-concrete.
-
-### Merge danger
-
-State whether the door is one-way or two-way. You can walk back through a two-way door; you cannot walk back through a one-way door. A PR that is cheap to roll back is lower risk. Destructive actions and hard-to-reverse decisions are one-way doors.
-
-The blast radius is the impact or scope of the change: layout shift, breakage for consumers, mobile responsiveness, and similar.
-
-State the gate risk in the merge danger. If any authorizing gate is pending, the
-merge is a decision, not a review. If every authorizing gate is approved, the
-merge is the second approval. Why: the owner reads the merge danger to decide,
-and a hidden pending gate turns a review into an unapproved build.
-
-## Handback
-
-Report the PR URL, the check state, what changed, what it unlocks, and the merge
-danger. The head SHA stays in the PR. Why: the SHA is for the machine; the
-owner's decision is the merge.
-
-Use `Closes <issue>` in the body when the PR completes the issue. Use `Refs
-<issue>` when the issue stays open.
+Report in chat: PR URL, check state, what changed, what it unlocks, and merge danger. Keep head SHAs in the PR; the owner decides the merge, not the SHA.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

@@ -4,4 +4,8 @@ description: A relentless interview to sharpen a plan or design.
 disable-model-invocation: true
 ---
 
-Load the `grilling` skill with the Skill tool. Why: `grilling` owns the round format, the frontier, and the wait; a second copy here would drift. Use this skill when the owner wants a plan or design stress-tested and has no repo for `grill-with-docs`.
+# Grill me
+
+Load `grilling` with the Skill tool and run it directly in the orchestrator session (`opencode-go/kimi-k3.1-pro`). Keeping one source of truth in `grilling` prevents the round format and rules from drifting.
+
+Use this skill when stress-testing a plan or design with no repo. Inside a repo, use `grill-with-docs` instead.

@@ -4,4 +4,8 @@ description: Sharpen a plan or design with the grill, and write the glossary and
 disable-model-invocation: true
 ---
 
-Call the Skill tool twice, for `grilling` and `domain-modeling`. Why: `grilling` owns the interview and `domain-modeling` owns the glossary and ADRs; loading both keeps the questions and the written model in one pass. Use this in a repo; use `grill-me` when there is no repo.
+# Grill with docs
+
+Load `grilling` and `domain-modeling` with the Skill tool and run them together in the orchestrator session (`opencode-go/kimi-k3.1-pro`), delegating codebase fact-gathering to an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`). Loading both keeps the interview and the written domain model in sync without duplicating either procedure.
+
+Use this inside a repo; use `grill-me` when there is no repo.

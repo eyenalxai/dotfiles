@@ -6,157 +6,48 @@ disable-model-invocation: true
 
 # Implement spec
 
-You have been provided a spec. The spec has tickets that describe how to
-implement it.
+Run a frontier of 2+ ready tickets as **crew chief**: claim ready tickets, spawn one isolated worker per ticket, critique and review each layer, and report the stack bottom-up for the owner to merge. A 1-ticket frontier routes to `implement`.
 
-The issue tracker comes from the repo's agent docs. If it is missing, ask the
-owner for the tracker.
+## Roles
 
-The goal is the frontier implemented as one PR per ticket, stacked by blocking
-edge, or one integration PR when the owner asks. This skill runs the crew chief
-role: it claims the ready tickets, runs one worker subagent per ticket, reviews
-each PR, and reports the stack bottom-up. The owner merges.
+- **Crew chief / orchestrator (`opencode-go/kimi-k3.1-pro`)**: stays in the mission session, owns the dependency graph, claims tickets, prepares stack bases, critiques worker outputs at the forest level, runs `code-review`, writes every PR body (`pr`), and reports the stack bottom-up. Never hands off for a phase change; workers already isolate context.
+- **Workers (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`, `general` subagent)**: one worker per ready ticket, running in parallel in its own checkout/worktree up to the concurrency cap. Also handles optional pre-build exploration and merge-branch integration when requested.
+- **Critique loop**: when a worker reports done, inspect its compact summary (and public interface diff if needed). If the design or seam is off, send targeted redirection to that worker's **`sessionID`** before running review.
 
-A one-ticket frontier uses `implement`. This skill runs two or more tickets. When
-the harness cannot isolate checkouts, run the tickets one at a time in the same
-session and say so. Why: parallel edits in one checkout conflict, and a single
-ticket has no graph for the crew chief to run.
-
-The mission session loads this skill and acts as the crew chief. A fresh session
-is needed only when the work travels or the current context cannot continue. A
-subagent is a worker inside the session, not a handoff. Why: the workers already
-provide the context isolation, and a handoff forces a copied prompt and a new
-gate confirmation.
-
-The tickets are a task graph with blocking relationships, not a list of steps.
-There is a frontier of tickets that are ready to be grabbed, unless every ticket
-is blocked.
-
-Communication to and from workers is sparse. Communicate through context
-pointers: the spec, the ticket, research notes, and previous commits. Never
-duplicate what a pointer already carries. Why: a copy drifts from the source, and
-the worker cannot tell which copy is current.
-
-Workers run in the background where the harness allows it, each in its own
-checkout. Why: parallel work finishes sooner, and isolated checkouts keep one
-ticket's edits out of another.
+If the harness cannot isolate checkouts, run tickets sequentially in one checkout and tell the owner; parallel edits in one directory conflict.
 
 ## Gate check
 
-Before the first edit, read the mission document and the gate decision. If the
-scope and spec gate or the ticket gate is pending, stop and ask. A feature has
-both gates; a draft spec or a proposed ticket graph is not an approval. On a fog
-path, the decision gates must also be approved. Why: the feature path multiplies
-one unapproved decision across every ticket.
+Read the mission document first. Both the **scope and spec gate** and the **tickets gate** must be approved (plus **decision gates** on a Fog path). If any gate is pending, stop and ask. Building a graph on an unapproved decision multiplies the mistake across every ticket.
 
 ## Steps
 
-1. Read the spec, the tickets, and the mission document. Read the concurrency cap
-   from the mission document. `mission` defines the cap; the Decisions may set a
-   different value. Note the PR model: a per-ticket stack by default, one
-   integration PR only when the owner asked for it and the record notes it. Why:
-   the next session reads the record, not this message.
+1. **Load the graph.** Read the spec, tickets, mission record, concurrency cap (default 10 unless Decisions overrides it), and PR model (stacked per-ticket PRs by default; one integration PR only if recorded in Decisions).
+2. **Optional shared exploration.** If several tickets touch unfamiliar areas, dispatch one `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to write shared exploration notes outside the repo (e.g., OS temp dir). One pass is cheaper than repeating the same search in every worker.
+3. **Claim the frontier.** Assign every ready ticket to yourself in the tracker before spawning workers so another session does not grab it. Release the claim if a worker fails before opening a PR.
+4. **Prepare stack bases.**
+   - No blockers: branch from `main` (or the mission's named base commit).
+   - One unmerged blocker: branch from the blocker's branch once that branch exposes the needed interface (you do not need to wait for the blocker's PR to merge).
+   - Multiple blockers: wait until all but one merge, then branch from the last.
+   - Integration-PR mode: create the integration branch and branch every worker from it.
+5. **Spawn one worker per frontier ticket** (up to the cap), using `openrouter/deepseek/deepseek-v4.1-flash-1017#max` in its own worktree/checkout. Give sparse pointers only (its ticket, the relevant spec section, shared notes, base branch; never copy-paste specs that can drift). Each worker must:
+   - verify its checkout is based on its stack base;
+   - load `tdd` via the Skill tool when the ticket has a code seam (otherwise run the ticket's named check, or report none);
+   - commit to its layer, rebase onto its stack base, and push;
+   - return a compact report (under 400 words): files changed, interface summary, verification output, branch name, and any blockers (never fail silently).
+6. **Critique each layer (forest check).** As each worker finishes, check that its interface, seam, and scope fit the spec and adjacent layers. If anything looks wrong, follow up on that worker's `sessionID` until fixed.
+7. **Review each PR.** Load `code-review` against each layer's base branch with the ticket as spec source. Run wave reviews concurrently when supported. Never ask a worker still implementing to review its own diff. Send real findings back to the ticket's worker `sessionID` to fix and re-test.
+8. **Write PR bodies and clean up.** Author each PR body yourself via `pr` (with `Closes <ticket>` against its stack base) and have the worker or CLI open/update it. Remove worker worktrees once branches are pushed and PRs are open, but **keep all branches** until merged (deleting a base branch closes stacked PRs above it).
+9. **Report bottom-up and stop.** List each PR in merge order: URL, base, check state, what changed, what it unlocks, and merge danger. Name the next frontier in plain words (keep head SHAs in the PR). Wait for the owner to merge bottom-up.
 
-2. Optionally use an exploration subagent to gather what the tickets need:
-   relevant codebase files or external documentation. The exploration notes go
-   outside the repo, where every worker can read them. Why: the workers stay on
-   implementation, and one set of notes is cheaper than the same search in every
-   worker.
+## Integration PR mode
 
-3. Claim the frontier. For each ready ticket, claim it with the tracker doc's
-   assign form before spawning its worker. For rata, the claim is
-   `rata issue assign <ref> --assignee me`; a positional assignee is a validation
-   error. An open, unassigned ticket is available to another session. Release a
-   claim if a worker fails before it opens a PR. Why: the assignee is the
-   reservation, and a claimed ticket with no worker blocks the frontier.
+When the owner requested one integration PR: spawn a DeepSeek merger worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to merge each worker branch into the integration branch, run `code-review` against the integration base using the full spec as spec source, write the single PR body via `pr`, and report it.
 
-4. Create the stack bases. For a ticket with no blockers, branch from the current
-   base (`main`, or the merge commit the mission names). For a ticket with one
-   unmerged blocker, branch from the blocker's branch. For a ticket with several
-   blockers, wait for all but one to merge, then branch from the last. If the
-   owner asked for one integration PR, create the integration branch and branch
-   every worker from it. Why: the PR base is the layer below, and a ticket with
-   several PR bases is not reviewable.
+## After a merge
 
-5. Spawn one worker per frontier ticket, up to the cap. Each worker:
-   - confirms its checkout is based on its stack base before starting;
-   - gets the ticket text and the spec text it needs in the prompt, not the
-     whole graph and never a ref alone;
-   - calls the Skill tool with `tdd` when the ticket has a code seam;
-   - commits to its layer and rebases onto its base before reporting done;
-   - opens one PR against its base, with `Closes <ticket>`.
-   A worker with no code seam runs the check the ticket names, or reports that it
-   names none. A worker that cannot open a PR reports the branch and the blocker.
-   Why: a silent failure leaves the frontier stalled, and a worker that starts
-   from refs re-reads the tracker.
+Retarget the next layer's PR to `main`, fetch `origin`, and rebase it on the merge commit. If the merge unblocks new tickets, start them up to the cap (stay in this session if context holds; otherwise hand off). If asked to merge, use a merge commit.
 
-6. Review each PR as it opens. Call the Skill tool with `code-review` on the PR,
-   passing the ticket text and the spec text in the review prompt, and using the
-   PR's base as the fixed point. Fix the findings in the worker or a fix worker.
-   Run the reviews for a wave together when the harness supports concurrent
-   subagents; otherwise run them one at a time and say so. Never nest a review
-   inside a worker that is still implementing. Why: the crew chief owns the
-   review, and a worker reviewing its own diff is not an independent check.
-   Passing the text saves the reviewer two tracker reads.
-
-7. Clean up the worker worktrees after the branches are pushed and the PRs are
-   open. Keep the branches until the owner merges. Why: deleting a base branch
-   closes its stacked PRs.
-
-8. Report the stack bottom-up. For each PR: URL, base, check state, what changed,
-   what it unlocks, and the merge danger. Name the merge order and the next
-   frontier in plain words. Stop. The owner merges bottom-up.
-
-## The worker prompt
-
-The prompt carries the context, not only the refs:
-
-- the ticket text: identifier, title, state, body, and acceptance criteria;
-- the spec text: identifier, title, and the sections that constrain the ticket,
-  such as problem, solution, decisions, and testing;
-- the relations: the tickets that block this one and the tickets it blocks;
-- the stack base, the check command, and the PR base;
-- the write scope: update, comment on, or close this ticket only; never edit the
-  parent spec; stop and ask the parent when a fact is missing.
-
-When the harness cannot inline the text, name the parent context that holds it
-and the one read that returns it. Never send a bare ref. Why: the parent already
-holds the ticket and the spec, and a worker that starts from refs pays two
-tracker reads and may read a newer issue than the parent approved.
-
-For rata, a ticket write is `rata issue update <ref> <flags>`, a comment is
-`rata issue comment create <ref> --body-file -`, and a claim is
-`rata issue assign <ref> --assignee me`. Never use a positional assignee or the
-direct comment form. Why: the CLI has one canonical form per operation, and a
-guessed form costs a failed call.
-
-## After the merge
-
-After a merge, retarget the next layer to `main` and rebase it on the merge
-commit. Continue in the current session when the context holds. Run
-`/mission continue` when a merge unblocks a new frontier. If the owner asks the
-crew chief to merge, use a merge commit.
-
-When every ticket is merged, close the spec in one call that carries the stack
-comment. For rata, that is `rata issue close <spec> --comment "..."`. Never post
-the comment and close in two calls. Why: the spec is the parent issue, and the
-stack's PRs close the tickets, not the spec. A separate comment leaves the spec
-open with no result in between.
-
-## Integration branch
-
-When the owner asks for one integration PR, the crew chief merges each worker's
-branch into the integration branch with a merger subagent, runs `code-review` on
-the integration branch, opens one PR, and reports it. The review passes the spec
-text and the ticket text for the layer in the prompt, and uses the integration
-branch's base as the fixed point. The owner merges the one PR.
-
-## The frontier is dynamic
-
-A ticket enters the frontier when its blockers' branches have the interface it
-needs, not only when the blockers' PRs merge. A merge can unblock several tickets
-at once; start them together, up to the cap. If the frontier has one ticket, use
-`implement`. If the harness cannot isolate checkouts, run the tickets one at a
-time and say so.
+Once every ticket is merged, close the parent spec issue with a neutral comment linking the merged PRs (ticket PRs close tickets, not the spec).
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

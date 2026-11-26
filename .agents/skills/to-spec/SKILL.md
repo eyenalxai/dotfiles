@@ -6,54 +6,30 @@ disable-model-invocation: true
 
 # To spec
 
-Turn the current conversation and the codebase understanding into a spec. Never
-interview the owner; synthesize what is known. Why: the grill already asked the
-questions, and a second interview reopens settled decisions.
+Synthesize the settled discussion and codebase facts into a spec. Never re-interview the owner; grilling already settled the decisions, and asking again reopens them.
 
-Write the spec in neutral language. Never reproduce words directly or name the
-person who decided. The spec is current state only: no prior attempts, sessions,
-issues, or versions. Why: the spec records what will be
-built, not who said it or how the decision was reached.
+## Roles
 
-The issue tracker and triage label vocabulary come from the repo's agent docs. If
-they are missing, ask the owner for the tracker.
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: designs the testing seams, writes the spec prose (owner-read), presents the draft at the scope and spec gate, and publishes after approval.
+- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: if the codebase has not been explored yet, runs an `explore` pass to map current modules, existing test seams, glossary terms, and relevant ADRs, returning a compact brief (under 400 words).
+
+Read the tracker doc and triage-label mapping first. If either is missing, ask the owner.
 
 ## Process
 
-1. Explore the repo to understand the current state of the codebase, if not
-   already done. Use the project's domain glossary vocabulary throughout the spec,
-   and respect ADRs in the area you touch. Why: a spec that invents a term or
-   contradicts an ADR sends the ticket graph in the wrong direction.
+1. **Gather missing repo facts.** If the session lacks current module or test-seam facts, dispatch the `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`). Respect `GLOSSARY.md` vocabulary and existing ADRs; inventing terms or contradicting an ADR sends the ticket graph off course.
+2. **Pick testing seams.** Prefer an existing seam over a new one, and place seams as high as possible (ideally one seam across the codebase). Record them in **Testing Decisions**. Never ask for a separate seam approval; the scope and spec gate covers them.
+3. **Draft the spec** using the template below. Write in neutral current state only: never quote the conversation, name who decided, or include history.
+4. **Gate and publish:**
+   - **Inside a mission:** keep the spec as a draft in conversation until the scope and spec gate is approved. After approval, publish to the tracker with the `ready-for-agent` label (no extra triage needed). On a Feature, add the mission record sections from `mission-template.md` to this same issue (never create a second issue). On a Fog, the map is the record: publish the spec as a separate issue and link it from the map.
+   - **Standalone:** the owner's request to write and publish the spec is the approval.
 
-2. Sketch the seams at which the feature will be tested. Prefer an existing seam
-   to a new one, and use the highest seam possible. If a new seam is needed,
-   propose it at the highest point available. The ideal is one seam across the
-   codebase. Put the seams in Testing Decisions. The owner approves them at the
-   scope and spec gate; never ask for a separate seam approval. Why: every new seam is a new place the implementation can drift from
-   the spec, and the gate is the approval that covers it.
-
-3. Write the spec using the template below. Inside a mission, the spec is a draft
-   until the scope and spec gate is approved. Present it with the scope in the
-   conversation. Never publish it before the gate. After approval, publish it in
-   one create call that carries the body, the `ready-for-agent` label, a priority,
-   and the assignee. Use the create form from the repo's tracker doc. Take the
-   priority from the owner's decision: `medium` unless the owner named another
-   value. Set the assignee to the authenticated user. Never create the issue and
-   then label it or set its priority in a second call. No additional triage is
-   needed. When the mission uses the spec as its record, add the record sections
-   from the mission template to the same issue; never create a second issue. On a
-   fog, the map is the record: publish the spec as a separate issue and link it
-   from the map. Why: the spec is the gate document, and it is a draft until the
-   scope and spec gate. A create-then-label pair costs an extra call and leaves
-   the issue unready in between. Standalone, the owner's request to write and
-   publish the spec is the approval.
-
-## The spec template
+## Spec template
 
 ```markdown
 ## Problem Statement
 
-The problem the owner is facing, from the owner's perspective.
+The problem from the owner's perspective.
 
 ## Solution
 
@@ -61,61 +37,45 @@ The solution from the owner's perspective.
 
 ## User Stories
 
-One story per actor and outcome in the scope:
+One story per in-scope actor and outcome:
 
-1. As an <actor>, I want a <feature>, so that <benefit>
+1. As an <actor>, I want <capability>, so that <benefit>.
 
-Cover every actor and outcome in the scope. A story that cannot be tested is not
-a story; move it to Out of Scope. Never write a story the spec does not cover.
-Why: the ticket graph is cut from these stories, so a missing story is a missing
-ticket and an invented story is unapproved work.
+Move any untestable story to Out of Scope. Never add a story outside the agreed scope; tickets are cut directly from these stories.
 
 ## Implementation Decisions
 
-The decisions already made:
+Settled technical decisions:
+- modules to build or change
+- interface, schema, and API contract changes
+- architectural and interaction decisions
 
-- the modules to build or modify
-- the interfaces that change
-- the technical clarifications from the owner
-- the architectural decisions
-- the schema changes
-- the API contracts
-- the specific interactions
-
-Never include specific file paths or code snippets; they go stale. The one
-exception is a prototype snippet that encodes a decision more precisely than
-prose can (a state machine, a reducer, a schema, a type shape). Inline the
-decision-rich part and note that it came from a prototype. Trim it to the
-decision, not a working demo.
+Never put specific file paths or code snippets here; they go stale. One exception: a trimmed prototype snippet that captures a decision sharper than prose (state machine, reducer, schema, type shape), marked as coming from a prototype.
 
 ## Testing Decisions
 
-- what a test must check: external behavior, not implementation details
-- which modules are tested
-- the prior art for these tests in the codebase
+- external behaviors tests must check (never internals)
+- approved seams and modules under test
+- existing test prior art in the codebase
 
 ## Out of Scope
 
-Everything this spec does not cover, with the reason. Move any user story here
-that is real but not in this scope. Why: the ticket graph must stop at the scope,
-and an unlisted out-of-scope item comes back as a surprise ticket.
+Excluded items with the reason for each, plus any rejected options so they do not resurface as tickets.
 
 ## Further Notes
 
-Anything else the implementer needs.
+Remaining constraints or context an implementer needs.
 ```
 
 ## Check before publishing
 
-- Every problem in the Problem Statement has a solution.
-- Every in-scope actor and outcome has a story.
-- Every story has an acceptance criterion the tests can check.
-- Every testing decision names a seam the owner approved.
-- No file paths, no code snippets, except a prototype decision.
-- Every rejected option is in Out of Scope or in the mission's Rejected options
-  with its reason. Why: a rejected option that is only in chat comes back in the
-  tickets.
+- [ ] Every problem in Problem Statement maps to a solution.
+- [ ] Every in-scope actor and outcome has a testable User Story.
+- [ ] Every Testing Decision names an approved seam.
+- [ ] No file paths or code snippets (except trimmed prototype decision shapes).
+- [ ] Every rejected option is recorded in Out of Scope (or mission Rejected options) with its reason.
+- [ ] Neutral language, no quotes, no decider names, no history.
 
-After publishing, create the tickets with `to-tickets`.
+After publishing, load `to-tickets` to cut the ticket graph.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

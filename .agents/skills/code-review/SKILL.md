@@ -5,116 +5,79 @@ description: "Review the changes since a fixed point (commit, branch, tag, or me
 
 # Code review
 
-Two-axis review of the diff between `HEAD` and a fixed point the owner supplies:
+Two-axis review of `HEAD` against a fixed point, split across parallel DeepSeek workers and verified by the orchestrator's forest check:
 
-- **Standards**: does the code conform to this repo's documented coding standards?
-- **Spec**: does the code implement the originating issue or spec?
+- **Standards**: conforms to documented repo standards plus the Fowler smell baseline.
+- **Spec**: implements the originating issue, ticket, or spec without gaps or scope creep.
+- **Forest check**: catches architectural, interface, or domain blind spots that worker-on-worker review can miss.
 
-Both axes run as parallel sub-agents so they do not pollute each other's context; this skill aggregates their findings.
+## Roles
 
-The issue tracker must be available to you. If it is missing, ask the owner for the tracker.
+- **Workers (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`, 2 parallel `general` subagents)**: run Standards and Spec in separate contexts so neither axis biases the other. Each returns under 400 words.
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: resolves the fixed point and sources, dispatches both workers in parallel, filters false positives, runs a targeted forest check on public interfaces and risky hunks, and writes the final report for the owner (or sends concrete fixes back to the implementation worker's `sessionID`).
+
+The configured issue tracker must be available; if missing, ask the owner.
 
 ## Process
 
 ### 0. Check the authorizing gate
 
-Read the mission document and the gate decision. If the gate is pending, say the
-diff is a proposal and this review is not the PR gate. If the gate is approved,
-state that the gate is approved. Never reproduce the owner's words or name the
-person who decided. State the current finding only, with no history of
-the issue or mission. The review does not grant the gate; the merge does. Why: a review is
-evidence, and only the merge decision approves.
+Read the mission record if one exists. State neutrally whether the authorizing gate is approved or pending (never quote conversation words, name deciders, or log history). If pending, label the diff a **proposal**. A review is evidence; only merge approves the PR gate.
 
 ### 1. Pin the fixed point
 
-Whatever the owner said is the fixed point: a commit SHA, branch name, tag,
-`main`, or `HEAD~5`. If the owner named none, ask for it.
+Use the owner's ref (commit SHA, branch, tag, `main`, or `HEAD~5`). For a stacked ticket, use the PR's base branch so only this layer's diff is reviewed. If none was named, ask.
 
-For a stacked ticket, the fixed point is the PR's base branch, so the diff is the ticket's layer, not the whole stack. Why: the layer is the change under review, and the blocker's diff was reviewed below it.
+Confirm `git rev-parse <fixed-point>` succeeds and `git diff <fixed-point>...HEAD` is non-empty before spawning workers. Capture `git log <fixed-point>..HEAD --oneline`.
 
-Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Note the commit list with `git log <fixed-point>..HEAD --oneline`.
+### 2. Locate the spec source (first match wins)
 
-Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. An invalid ref or an empty diff must fail here, not inside two parallel sub-agents.
+1. Issue ref in commit messages (`#123`, `Closes #45`, `!67`), fetched via the tracker doc.
+2. Path passed as an argument.
+3. Matching spec file under `docs/`, `specs/`, or `.scratch/`.
+4. Mission document (for Change or Bug: problem, constraints, rule changes, file scope).
+5. Ticket body and acceptance criteria (for a Feature ticket; parent spec is context).
+6. If none exists, ask the owner. If they confirm there is no spec, skip the Spec worker and report `no spec available`.
 
-### 2. Identify the spec source
+### 3. Locate standards sources and attach the smell baseline
 
-When the calling session holds the ticket and its parent spec, it passes their
-text. Fetch only the parts the caller did not pass. Why: the caller already paid
-for the read, and a ref alone makes the reviewer read both again.
+Find every repo file documenting coding conventions (`CODING_STANDARDS.md`, `CONTRIBUTING.md`, `AGENTS.md`, etc.).
 
-Look for the originating spec, in this order:
+For a **skill change**, standards sources are `AGENTS.md`, `emil-writing-skills`, `emil-unslop-writing`, and sibling skills for terminology consistency. A skill that lists bare rules without reasoning or leaves filler lines that do not steer behavior is a Standards finding.
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`), fetched with the workflow in the tracker doc.
-2. A path the owner passed as an argument.
-3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. For a change or bug, the mission document is the spec source. Use its
-   problem, constraints, rule changes, and file scope.
-5. For a feature ticket, the ticket is the spec source. Use its body and
-   acceptance criteria; the parent spec is context.
-6. If nothing is found, ask the owner where the spec is. If the owner says there is none, the **Spec** sub-agent skips and reports "no spec available".
+Always paste this **Fowler smell baseline** into the Standards worker prompt. Two rules bind it: (1) any documented repo standard overrides the baseline; (2) every smell is a labeled judgment call ("possible Feature Envy"), never a hard breach. Skip anything linters or typecheckers already enforce.
 
-### 3. Identify the standards sources
+- **Mysterious Name**: name hides what it does or holds -> rename; if no clear name fits, the design is murky.
+- **Duplicated Code**: same logic shape repeated across hunks/files -> extract and share.
+- **Feature Envy**: method reaches into another object's data more than its own -> move it to that object.
+- **Data Clumps**: same fields/params always travel together -> bundle into one type.
+- **Primitive Obsession**: raw primitive/string standing in for a domain concept -> give it a small type.
+- **Repeated Switches**: same type switch or `if` cascade recurs -> replace with polymorphism or one shared map.
+- **Shotgun Surgery**: one logical change scatters edits across many files -> gather cohesive logic into one module.
+- **Divergent Change**: one module edits for unrelated reasons -> split by reason to change.
+- **Speculative Generality**: abstractions/hooks/params added for unasked needs -> delete and inline.
+- **Message Chains**: deep `a.b().c().d()` caller navigation -> expose one method on the first object.
+- **Middle Man**: wrapper that mostly delegates onward -> remove and call the real target.
+- **Refused Bequest**: subclass ignores most of what it inherits -> replace inheritance with composition.
 
-Search the repo for every file that documents how code is written. When `CODING_STANDARDS.md` or `CONTRIBUTING.md` exists, it must be on the list.
+### 4. Spawn both workers in parallel
 
-For a skill change, the standards sources are `AGENTS.md`, the
-`emil-writing-skills` standard, the `emil-unslop-writing` standard, and the
-repository's other skill files for cross-reference and terminology. Check every
-rule for its why, every line for whether it changes what the agent does, and the
-skill for a single focus. A skill that lists rules without reasons is a Standards
-finding. Why: the repo's product is the process, so a skill diff is code and the
-skill-writing standard is its coding standard.
+Spawn both `general` subagents together on `openrouter/deepseek/deepseek-v4.1-flash-1017#max`:
 
-On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch. 3) that applies even when a repo documents nothing. Two rules bind it:
+- **Standards worker prompt**: diff command (`git diff <fixed-point>...HEAD`), commit list, standards-source file paths, full smell baseline pasted verbatim, and brief:
+  > Report per file/hunk: (a) violations of documented standards (cite file and rule); (b) baseline smells (name smell and `file:line`). Separate hard documented breaches from judgment-call smells; documented standards override the baseline. Skip linter/typechecker issues. Neutral language, no history, under 400 words.
+- **Spec worker prompt**: diff command, commit list, spec path or contents, and brief:
+  > Report: (a) missing or partial spec requirements; (b) unasked behavior (scope creep); (c) requirements implemented incorrectly. Cite the spec line and diff `file:line` for each finding. Neutral language, no history, under 400 words.
 
-- **The repo overrides.** A documented repo standard always wins; where it endorses something the baseline flags, suppress the smell. Why: the documented standard is the contract, and the baseline is only a fallback.
-- **Always a judgment call.** Each smell is a labeled heuristic ("possible Feature Envy"), never a hard violation. Like any standard here, skip anything tooling already enforces.
+### 5. Orchestrator forest check and report
 
-Each smell names what it is and how to fix it. Match it against the diff:
+When both workers return:
 
-- **Mysterious Name**: a function, variable, or type whose name does not reveal what it does or holds. → rename it; if no honest name comes, the design is murky.
-- **Duplicated Code**: the same logic shape appears in more than one hunk or file in the change. → extract the shared shape, call it from both.
-- **Feature Envy**: a method that reaches into another object's data more than its own. → move the method onto the data it envies.
-- **Data Clumps**: the same few fields or params keep traveling together (a type wanting to be born). → bundle them into one type, pass that.
-- **Primitive Obsession**: a primitive or string standing in for a domain concept that deserves its own type. → give the concept its own small type.
-- **Repeated Switches**: the same `switch` or `if` cascade on the same type recurs across the change. → replace with polymorphism, or one map both sites share.
-- **Shotgun Surgery**: one logical change forces scattered edits across many files in the diff. → gather what changes together into one module.
-- **Divergent Change**: one file or module is edited for several unrelated reasons. → split so each module changes for one reason.
-- **Speculative Generality**: abstraction, parameters, or hooks added for needs the spec does not have. → delete it; inline back until a real need shows.
-- **Message Chains**: long `a.b().c().d()` navigation the caller must not depend on. → hide the walk behind one method on the first object.
-- **Middle Man**: a class or function that mostly delegates onward. → cut it, call the real target direct.
-- **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
+1. Check the diff stat and any changed public interfaces, state transitions, or high-risk hunks yourself so worker blind spots do not slip through.
+2. Drop obvious false positives; if a worker missed a real architectural or domain issue, add it clearly under the relevant axis (or note it as a forest finding).
+3. Present `## Standards` and `## Spec` side by side. Never merge or cross-rank findings across axes; a change can pass one and fail the other, and merging hides that.
+4. End with a one-line summary: total findings per axis and the worst issue within each axis (never pick one winner across axes).
 
-### 4. Spawn both sub-agents in parallel
-
-Issue both sub-agent calls together, in the foreground, and aggregate the reports they return.
-
-The **Standards sub-agent prompt** must include:
-
-- The full diff command and commit list.
-- The list of standards-source files found in step 3, **plus the smell baseline from step 3** pasted in full (the sub-agent has no other access to it).
-- The brief: "Report, per file or hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file and rule); and (b) any baseline smell you spot: name it and cite the hunk by file and line. Distinguish hard violations from judgment calls: documented-standard breaches can be hard, but baseline smells are always judgment calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Use neutral language and no history. Under 400 words."
-
-The **Spec sub-agent prompt** must include:
-
-- The diff command and commit list.
-- The ticket text and the spec text the caller passed. When the caller passed
-  none, use the parent context that holds them, or the path or fetched contents.
-  Never send a ref alone.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behavior in the diff that was not asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Cite the spec line for each finding. Use neutral language and no history. Under 400 words."
-
-When the prompt carries the text, say that the sub-agent must not re-read the
-tracker. Why: the caller already holds both, and a second read can see a newer
-issue than the one under review.
-
-If the spec is missing, skip the Spec sub-agent and note this in the final report.
-
-The 400-word cap keeps the two reports readable side by side.
-
-### 5. Aggregate
-
-Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do not merge or rerank findings. Why: a change can pass one axis and fail the other, and a merged report lets one axis mask the other.
-
-End with a one-line summary: total findings per axis and the worst issue within each axis, if any. Never pick a single winner across axes; that is the reranking the separation prevents.
+When running inside `implement` or `implement-spec`, send confirmed findings back to the implementation worker's `sessionID` to fix and re-verify before opening the PR.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

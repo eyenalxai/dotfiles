@@ -5,90 +5,43 @@ description: Investigate a question against high-trust primary sources and captu
 
 # Research
 
-Spin up a **background agent** to do the research, so the main session keeps
-working while it reads. Why: research is I/O-bound; blocking the main session on
-it wastes the context window.
+Investigate a question against primary sources and save a cited Markdown file in the repo.
 
-## Fan out
+## Roles
 
-When two or more independent questions block the phase, start one background
-researcher per question. Inside a mission, stay within the mission's cap. Each
-researcher writes its own file. Collect the files before the gate that needs
-them. Why: independent questions do not wait on each other, and one file per
-question keeps the references separable. If the harness cannot run background
-agents, run the questions one at a time and say so.
+- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`, `general` subagent)**: always does the research in the background. Reads lockfiles, installed/vendored/upstream source, and official docs; writes the cited Markdown file; returns a compact summary (under 300 words) listing the answer, status, conflicts, gaps, and file path.
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: frames the exact question, spawns one worker per independent question (parallel fan-out, staying within the mission cap of 10), critiques the worker's return, and presents the clean takeaway to the owner.
+- **Critique loop**: if the worker cites secondary blog posts as facts, skips pinned source code, glosses over a conflict, or guesses past a missing fact, send a follow-up to the **same worker `sessionID`** naming the gap and have it re-check primary sources before presenting to the owner.
 
-## Start at the source
+If the harness cannot run background subagents, run questions one at a time and say so.
 
-When the question is about software, find the code before the web.
+## Worker procedure
 
-1. **Locate the source on disk.** Read the manifest and lockfile for the version
-   in use. Then look in the repo's own code, its documentation and examples, the
-   installed dependency source, a vendored copy, and a checkout the owner names.
-   Why: the pinned source is the code that runs, and a docs site describes the
-   latest release.
+Include these instructions in the worker prompt:
 
-2. **Fetch the upstream source when no readable source is on disk.** Clone or
-   download the repository at the tag or commit for the pinned version. Why: an
-   installed dependency can be minified or incomplete, and the upstream tag is the
-   readable copy of the same code.
+### 1. Code before web (for software questions)
 
-3. **Follow each claim into the implementation.** Start at the entry point and
-   read the path that produces the behavior. Read the docs for intent, the types
-   and tests that define the behavior, and the changelog that dates it. Why: docs
-   state intent, types and tests state what happens, including the edge cases the
-   prose leaves out, and the changelog says when the behavior changed.
+1. **Check disk first.** Read the manifest and lockfile for the exact pinned version. Inspect repo code, docs, examples, installed dependency source, vendored copies, or a path the owner named. Docs sites describe latest; pinned source is what actually runs.
+2. **Fetch upstream if disk source is missing or minified.** Clone or fetch the upstream repo at the pinned tag or commit.
+3. **Trace the actual execution path.** Start at the entry point and read the implementation, types, tests (which capture edge cases prose omits), and changelog (which dates behavior changes).
+4. **Cite file, line, and version/commit** for every claim so a later session can open the exact proof.
 
-4. **Cite the file and line with the version or commit.** Why: the next session
-   must be able to open the exact code path that proves the claim.
+For non-code questions (pricing, hosted API terms, quotas), use official first-party documentation and state that the answer rests on prose rather than code. Treat secondary write-ups as leads to find primary sources, never as proof.
 
-A question with no code source, such as a pricing policy or a hosted API's terms,
-uses the official documentation and says so. Why: the docs own that fact, and the
-next session must know the answer rests on prose rather than code.
+### 2. Write the findings file
 
-## The agent's job
+Save to the repo's existing research directory, or `docs/research/<slug>.md` if none exists. One file per question on a fan-out so references stay separable.
 
-1. Investigate the question against **primary sources**: official docs, specs, and
-   first-party APIs, plus the source code and its documentation at the pinned
-   version when the question is about software. For a software question, start
-   with the procedure above. Follow every claim back to the source that owns it.
-   Treat a secondary write-up as a lead, not a source. Why: a secondary source
-   copies the primary one and adds its own errors; the citation must point at the
-   owner of the fact.
+Rules for the file:
 
-2. Write the findings to a single Markdown file, citing each claim's source.
-   Save it where the repo already keeps such notes and match the existing
-   convention. If there is none, save it to `docs/research/<slug>.md` and say
-   where. Why: the next session must find and load the file.
+- **Neutral current state only.** Never quote conversation words, name who decided, or log prior attempts/sessions.
+- **One claim, one citation.** Exact URL or file path, plus section or line, plus version/commit. Whole-site links are rejected.
+- **Name conflicts explicitly.** When two primary sources disagree, report both, name the conflict, and state which one the repo follows and why. Never pick silently.
+- **Name missing facts explicitly.** When sources do not answer the question, state what was checked and leave it unanswered. Never invent a plausible fill-in.
+- **Label secondary-only evidence.** If no primary source exists, mark the claim `secondary` and note what it cites.
+- **Redact secrets.** Strip credentials, tokens, and PII before writing.
 
-3. Record the date, the version or commit of each source, and the question the
-   research answers. Why: a fact without a date and version is stale on arrival,
-   and the next session cannot tell whether it still holds.
-
-## Rules for the findings
-
-- **No owner words.** Never reproduce the owner's words or name the person who
-  decided. State the decision in neutral language. The notes are current
-  state only: no prior attempts, sessions, issues, or versions. Why: the notes
-  are a durable reference, and a quote ties the reference to one message.
-- **One claim, one citation.** Each claim carries the exact URL, file path, or
-  commit, plus the section or line. Why: a citation to a whole site does not let
-  the next session check the claim.
-- **A conflict is a finding.** When two primary sources disagree, report both,
-  name the conflict, and say which one the repo or the task follows and why.
-  Never pick one silently. Why: a silent pick hides a decision the owner may need
-  to make.
-- **A missing fact is a finding.** When the source does not answer the question,
-  say so and name what you checked. Never fill the gap with a plausible answer.
-  Why: an invented fact is worse than a known gap, because the next session
-  cannot tell it is invented.
-- **A secondary source is labeled.** When a secondary source is the only
-  available evidence, label it `secondary` and say what it cites. Why: the
-  owner can judge the trust level only if the label is visible.
-- **No secrets.** Redact credentials, tokens, and personal data. Why: the notes
-  are committed or shared.
-
-## Output shape
+### Output shape
 
 ```markdown
 # <question>
@@ -98,39 +51,34 @@ Status: answered | partial | conflict
 
 ## Answer
 
-<the shortest answer, with the confidence and the scope>
+<Shortest direct answer, with confidence and scope.>
 
 ## Evidence
 
-- <claim>: <source URL or path>, <section or line>, <version or commit>
-- <claim>: <source>, <section or line>, <version or commit>
+- <claim>: <path or URL>, <section or line>, <version or commit>
 
 ## Conflicts
 
-- <source A> says <X>; <source B> says <Y>. The repo follows <X> because <reason>.
+- <source A> says <X>; <source B> says <Y>. Repo follows <X> because <reason>. (Omit if none.)
 
 ## Not found
 
-- <question>: checked <sources>; no answer.
+- <gap>: checked <sources>; no answer. (Omit if none.)
 
 ## References
 
-- <source>: <URL or path>, <why it matters>
+- <source>: <path or URL>, <why it matters>
 ```
 
-## Check before delivering
+## Orchestrator check before delivering
 
-- Every claim has a citation.
-- For a code fact, the pinned version's source was read, or its absence is
-  stated.
-- Every conflict is named, with a recommendation and a reason.
-- Every missing fact is named, with what was checked.
-- The date and source versions are present.
-- The file is where the repo keeps research notes, or the location is stated.
-- For a fan-out, every question has its own file and the main session has
-  collected all files before the gate.
+Verify from the worker's summary (inspecting the file only if something looks weak):
 
-Why: the research is a reference the next phase loads. An uncited claim is a lead,
-not a fact, and the next session cannot tell the difference.
+- [ ] Every claim carries a file/line or URL/section citation plus date and version.
+- [ ] Pinned source code was read for code claims, or its absence is stated.
+- [ ] Conflicts and missing facts are surfaced, never smoothed over.
+- [ ] On a fan-out, every question produced its own file before any gate opens.
+
+Present the concise answer, conflicts, and file path(s) to the owner.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

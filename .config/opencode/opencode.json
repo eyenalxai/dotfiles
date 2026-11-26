@@ -10,7 +10,8 @@
           "railway",
           "mcp"
         ],
-        "type": "local"
+        "type": "local",
+        "protocol": "legacy"
       },
       "reui": {
         "type": "remote",
@@ -35,14 +36,10 @@
         "copyAll": true
       },
       "package": "github:anomalyco/rift#v0.0.13::path:plugins/opencode"
-    }
+    },
+    "opencode-github-panel"
   ],
   "policies": [
-    {
-      "action": "provider.use",
-      "resource": "*",
-      "effect": "deny"
-    },
     {
       "action": "provider.use",
       "resource": "opencode-go",

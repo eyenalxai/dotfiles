@@ -6,48 +6,48 @@ disable-model-invocation: true
 
 # To questionnaire
 
-Turn a decision the owner cannot answer alone into a **questionnaire**: a Markdown document the owner hands to one person to fill in async, or fills out with them in a meeting. The recipient holds knowledge the owner lacks; the questionnaire pulls it out.
+Turn a decision the owner cannot make alone into a **questionnaire**: a Markdown file the owner sends to one person to fill out async, or walks through live. The orchestrator (`opencode-go/kimi-k3.1-pro`) runs the exchanges and writes the document because it is owner- and recipient-facing prose. If repo facts are needed for the context block, gather them with an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) first.
 
-**Grill the send, not the subject.** Interview the owner only about the send, which they can always answer: who it goes to, and what they need back. The questions in the document then target the gap between what the recipient knows and what the owner needs. Why: guessing at the subject is what the questionnaire is for; the owner owns the send.
+**Grill the send, not the subject.** Only ask the owner about who gets the document and what decisions depend on the answers. Guessing at the subject is what the questionnaire is for.
 
-1. **Who is it going to?** Ask, in one exchange, the recipient's role, expertise, and relationship to the owner. This fixes the questionnaire's tone and how much context it must carry. Done when you know who the recipient is and what they know that the owner does not. Why: tone and context depend on who reads it.
+## Procedure
 
-2. **What do you need back?** Ask, in one exchange, the specific decisions or facts the owner cannot resolve alone and needs from this person. Done when you have a concrete list of what the owner must be able to do or decide afterward. Why: a question with no decision behind it is noise.
-
-3. **Write the questionnaire.** Draft questions aimed at the gap from steps 1 and 2, following the document structure below. Write it to `to-questionnaire-<slug>.md` in the current directory, with the slug from the topic, and report the path. Done when the file exists and every item the owner named in step 2 has a question. Why: one idea per question is answerable; a compound question gets a partial answer.
+1. **Who is it going to?** Ask in one exchange for the recipient's role, expertise, and relationship to the owner. This sets the tone and how much background the document needs.
+2. **What do you need back?** Ask in one exchange for the exact decisions or facts the owner needs from this person. Every question must tie back to a decision; questions without one are noise.
+3. **Write the file.** Save to `to-questionnaire-<slug>.md` in the current directory and report the path. Confirm every item from step 2 maps to at least one question.
 
 ## Document structure
 
-Frame the document as a **discovery questionnaire**: the owner lacks context, the recipient holds it. Order questions most-important-first, since async means you may only get one pass. Group them under `##` headings by theme once there are more than five. Write it using the template below.
+Order questions most-important-first because async often gives you one shot. Group under `##` theme headings when there are more than five questions. Keep every question to one idea; compound questions come back half-answered.
 
 ```markdown
 # <Questionnaire title>
 
-**Purpose:** why this questionnaire exists and the decision riding on it.
+**Purpose:** why this exists and what decision rides on it.
 
-**From:** <the owner>, **To:** <the recipient>, **How your answers will be used:** <where they go>
+**From:** <owner> | **To:** <recipient> | **How answers will be used:** <destination>
 
 ## Context
 
-One paragraph orienting a recipient who was not in the owner's head. Enough to answer well, not a page.
+One short paragraph for a reader who is not in the owner's head. Enough to answer well, never a full spec.
 
 ## How to answer
 
-State the deadline and the estimated effort. Partial answers and "I don't know" are useful: flag anything you are unsure of rather than skipping it.
+Deadline and estimated time. Note that partial answers and "I don't know" are useful: flag uncertainty instead of skipping.
 
 ## <Theme heading>
 
-One `##` section per theme. Under each, its questions, most-important-first. Every question is one idea, never compound, with an answer stub directly beneath, and a one-line _why this matters_ only where a question could be misread or invite a throwaway answer.
+### What peak traffic should launch support?
 
-### What load is the system expected to handle at launch?
-
-_Why this matters: it decides whether to provision for burst traffic now or defer it._
+_Why this matters: decides whether to provision burst capacity now or defer it._
 
 >
 
 ## Anything else?
 
-A closing catch-all: anything we did not ask that we need to know?
+Anything we did not ask that we should know?
 ```
+
+Add `_Why this matters:_` only when a question could be misread or invite a throwaway answer.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

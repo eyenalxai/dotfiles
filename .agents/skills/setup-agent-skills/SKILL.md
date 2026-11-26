@@ -6,122 +6,87 @@ disable-model-invocation: true
 
 # Setup agent skills
 
-Scaffold the per-repo configuration that the agent skills assume:
+Scaffold the per-repo configuration the mission skills expect:
 
-- **Issue tracker**: where issues live, detected from the remote or chosen from GitHub, GitLab, Linear, local markdown, or another tracker.
-- **Triage labels**: the strings used for the two category roles and the five state roles.
-- **Domain docs**: where `GLOSSARY.md` and ADRs live, and the rules for reading them.
+- **Issue tracker**: GitHub, GitLab, local markdown, or another tracker (`docs/agents/issue-tracker.md`).
+- **Triage labels**: category and state role mapping (`docs/agents/triage-labels.md`, only when `triage` is installed).
+- **Domain docs**: `GLOSSARY.md` and `docs/adr/` layout (`docs/agents/domain.md`).
 
-This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the owner, then write. Why: the tracker and labels are owner decisions, and a script that guesses them writes a wrong config.
+Prompt-driven, not a blind script: explore first, confirm owner decisions, then write.
+
+## Roles
+
+- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`, `explore` subagent)**: inspects the repo in step 1 and creates missing tracker labels in step 4 if needed.
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: presents findings, walks the owner through decisions, drafts and writes `AGENTS.md` and `docs/agents/*.md`.
 
 ## Process
 
-### 1. Explore
+### 1. Explore via worker
 
-Look at the current repo and read what exists. Do not assume:
+Dispatch an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to check and report in under 300 words:
 
-- `git remote -v` and `.git/config`: which host and repo does this clone point at?
-- `AGENTS.md` at the repo root: does it exist? Does it already have an `## Agent skills` section?
-- `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root, plus the legacy `CONTEXT.md` and `CONTEXT-MAP.md`. If a legacy file exists, offer to `git mv` it to its GLOSSARY name and rewrite those names in `docs/agents/domain.md`.
-- `docs/adr/` and any `src/*/docs/adr/` directories.
-- `docs/agents/`: does this skill's prior output already exist?
-- `.scratch/`: a sign that a local-markdown issue tracker convention is already in use.
-- `.rata.json`, or `rata status --json` when `rata` is installed: a sign that this repository already uses Linear with rata.
-- Is the `triage` skill installed? Look for a `triage` skill folder alongside this one, or `triage` in the available skills. This decides whether Section B runs.
-- Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These appear only in a large multi-package repo; their absence means single-context, which is almost every repo.
+- `git remote -v` and `.git/config` (host and repo).
+- `AGENTS.md` at repo root (exists? already has `## Agent skills`?).
+- `GLOSSARY.md`, `GLOSSARY-MAP.md`, plus legacy `CONTEXT.md` / `CONTEXT-MAP.md` (if legacy files exist, offer to `git mv` them to GLOSSARY names and update `docs/agents/domain.md`).
+- `docs/adr/`, `src/*/docs/adr/`, `docs/agents/`, `.scratch/`.
+- Whether `triage` is installed alongside this skill or in available skills (decides whether Section B runs).
+- Monorepo signals (`pnpm-workspace.yaml`, `package.json` `workspaces`, or populated `packages/*/src/`). Absence means single-context.
 
-### 2. Present findings and ask
+### 2. Present findings and ask (one section at a time)
 
-Summarize what is present and what is missing. Then take the sections in order. One section, one answer, then the next. Why: a batch of questions hides which answer changed the config.
-
-Lead each section with the recommended answer so the owner can accept it in a word. Give a one-line explainer only when the choice branches. Skip the questions in a section when exploration already settled it: Section B when `triage` is not installed, Section C when there is no monorepo. Section C still writes the single-context default; Section B writes nothing when skipped.
+Summarize what exists and what is missing. Walk sections A, B, and C sequentially (one answer before the next) so each choice stays clear. Lead every question with the recommended answer so the owner can accept in one word.
 
 **Section A: Issue tracker.**
+1. If `git remote -v` points at GitHub, recommend **GitHub** (`gh`). If GitLab (`gitlab.com` or self-hosted), recommend **GitLab** (`glab`).
+2. Otherwise (or if declined), offer all four: **GitHub**, **GitLab**, **Local markdown** (`.scratch/<feature>/`), or **Other** (Jira, Linear, etc.; ask for a one-paragraph workflow description).
+3. Keep the template's "PRs as a request surface" flag **off** without raising it; the owner can flip it later.
+4. For GitHub/GitLab with no remote yet, wire up `git init` / `git remote add origin <url>` and confirm `gh repo view` or `glab repo view` succeeds before proceeding.
 
-> Explainer: The issue tracker is where issues live for this repo. Skills such as `mission`, `to-spec`, `to-tickets`, and `triage` read from and write to it. They need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow another workflow the owner describes. Pick the place where work is tracked for this repo.
+**Section B: Triage labels.** Skip entirely if `triage` is not installed (write nothing). Otherwise ask one question:
+> Keep default triage labels (`bug`, `enhancement`, `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`)? (recommended: **yes**)
 
-Tracker precedence: detect the host from the remote, then offer the choices.
+Only collect overrides when the owner says no, so `triage` maps to existing tracker labels instead of creating duplicates.
 
-1. Run `git remote -v`. If a remote points at GitHub, propose GitHub. If it points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. If `.rata.json` exists, or `rata status --json` names a team when `rata` is installed, propose Linear.
-2. If no remote points at a host, or the owner declines the detected tracker, offer all five:
-   - **GitHub**: issues live in the repo's GitHub Issues. Uses the `gh` CLI.
-   - **GitLab**: issues live in the repo's GitLab Issues. Uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI.
-   - **Linear**: issues live in a Linear team. Uses the `rata` CLI.
-   - **Local markdown**: issues live as files under `.scratch/<feature>/` in this repo. Fits solo projects or repos without a remote.
-   - **Other** (Jira, and so on): ask the owner to describe the workflow in one paragraph; record it as freeform prose.
+**Section C: Domain docs.** Default to **single-context** (`GLOSSARY.md` + `docs/adr/` at root) without asking unless monorepo signals appeared in step 1. Only on monorepos, offer **multi-context** (`GLOSSARY-MAP.md` pointing to per-context glossaries) and confirm.
 
-Record the choice in `docs/agents/issue-tracker.md`. The GitHub, GitLab and Linear templates carry a "PRs as a request surface" flag, defaulted **off**. Leave it off and do not raise it: an owner who wants external PRs in the triage queue can flip the flag in the file later.
+### 3. Confirm before writing
 
-A GitHub or GitLab tracker needs a reachable repo. When the owner picks one and no `git remote` points at that host, get the repo URL and wire it up (`git init` if needed, `git remote add origin <url>`) before going further. Done when `gh repo view` or `glab repo view` prints the project from inside this directory. If it cannot, stop and tell the owner what is missing.
-
-A Linear tracker needs an authenticated `rata` and a team. Run `rata team list` and choose the team key. From the repository root, run `rata link --team <key>`. Pass `--workspace <name>` when the key exists in more than one stored workspace. Done when `rata status --json` prints the team. If it cannot, stop and tell the owner what is missing. The tracker doc must name the `rata` skill: `rata status` warns when it does not.
-
-**Section B: Triage label vocabulary.** Skip this section when the `triage` skill is not installed; an uninstalled skill needs no labels.
-
-If it is installed, ask exactly one question:
-
-> Do you want to keep the default triage labels? (recommended: **yes**)
-
-The defaults are the two category roles and the five state roles, with each label string equal to its name: `bug`, `enhancement`, `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On yes, write them as-is. Only when the owner says no, usually because the tracker already uses other names (for example `bug:triage` for `needs-triage`), collect the overrides so `triage` applies existing labels instead of creating duplicates.
-
-**Section C: Domain docs.** Default to **single-context**: one `GLOSSARY.md` plus `docs/adr/` at the repo root. This fits almost every repo; write it without asking.
-
-Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSSARY.md` files) only when exploration finds monorepo signals. Then confirm the layout with the owner.
-
-### 3. Confirm and edit
-
-Show the owner a draft of:
-
-- The `## Agent skills` block to add to `AGENTS.md`.
-- The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed).
-
-Let the owner edit before writing. Why: the config is durable, and the owner reads it later.
+Show drafts of the `## Agent skills` block for `AGENTS.md` and each `docs/agents/*.md` file to create. Let the owner edit before writing.
 
 ### 4. Write
 
-**Edit `AGENTS.md`:**
-
-- If `AGENTS.md` exists, edit it.
-- If it does not exist, create it.
-- If an `## Agent skills` block already exists, update its contents in place. Keep the surrounding edits.
-
-The block:
+Update or create `AGENTS.md` (editing `## Agent skills` in place while keeping surrounding content):
 
 ```markdown
 ## Agent skills
 
 ### Issue tracker
 
-[one-line summary of where issues are tracked]. See `docs/agents/issue-tracker.md`.
+<one-line summary>. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-[one-line summary of the label vocabulary]. See `docs/agents/triage-labels.md`.
+<one-line summary>. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-[one-line summary of layout: "single-context" or "multi-context"]. See `docs/agents/domain.md`.
+<single-context or multi-context summary>. See `docs/agents/domain.md`.
 ```
 
-Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. Otherwise omit both.
+Omit `### Triage labels` and `docs/agents/triage-labels.md` when Section B was skipped.
 
-When Section B ran on GitHub, GitLab or Linear, create each configured label the tracker lacks (`gh label create`, `glab label create`, or `rata label create --team <key> --name <label> --if-not-exists`). List the Linear team labels with `rata label list --team <key>`.
+Write `docs/agents/*.md` from the templates in this folder:
+- [issue-tracker-github.md](./issue-tracker-github.md)
+- [issue-tracker-gitlab.md](./issue-tracker-gitlab.md)
+- [issue-tracker-local.md](./issue-tracker-local.md)
+- [triage-labels.md](./triage-labels.md)
+- [domain.md](./domain.md)
+- Or write `docs/agents/issue-tracker.md` from the owner's description for another tracker.
 
-Then write the docs files from the seed templates in this skill folder:
+When Section B ran on GitHub or GitLab, have a worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) create any missing labels with `gh label create` / `glab label create`.
 
-- [issue-tracker-github.md](./issue-tracker-github.md): GitHub issue tracker
-- [issue-tracker-gitlab.md](./issue-tracker-gitlab.md): GitLab issue tracker
-- [issue-tracker-linear.md](./issue-tracker-linear.md): Linear issue tracker
-- [issue-tracker-local.md](./issue-tracker-local.md): local-markdown issue tracker
-- [triage-labels.md](./triage-labels.md): label mapping (only when `triage` is installed)
-- [domain.md](./domain.md): domain doc consumer rules and layout
+### 5. Finish
 
-On Linear, fill the team key, the team name, the workspace, the label strings and the pull request convention in the template. Keep the `rata` skill pointer.
-
-For other issue trackers, write `docs/agents/issue-tracker.md` from scratch using the owner's description.
-
-### 5. Done
-
-Tell the owner the setup is complete and which skills read from these files. Mention that the owner can edit `docs/agents/*.md` directly later; re-run this skill only to switch issue trackers or restart from scratch.
+Confirm setup is complete, list which skills consume the files, and note that `docs/agents/*.md` can be edited directly later (re-run this skill only to switch trackers or reset).
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

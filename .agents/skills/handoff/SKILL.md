@@ -7,185 +7,83 @@ disable-model-invocation: true
 
 # Handoff
 
-Write a handoff document summarizing the current conversation so a fresh agent
-can continue the work. Save it to the temporary directory of the owner's OS
-(`$TMPDIR`, else `/tmp`; `%TEMP%` on Windows), not the current workspace. Why:
-the document is a scratch artifact, not a deliverable; the repo does not carry
-session transport.
+Package the current state so a fresh session can resume without re-litigating settled work.
 
-Inside a mission, the mission skill uses this contract at planned session
-boundaries. When a mission is active, the mission output contract owns the reply
-around the prompt. This skill owns the prompt contract; `mission` defers to it.
+## Roles
 
-A handoff is for travel, not for a phase change. When the next step stays in the
-current session, use a subagent when the work is parallel or isolated, and keep
-the mission session as the crew chief. A subagent is a worker inside the session,
-not a handoff. Why: the worker keeps the approved context, and a handoff forces a
-copied prompt and a new gate confirmation.
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: writes the handoff document and the chat prompt. Both are owner-read and control the next session's direction.
+- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: if reference paths, URLs, open PRs, or stack states need verification before handoff, run one `explore` or `general` worker to check them and return a compact status table.
 
-A stack handback reports the stack's open PRs and stops. The next frontier waits
-until merges unblock it. A stacked ticket may start when its blocker's branch has
-the interface it needs, even if the blocker's PR is open; the prompt carries the
-stack order and the merge order. A ticket with several blockers waits for all but
-one to merge, then stacks on the last. A ticket that cannot stack waits for all
-its blockers' PRs to merge. Why: a stack that is not reported as a stack looks
-like a queue, and the owner cannot see the merge order.
+## When to hand off
 
-Include a "suggested skills" section in the document, naming the skills the next
-agent must load with the Skill tool, in order.
+Hand off only when the work travels or the current context cannot carry it: context is nearly full, a side task needs isolation, the next step moves to another directory or harness, or the owner asks. Never hand off for a normal phase change in the same session; worker subagents already isolate implementation and research without forcing a copied prompt and a fresh gate confirmation.
 
-Never duplicate content already captured in other artifacts (specs, plans, ADRs,
-issues, commits, diffs). Reference them by path or URL. Why: a copy drifts from
-the source, and the next session cannot tell which copy is current.
+## Outputs
 
-Redact sensitive information: API keys, passwords, and personally identifiable
-information.
+1. **Scratch handoff doc**: save to the OS temp directory (`$TMPDIR`, fallback `/tmp`; `%TEMP%` on Windows), never inside the repo. It is session transport, not a deliverable. Reference specs, ADRs, issues, commits, and diffs by path or URL instead of copying them, so nothing drifts. Redact secrets, tokens, and PII. Include a `Suggested skills` section listing the skills to load in order.
+2. **Next-session prompt (the deliverable)**: end the chat reply with one fenced `text` block ready to copy. This is the only copy of the prompt. Never paste a delivered prompt into an issue, PR, commit, repo file, or mission document, because durable text gets mistaken for owner authority by later sessions.
 
-If the owner passed arguments, treat them as a description of what the next
-session will focus on and tailor the document accordingly.
+If the owner passed arguments, focus the handoff on that next-session goal. Inside an active mission, follow the `mission` output contract around the prompt block.
 
-## The prompt is the handoff
+## Gate integrity
 
-The document is the summary; the prompt is the deliverable. End the chat reply
-with one fenced `text` block the owner can copy with one click. That is the only
-copy of the prompt. Never put the delivered prompt in an issue, a PR, a commit,
-the repo, or the mission document. The record gets no log line and no prompt.
-Why: a prompt pasted into a durable record becomes state the owner did not
-approve, and the next agent treats the record as authority.
+A handoff prompt **reports** a gate; it **never grants** one. The agent writes the prompt, so treating a prompt as approval lets the agent approve its own work.
 
-## The prompt reports the gate, it never grants it
+- If a gate is pending: write `Open gate: pending` and name the decision.
+- If a gate was approved earlier: write `Open gate: approved, confirm it still holds` and name the decision. The next session presents it and waits for the owner's words.
+- If a gate does not apply to the scope: write `Open gate: not used`.
 
-The prompt may say that a gate was approved, pending, or not used. It reports the
-decision, never the words, never the owner, and never the name of the person who
-decided. It may not turn that decision into a new approval. The next session
-presents the gate with its recorded status and waits for the owner's words. The
-owner may confirm the earlier decision in their own words; the agent never
-assumes it. Why: the prompt is written by the agent; if a prompt can grant a
-gate, the agent can approve its own work.
+Never write "the scope is approved" as settled authority, never write "decide this first", never quote the owner's words, and never name who decided.
 
-An approval does not carry on its own. A fresh session is a fresh conversation,
-and the owner's words in the old conversation are not the owner's words in the
-new one. If the record says a gate is approved, present it that way and ask the
-owner to confirm it still holds. If the gate is pending, state the decision to be
-made and ask. Never write "the scope is approved" as a fact, and never carry the
-old words. Why: a prompt that says the earlier approval carries is still the
-agent's words, and the owner did not speak them in the new conversation.
+## What the prompt must carry
 
-If the gate is pending, say `Open gate: pending` and name the decision. If the
-gate is approved, say `Open gate: approved, confirm it still holds` and name the
-decision. Never write "decide this first"; it moves the owner's decision back to
-the agent.
+- Work item issue title and team (never its tracking key or URL), or `No work item record exists; do not create one before the gate` plus the grill ledger and open questions.
+- Goal, why the next step is next, and what it unlocks.
+- Scope, settled decisions, rejected options (marked `Do not re-offer` with reason), and session plan.
+- Base commit, open PRs in bottom-up merge order, stack order, next frontier in plain words, and remaining blocking edges. A stacked ticket can start once its blocker's branch exposes the needed interface; a ticket with multiple blockers waits until all but one merge, then stacks on the last.
+- Current gate, how it was reached, and its status (`pending`, `approved, confirm it still holds`, or `not used`).
+- Approved rule changes and file scope (a file list for small changes; a pattern plus exceptions for large ones).
+- Top references for the next phase by path or URL, marking broken ones `stale: <what changed>`.
+- Ordered skills to load with the Skill tool, plus the stop rule: if a named skill fails to load, stop and name it instead of simulating it.
+- Exact build and check commands.
+- Execution model: orchestrator (`opencode-go/kimi-k3.1-pro`) owns the forest, gates, and owner-facing artifacts; workers (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) handle exploration, research, implementation, and diff reviews.
+- Output contract and handback: answer first, no status header, one plain `Next step:` sentence when the owner must act; open one PR per ticket stacked by edge, run `code-review`, report the stack bottom-up with URL, check state, what changed, what it unlocks, and merge danger (keep head SHAs in the PR).
 
-## What the prompt carries
+## What the prompt must exclude
 
-The prompt is self-contained:
+- History of any kind: prior attempts, prior sessions, prior issues, or earlier versions. History invites the next session to reopen settled work.
+- Unsourced constraints: label any unapproved constraint `proposed`.
+- Direct quotes from the conversation or names of who decided.
+- Tracking keys or head SHAs in the prose around the prompt.
 
-- the work item issue ref and title, and its team, or that no record exists yet
-  and the next session must not create one before the gate;
-- the goal, why the next step is next, and what it unlocks;
-- the mission flow, the decisions that constrain the work, and the session plan;
-- the base commit, the stack order, the open PRs, and the next frontier in plain
-  words, plus the blocking edges after it;
-- the current gate, the method that reached it, and whether it is approved,
-  pending, or not used, stated neutrally and never with words or a name;
-- the current state only, with no prior attempts, sessions, issues, or versions;
-- the grill ledger and the open questions when no record exists yet;
-- the approved rule changes and the file scope, at the level the change needs: a
-  list for a small change, a pattern plus exceptions for a large one;
-- the references for the next phase, by path or URL, with `stale: <what changed>`
-  on any that no longer holds;
-- the skills to load first, in order (the mission, the next phase, or `router`
-  for a standalone flow), then `code-review` and `pr` per PR;
-- the stop: if a named skill will not load, stop and say which one failed; never
-  simulate its output;
-- the build and check commands;
-- the output contract the next session must use: answer first, no status block,
-  state in the mission document, one plain Next step sentence when the owner must
-  act;
-- the handback: the crew chief opens one PR per ticket, stacked by edge; run
-  `code-review` on each and fix the findings; report the stack bottom-up with
-  each PR URL, check state, what changed, what it unlocks, and the merge danger.
-  Name the next frontier in plain words. The owner merges bottom-up.
-
-The prompt is the one place that carries the full mission state. It names the
-work item issue by ref and title, and names its team. The reply around it does
-not repeat the state, and it does not print a ticket id, mission id, or issue key
-in the prose: the no-bare-id rule covers the owner-facing reply, not the prompt.
-Why: a title-only prompt costs one search per session and can find the wrong
-issue.
-
-Write the prompt in the owner's language and keep it positive. State the desired
-end state and the owner's merge step. Name the load chain in order. For a fog
-path, that is `wayfinder`, then `grilling` and `domain-modeling`, then `to-spec`
-and `to-tickets`, then `implement` for one ticket or `implement-spec` for a
-frontier, then `tdd` and `code-review`. For one ticket, it is `implement`, `tdd`,
-and `code-review`.
-
-When no record exists, replace the first line with: no work item record exists;
-do not create one before the gate. Add the grill ledger and the open questions.
-
-A starting shape:
+## Starting shape
 
 ```text
-Read the work item issue <ref> in team <team>: <title>. Run /mission
-continue. The goal is <goal>. The current gate is <gate>, reached with <method>.
-Open gate: <pending | approved, confirm it still holds | not used>. The
-approved rule changes are <list or pattern>. The file scope is <list or pattern>, and <what is
-out> is out. The open PRs are <urls>, in merge order <...>, or no PR is open yet.
-The base commit is <sha>. The next frontier is <plain name>: <why it is next, and
-what it unlocks>. Its tracking key is in the mission document.
-Read the mission references for <phase> at <paths or URLs>, then load <skills> in
-order with the Skill tool. If a skill will not load, stop and say which one, and
-never simulate its output.
-Run <checks>. Open one PR per ticket, stacked by edge. Run code-review on each.
-Report the stack bottom-up: each PR URL, check state, what changed, what it
-unlocks, and the merge danger. Name the next frontier in plain words. The owner
-reviews and merges bottom-up.
+Find the work item issue in team <team> by its title: <title>. Run /mission continue.
+Goal: <goal>.
+Current gate: <gate>, reached with <method>. Open gate: <pending | approved, confirm it still holds | not used>.
+Rule changes: <list or pattern>. File scope: <list or pattern>. Out of scope: <what is out>.
+Rejected options (do not re-offer): <option: reason>.
+Open PRs (merge order, bottom-up): <urls, or none>. Base commit: <sha>.
+Next frontier: <plain name>: <why it is next and what it unlocks>. Tracking keys live in the mission document.
+References for <phase>: <paths or URLs, with stale marks if broken>.
+Load these skills in order with the Skill tool: <skills>. If any skill fails to load, stop and name it; never simulate its output.
+Orchestrator (opencode-go/kimi-k3.1-pro) owns decisions, gates, and owner-facing writing; delegate exploration, research, implementation, and diff review to workers (openrouter/deepseek/deepseek-v4.1-flash-1017#max) and critique before accepting.
+Checks: <commands>. Open one PR per ticket, stacked by edge, run code-review on each, and report the stack bottom-up (PR URL, check state, what changed, what it unlocks, merge danger). Keep head SHAs in the PR. The owner reviews and merges bottom-up.
 ```
 
-## What the prompt must not carry
+*(Replace the first line with `No work item record exists; do not create one before the gate.` and include the grill ledger and open questions when handing off before the first gate.)*
 
-- A rejected option, unless the prompt names it as rejected with the reason and
-  says `Do not re-offer`. Why: a bare rejected option reads as an open choice,
-  and the next session re-offers it.
-- A constraint with no source. Label it `proposed` when it is not in the record
-  or the decision. Why: a proposal that looks like a decision closes a question
-  that was never answered.
-- A stale reference without a mark. Write `stale: <what changed>` when the path
-  or URL no longer holds. Why: the next session spends its first round
-  discovering the reference is gone.
-- An approval the owner did not give. Why: that is the failure this contract
-  exists to prevent.
-- A direct quote, a mention of the owner, or the name of the person who decided.
-  State the decision in neutral language. Why: the prompt is read as authority,
-  and a name or a quote ties that authority to one message.
-- History of the issue or mission: prior attempts, sessions, issues, or versions.
-  State the current state only. Why: history invites the next session to reopen
-  a settled decision.
+## Audit before sending
 
-## Check before delivering
+Read the prompt as the next session will:
 
-Read the prompt as the next session would.
-
-1. Does it claim an approval the owner did not give? If yes, cut the claim and
-   mark the gate pending.
-2. Does it list a rejected option without `Do not re-offer`? If yes, add the
-   reason.
-3. Does it carry a constraint with no source? If yes, label it `proposed`.
-4. Does it point at a missing reference without marking it stale? If yes, mark
-   it.
-5. Does it name a per-file approval list for a large change? If yes, replace it
-   with the rule and the file scope.
-6. Does it say `head SHA` in the reply? If yes, move the SHA to the PR; the
-   reply carries the decision.
-7. Does it name the work item only by title? If yes, add its ref.
-8. Does it quote, name the person who decided, or carry history? If yes, rewrite
-   it as neutral current state.
-9. Does it treat a stack as a queue? If yes, state the stack order and the merge
-   order. Why: the owner merges bottom-up, and a queue hides the layers.
-
-This is a reading, not a program. There is no build command for a prompt. Why:
-the gate is the owner's words, and a program can only check the agent's text
-against itself.
+- [ ] No claimed approval without owner confirmation in the new session.
+- [ ] Every rejected option carries a reason and `Do not re-offer`.
+- [ ] Every unsourced constraint is labeled `proposed`.
+- [ ] Every broken reference is marked `stale: <what changed>`.
+- [ ] Large changes state rule + file pattern, not a per-file list.
+- [ ] No quotes, no names of deciders, no history, no head SHAs in chat prose.
+- [ ] Stacks state both stack order and bottom-up merge order, never treated as a queue.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

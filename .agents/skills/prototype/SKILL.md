@@ -5,24 +5,37 @@ description: Build a throwaway prototype to answer a design question. Use when t
 
 # Prototype
 
-A prototype is **throwaway code that answers a question**. The question decides the shape.
+Build throwaway code that answers one concrete design question fast.
 
-## Pick a branch
+## Roles
 
-Identify the question being answered, using the owner's prompt, the surrounding code, or a direct question when the owner is available:
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: picks the branch (logic vs. UI), sharpens the question, inspects the worker's result (critiquing via `sessionID` if state is hidden or code is over-engineered), presents the run command and verdict to the owner, and captures the settled decision.
+- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`, `general` subagent)**: writes and runs the throwaway logic HTML file or UI route variations, fixes runtime errors, and commits the finished prototype to its throwaway branch when done.
 
-- **"Does this logic or state model feel right?"** → [LOGIC.md](LOGIC.md). Build a single shareable HTML file (free-play buttons plus tabbed guided walkthroughs) that pushes the state machine through cases that are hard to reason about on paper, and that a non-developer can drive.
-- **"What does this look like?"** → [UI.md](UI.md). Generate several radically different UI variations on a single route, switchable via a URL search param and a floating bottom bar.
+## 1. Pick a branch
 
-The two branches produce different artifacts, so a wrong branch wastes the prototype. When the question is ambiguous and the owner is unreachable, default to the branch that matches the surrounding code: a backend module goes to logic; a page or component goes to UI. State the assumption at the top of the prototype.
+```text
+What question is the prototype answering?
+├── "Does this logic or state model feel right?" → Read LOGIC.md (single shareable HTML file with free-play controls + guided walkthroughs)
+└── "What does this UI look like?"              → Read UI.md (several distinct variations on one route, switchable via URL param + floating bottom bar)
+```
 
-## Rules that apply to both
+If ambiguous and the owner is unavailable, match the surrounding code (backend module -> `LOGIC.md`; page/component -> `UI.md`) and state the assumption at the top of the prototype.
 
-1. **Throwaway from day one, and marked.** Locate the prototype code next to the module or page it prototypes so context is clear, and name it so a casual reader sees it is a prototype, not production. For throwaway UI routes, follow the routing convention the project already uses; never invent a new top-level structure. Why: a prototype that looks production gets kept, and unowned code outlives the question.
-2. **Trivial to run.** A UI prototype starts from one command in the project's task runner: `pnpm <name>`, `python <path>`, `bun <path>`. A logic demo is a single HTML file the owner double-clicks. Starting it requires no thought. Why: friction stops the owner from running it, and an unrun prototype answers nothing.
-3. **No persistence by default.** State lives in memory. Persistence is the thing the prototype is _checking_, not something it depends on. If the question involves a database, hit a scratch DB or a local file with a clear "PROTOTYPE, wipe me" name. Why: a database hides the state model behind setup, and the state model is the question.
-4. **Skip the polish.** No tests, no error handling beyond what makes the prototype _runnable_, no abstractions. The point is to learn fast. Why: tests and error handling answer questions the prototype is not asking, and they slow the answer.
-5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or render the full relevant state so the owner sees what changed. Why: the state is the thing being judged; a hidden state makes the verdict a guess.
-6. **Capture it when done.** Fold any validated decision into the real code, then capture the prototype as a **primary source**: commit it to a throwaway branch, out of main, and leave a context pointer to that branch on the implementation issue. Capture the answer too (the verdict and the question it settled) in the issue or a commit. Main keeps only the validated decision. Why: the decision is the durable output; the code is evidence that the decision was tested.
+## 2. Rules for the worker (pass these in the worker brief)
+
+1. **Clearly marked throwaway.** Place near the module or page it prototypes (following existing routing conventions for UI; never invent top-level structure) and name it unmistakably as a prototype so it never slips into production.
+2. **One command or double-click to run.** UI starts via one existing task-runner command (`pnpm <name>`, `bun <path>`, `python <path>`); logic opens as one standalone HTML file. Friction keeps prototypes unrun.
+3. **In-memory state only.** Persistence is usually what you are checking, not what you should set up. If a DB is part of the question, use a scratch DB or file clearly named `PROTOTYPE-wipe-me`.
+4. **Skip polish.** Zero tests, zero abstractions, only the error handling needed to run.
+5. **Always render full state.** After every logic action or UI variant switch, display the relevant state directly so the owner can judge without guessing.
+
+## 3. Critique and capture
+
+When the worker reports the file/route path and run command:
+
+1. Verify it directly answers the question and surfaces state cleanly. If not, follow up on the worker's `sessionID` to fix it before showing the owner.
+2. Give the owner the exact run command or file path and let them test it.
+3. Once the question is answered, fold only the **validated decision** into real code/specs. Have the worker commit the prototype to a throwaway branch (never `main`), push if appropriate, and record a pointer to that branch plus the verdict on the implementation issue.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

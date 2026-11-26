@@ -5,28 +5,31 @@ description: Grill the owner relentlessly about a plan, decision, or idea. Use w
 
 # Grilling
 
-Interview the owner until you share the same understanding. Map the conversation as a **design tree**: every decision branches into the decisions that depend on it.
+Interview the owner until you share the same understanding. Model the conversation as a **design tree**: every settled decision unlocks the dependent decisions below it.
 
-## Build the fact base before the first round
+## Roles
 
-Before the first round, produce two inventories:
+- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: owns the design tree, writes every round and ledger, talks to the owner, and judges when understanding is complete.
+- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: gathers codebase, tracker, ADR, and glossary facts so the orchestrator never burns main-session context searching files.
 
-1. **Surface inventory**: every existing screen, button, route, command, file, or API that could be the thing the owner is asking about. Search the code, the mission document, the issue, the ADRs, and the earlier rounds. Name the path or URL for each.
-2. **Prior-decisions inventory**: every decision the owner already made in this mission or in the referenced session, with the message or record that carries it as the source. Include rejected options and the reason.
+## 1. Build the fact base before round 1
 
-Why: a question about a surface that already exists wastes the owner's time and shows the agent did not read the code.
+When working in a repo or tracker, dispatch an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) before asking anything. Ask it for a compact report (under 500 words) with two inventories:
 
-If a fact is in the environment, find it. Dispatch a subagent when the search is large. Do not ask the owner for a fact you can look up. Put only the owner's decisions to them.
+1. **Surface inventory**: existing screens, routes, commands, files, modules, or APIs that touch the request, with paths or URLs.
+2. **Prior-decisions inventory**: decisions already settled in this mission, tracker issues, `GLOSSARY.md`, or `docs/adr/`, plus any rejected options and why.
 
-## Work the tree in rounds
+Asking the owner about a surface that already exists wastes their time and signals you did not read the repo. If a factual question comes up mid-grill and the environment can answer it, send a follow-up to the same worker `sessionID` instead of asking the owner.
 
-The **frontier** is every decision whose prerequisites are settled: the questions you can ask now without guessing at answers you have not heard. Ask the whole frontier in one round: number each question and give a recommended answer. Then wait for the owner's answers before the next round. Why: one question at a time hides the shape of the decision, and a round can shrink without anyone noticing.
+## 2. Ask the whole question frontier per round
 
-A question whose answer depends on another question still open in this round belongs to a later round.
+The **question frontier** is every open decision whose prerequisites are already settled. Put the entire frontier into one numbered round, with a recommended answer for each, then stop and wait. Asking one question at a time hides how decisions couple; bundling lets the owner see the full shape.
 
-## The round ledger
+Hold back any question that depends on an unanswered question in the current round.
 
-Before the questions, write the ledger:
+### Round format
+
+Start every round with the **ledger**, then the numbered questions:
 
 ```text
 Settled:
@@ -35,52 +38,35 @@ Rejected:
 - <option>: <reason>
 Open:
 - Q1, Q2, ...
-```
 
-The ledger lives in the conversation. Do not write it to the tracker before the gate. When the record is written, it carries the settled decisions, not the ledger. Why: the record is a snapshot of current state, not a transcript of the grill.
+Q1: <Short title>
 
-Every round carries the ledger. Why: the ledger shows what is decided, what is out, and what is left, so the agent does not reopen a settled decision or re-offer a rejected option.
+<Question and concrete options, naming any existing surfaces found in the fact base.>
 
-When a round shrinks, name every question that left and the owner answer that removed it. Why: a round that silently drops questions looks complete while the frontier is still open.
+Why this question: <what it decides and what breaks if guessed>
+Why I cannot answer it myself: <missing fact or owner preference>
 
-## Format a round
-
-```text
-Q1: <Question title>
-
-<Question body, including the options.>
-
-Why this question: <the decision it settles and what breaks without it>
-Why I cannot answer it myself: <the missing fact, or why the choice is the owner's>
-
-Recommended answer: <your recommended answer>
+Recommended answer: <concrete recommendation>
 
 ---
 
-Q2: <Question title>
-
-<Question body, including the options.>
-
-Why this question: <the decision it settles and what breaks without it>
-Why I cannot answer it myself: <the missing fact, or why the choice is the owner's>
-
-Recommended answer: <your recommended answer>
+Q2: <Short title>
+...
 ```
 
-Word each question so yes accepts the recommended answer. Every question carries both why lines. If the answer is a fact you can find, find it. If it is the owner's decision, say why the environment cannot answer it.
+- Keep the ledger in the conversation. Never write it to the tracker before a gate; the record holds settled decisions, not interview transcripts.
+- Word every question so "yes" accepts the recommended answer.
+- If a round shrinks compared to the prior round, list each dropped question and the owner answer that settled it so nothing disappears silently.
 
-## Rules for the questions
+## 3. Rules
 
-- Never offer an option the owner already rejected. If it must appear, put it in the ledger as rejected with the reason. Why: re-offering a rejected option tells the owner their answer did not land.
-- Never ask the owner to find a surface that already exists. Put the surface in the question. Why: that is the agent's search, not the owner's decision.
-- Never ask a question whose answer is in the code, the mission, the issue, or the ADRs. Find it and put it in the fact base. Why: a question with a findable answer is a reading failure, not a decision.
-- Never classify an owner decision as an engineering choice. If the owner said it, it is settled. If the agent chose it, label it `engineering` in the ledger. Why: relabeling an owner decision as engineering removes it from the gate.
-- If the owner says they do not care, do not turn that into a decision. Record `owner: no preference` and choose the safe default with the reason. Why: "I do not care" is permission to decide, not a decision the agent can record later.
+- **Never re-offer a rejected option.** Keep it in the ledger's Rejected list with its reason so it stays dead.
+- **Never ask for a findable fact.** Look it up via the worker and fold it into the question.
+- **Never relabel an owner decision as engineering.** If the owner decided it, record it as settled. Label only your own defaults `engineering` so owner decisions stay visible at the gate.
+- **Handle "I don't care" honestly.** Record `owner: no preference` and state the safe default with its reason. Permission to pick is not an owner mandate.
 
-## The end
+## 4. Finish
 
-The session is done when the frontier is empty: every branch of the design tree visited, and no assumption left unstated. Do not act on the result until the owner confirms shared understanding. Why: the gate is the owner's words, and a full ledger is not a substitute for their confirmation.
-
-The confirmation is a clear decision in the conversation. If the decision is ambiguous, ask. Do not demand a template sentence; the gate is the decision, not a password. Do not quote the words or name who decided in any artifact.
+The grill ends when the question frontier is empty and no assumption remains unstated. Stop and wait for the owner to confirm shared understanding in their own words before acting. Do not demand a magic phrase; if the confirmation is ambiguous, ask. Never quote the owner's words or name who decided in any durable artifact.
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

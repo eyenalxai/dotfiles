@@ -122,10 +122,11 @@
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/prototype/SKILL.md",
-      "skillFolderHash": "c85457354fbc59ab4b6c6e3fdbd2e00ddf25839e",
+      "skillFolderHash": "49f4e26116b654a2b7f8220ae15690ac887bfff7",
       "installedAt": "2026-09-11T00:37:48.311Z",
-      "updatedAt": "2026-11-10T12:33:31.971Z"
+      "updatedAt": "2026-11-26T16:06:55.272Z"
     },
     "write-swift": {
       "source": "emilkowalski/skill",
@@ -176,145 +177,161 @@
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/productivity/grill-me/SKILL.md",
-      "skillFolderHash": "2b6a546474ea91054edb0725f25d258b5f72b204",
+      "skillFolderHash": "7002b06e0ba92defb77add7a6b82d10f1312f40e",
       "installedAt": "2026-09-18T21:24:24.249Z",
-      "updatedAt": "2026-11-10T12:33:31.969Z"
+      "updatedAt": "2026-11-26T16:06:55.269Z"
     },
     "code-review": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/code-review/SKILL.md",
-      "skillFolderHash": "8c1ed49f00819d3fa4c2766cef6e8fe645b0f005",
+      "skillFolderHash": "567a3a1d00e968ab62f247b5f6c94dbb1993d8ac",
       "installedAt": "2026-10-03T19:42:56.663Z",
-      "updatedAt": "2026-11-10T12:33:31.972Z"
+      "updatedAt": "2026-11-26T16:06:55.260Z"
     },
     "codebase-design": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/codebase-design/SKILL.md",
-      "skillFolderHash": "b72ad495844e1574ca1df9c701fa9b1cf1396d0c",
+      "skillFolderHash": "82349d6501927cb96f7796c2e1d98ca10f4ae617",
       "installedAt": "2026-10-03T19:42:56.671Z",
-      "updatedAt": "2026-11-10T12:33:31.972Z"
+      "updatedAt": "2026-11-26T16:06:55.260Z"
     },
     "diagnosing-bugs": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/diagnosing-bugs/SKILL.md",
-      "skillFolderHash": "cc7bbd2c8830b3ef0f710e04ad6fa41a8d49337b",
+      "skillFolderHash": "ef85af6db023c68835021b55858f65ebc8a9cb49",
       "installedAt": "2026-10-03T19:42:56.671Z",
-      "updatedAt": "2026-11-10T12:33:31.972Z"
+      "updatedAt": "2026-11-26T16:06:55.268Z"
     },
     "domain-modeling": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
-      "skillFolderHash": "021b18eb311730c18c3fd918fed6a194ac651255",
+      "skillFolderHash": "803083483a8034030b476202d6b2eaf52e735a46",
       "installedAt": "2026-10-03T19:42:56.672Z",
-      "updatedAt": "2026-11-10T12:33:31.972Z"
+      "updatedAt": "2026-11-26T16:06:55.269Z"
     },
     "grill-with-docs": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
-      "skillFolderHash": "563c4ccc7e6544a9b7b24d37b63105e7851af8b2",
+      "skillFolderHash": "8782b85d8bb8155bb578a36c76ec935a80e76599",
       "installedAt": "2026-10-03T19:42:56.672Z",
-      "updatedAt": "2026-11-10T12:33:31.972Z"
+      "updatedAt": "2026-11-26T16:06:55.269Z"
     },
     "grilling": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/productivity/grilling/SKILL.md",
-      "skillFolderHash": "e8d1b988c13aa86b048d470dfb5f21283d25c109",
+      "skillFolderHash": "76fb49bf3a30ac969f96856fbadb4346153567a4",
       "installedAt": "2026-10-03T19:42:56.673Z",
-      "updatedAt": "2026-11-10T12:33:31.969Z"
+      "updatedAt": "2026-11-26T16:06:55.270Z"
     },
     "implement": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/implement/SKILL.md",
-      "skillFolderHash": "9666f3a952f52bb8bfce0141e8da08237275652b",
+      "skillFolderHash": "d6bfcaf62b7fbc9223795a4cc91033959a4a65d1",
       "installedAt": "2026-10-03T19:42:56.673Z",
-      "updatedAt": "2026-11-10T12:33:31.971Z"
+      "updatedAt": "2026-11-26T16:06:55.270Z"
     },
     "implement-spec": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/implement-spec/SKILL.md",
-      "skillFolderHash": "3b3bdd3efabdea03fa16e876c82dbfcb71cfca7a",
+      "skillFolderHash": "ee4420eaa8d906c86d6e09a0efa903a60d2dceef",
       "installedAt": "2026-10-03T19:42:56.673Z",
-      "updatedAt": "2026-11-10T12:33:31.971Z"
+      "updatedAt": "2026-11-26T16:06:55.271Z"
     },
     "pr": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/pr/SKILL.md",
-      "skillFolderHash": "eb5ddc92e4d4bc031fea6b54ccaee6dabc475097",
+      "skillFolderHash": "c80b5e1b9e0b2a9c09da0e11b75ce920b201f836",
       "installedAt": "2026-10-03T19:42:56.674Z",
-      "updatedAt": "2026-11-10T12:33:31.971Z"
+      "updatedAt": "2026-11-26T16:06:55.271Z"
     },
     "research": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/research/SKILL.md",
-      "skillFolderHash": "324f0dfb11cb7f616c0114158090e556ddbf101a",
+      "skillFolderHash": "99bcca97c2416f04034a2f1cf008fc79948bf9e3",
       "installedAt": "2026-10-03T19:42:56.675Z",
-      "updatedAt": "2026-11-10T12:33:31.971Z"
+      "updatedAt": "2026-11-26T16:06:55.272Z"
     },
     "tdd": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/tdd/SKILL.md",
-      "skillFolderHash": "d3f0633b25167e5a12237d8c76e317fbcfc4235f",
+      "skillFolderHash": "4abd31982c79f1bc6d6e1a790697160d2a31461f",
       "installedAt": "2026-10-03T19:42:56.676Z",
-      "updatedAt": "2026-11-10T12:33:31.970Z"
+      "updatedAt": "2026-11-26T16:06:55.273Z"
     },
     "to-spec": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/to-spec/SKILL.md",
-      "skillFolderHash": "32399ac82401d66155c508df6bd0fe56e184c272",
+      "skillFolderHash": "93203e0d4d77732b5bd5eab128d3512bac3df491",
       "installedAt": "2026-10-03T19:42:56.677Z",
-      "updatedAt": "2026-11-10T12:33:31.970Z"
+      "updatedAt": "2026-11-26T16:06:55.274Z"
     },
     "to-tickets": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/to-tickets/SKILL.md",
-      "skillFolderHash": "c235c523c12987185a05315f7f0675c317ae34f4",
+      "skillFolderHash": "a6c37b16d2096bcb7c73c34436b63e8837e14137",
       "installedAt": "2026-10-03T19:42:56.677Z",
-      "updatedAt": "2026-11-10T12:33:31.970Z"
+      "updatedAt": "2026-11-26T16:06:55.274Z"
     },
     "triage": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/triage/SKILL.md",
-      "skillFolderHash": "e32733a28dab485ea8ddfec2841b69bddfc3b0b0",
+      "skillFolderHash": "7da9d8edca32ac31ed8af0ae65136d17a19cbd21",
       "installedAt": "2026-10-03T19:42:56.677Z",
-      "updatedAt": "2026-11-10T12:33:31.970Z"
+      "updatedAt": "2026-11-26T16:06:55.274Z"
     },
     "wayfinder": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/wayfinder/SKILL.md",
-      "skillFolderHash": "6c09b14ee861aa7adc23c9a30823a5f2ed2ea376",
+      "skillFolderHash": "e201184ba8d8b0ece8d5229fa6a2a006a8eba097",
       "installedAt": "2026-10-03T19:42:56.678Z",
-      "updatedAt": "2026-11-10T12:33:31.969Z"
+      "updatedAt": "2026-11-26T16:06:55.275Z"
     },
     "create-auth": {
       "source": "better-auth/skills",
@@ -376,55 +393,61 @@
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/productivity/handoff/SKILL.md",
-      "skillFolderHash": "3af7245d2448782bda406e853ccaaa4c7bc51a99",
+      "skillFolderHash": "4565d5e8e412a336069a46572ab984d3e8111a42",
       "installedAt": "2026-10-29T07:46:54.117Z",
-      "updatedAt": "2026-11-10T12:33:31.969Z"
+      "updatedAt": "2026-11-26T16:06:55.270Z"
     },
     "mission": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/mission/SKILL.md",
-      "skillFolderHash": "c15859d43dc26095c063a94e5d4e21c5f20aa6f1",
+      "skillFolderHash": "c0356c5e6eaacc0116ac054aadbb0851ce7b62b0",
       "installedAt": "2026-10-29T07:46:54.125Z",
-      "updatedAt": "2026-11-10T12:33:31.971Z"
+      "updatedAt": "2026-11-26T16:06:55.271Z"
     },
     "router": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/router/SKILL.md",
-      "skillFolderHash": "163590b49042d5e34992119a65608739a6a31431",
+      "skillFolderHash": "ed7cf957b5921f4d59b720a505b5ab97c820f808",
       "installedAt": "2026-10-29T08:15:50.731Z",
-      "updatedAt": "2026-11-10T12:33:31.970Z"
+      "updatedAt": "2026-11-26T16:06:55.273Z"
     },
     "wait-what": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/productivity/wait-what/SKILL.md",
-      "skillFolderHash": "dcb914a199b299f276fafc7d00dac7e68344fda1",
+      "skillFolderHash": "57729c5a31fbf13dc6cd1f5d39fbdeb30b275f66",
       "installedAt": "2026-10-29T09:16:18.484Z",
-      "updatedAt": "2026-11-10T12:33:31.968Z"
+      "updatedAt": "2026-11-26T16:06:55.275Z"
     },
     "setup-agent-skills": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/setup-agent-skills/SKILL.md",
-      "skillFolderHash": "91da0889768698316e97cc65536c8a763d678498",
+      "skillFolderHash": "f3458a4c26b1998847ca0559b20dd1b9ce1289f9",
       "installedAt": "2026-10-29T09:16:18.486Z",
-      "updatedAt": "2026-11-10T12:33:31.970Z"
+      "updatedAt": "2026-11-26T16:06:55.273Z"
     },
     "to-questionnaire": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/productivity/to-questionnaire/SKILL.md",
-      "skillFolderHash": "f0e3983d7c213093e88134fe803678a1162089bf",
+      "skillFolderHash": "c87556b597e95f41aed99244caade7cdd30510ed",
       "installedAt": "2026-11-02T12:49:39.750Z",
-      "updatedAt": "2026-11-10T12:33:31.969Z"
+      "updatedAt": "2026-11-26T16:06:55.273Z"
     },
     "use-railway": {
       "source": "railwayapp/railway-skills",
@@ -439,19 +462,21 @@
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
-      "skillFolderHash": "3c3fd5de833954412a13a85de072c7e21cc6968b",
+      "skillFolderHash": "80e5c4c19d86309acd7a8eaf702c2e56ca948c06",
       "installedAt": "2026-11-09T11:04:19.669Z",
-      "updatedAt": "2026-11-10T12:33:31.971Z"
+      "updatedAt": "2026-11-26T16:06:55.271Z"
     },
     "pushback": {
       "source": "eyenalxai/skills",
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/skills.git",
+      "commit": "4b21b154e9ad3b8d0d5f666ee62e98520dd3054e",
       "skillPath": "skills/productivity/pushback/SKILL.md",
-      "skillFolderHash": "7737723b0dd048a0620ab85c7fdaf4f9d91c49df",
+      "skillFolderHash": "a5a81a46ec4fb8af08ae94bb79cd05a105230e16",
       "installedAt": "2026-11-10T07:45:15.387Z",
-      "updatedAt": "2026-11-10T12:33:31.969Z"
+      "updatedAt": "2026-11-26T16:06:55.272Z"
     }
   },
   "dismissed": {
