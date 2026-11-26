@@ -31,12 +31,6 @@
   },
   "model": "opencode-go/deepseek-v4.1-flash",
   "plugins": [
-    {
-      "options": {
-        "copyAll": true
-      },
-      "package": "github:anomalyco/rift#v0.0.13::path:plugins/opencode"
-    },
     "opencode-github-panel"
   ],
   "policies": [
