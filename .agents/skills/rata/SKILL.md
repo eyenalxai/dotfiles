@@ -1,100 +1,112 @@
 ---
 name: rata
-description: Drive Linear from the terminal with the rata CLI — read and write issues, comments, labels, relations, and wayfinding maps. Use when a repository tracks work in Linear, when its docs/agents/issue-tracker.md names rata, or when the user asks to file, triage, comment on, link, block, claim, or close Linear issues.
+description: Drive Linear from the terminal with the rata CLI — read and write issues, comments, relations, and wayfinding maps. Use when a repository tracks work in Linear, when its docs/agents/issue-tracker.md names rata, or when the user asks to file, triage, comment on, link, block, claim, or close Linear issues.
 ---
 
 # rata
 
 `rata` is the Linear CLI for agent workflows. Read
-`docs/agents/issue-tracker.md` for the repository's team, labels and conventions;
-this skill covers the CLI.
+`docs/agents/issue-tracker.md` for the repository's team, labels and conventions.
+`reference.md` has every command, flag and JSON shape.
 
 ## Start here
 
 ```bash
 command -v rata      # the binary is installed
-rata status --json   # repo, workspace, key source, team, defaults and viewer
+rata status          # repo, team, states, labels, triage, cache age, docs, viewer
 ```
 
-`status` works without a link. Fix a failed first command before you retry:
+`status` works without a link. It reports the viewer, the team context and the
+tracker document health. Fix a failed first command before you retry.
 
-- `auth`: `printf '%s' "$LINEAR_API_KEY" | rata auth login --with-token`. The key
-  resolves as `LINEAR_API_KEY`, the repository workspace, then `default`;
-  `workspace use <name>` selects a profile.
-- `not_linked`: run `rata team list`, then `rata link --team <key>`. Pass
-  `--team`; the prompt needs a terminal. `LINEAR_API_KEY` changes the profile
-  that `link` writes, and `link` also sets the team timezone. A stale stored key
-  is repaired on read with a warning; if `status` says it is gone, follow the
-  repair hint.
-- Do not guess a workflow state name. Read it from `rata team show --json`.
+## Five roots
+
+| Root     | Use                                                                             |
+| -------- | ------------------------------------------------------------------------------- |
+| `status` | The cached context, the viewer and the document health                          |
+| `issue`  | Read the working set and write issues                                           |
+| `triage` | Not available yet.                                                              |
+| `map`    | Not available yet.                                                              |
+| `admin`  | Setup: auth, link, unlink, workspace, config, team, project, label, doctor, api |
+
+The setup commands live under `admin`:
+
+- `printf '%s' "$LINEAR_API_KEY" | rata admin auth login --with-token` stores a
+  key. The key resolves as `LINEAR_API_KEY`, the repository workspace, then
+  `default`; `rata admin workspace use <name>` selects a profile.
+- `rata admin link --team <key>` links the repository and sets the team
+  timezone. A stale stored key is repaired on read with a warning; follow the
+  repair hint when `status` reports it.
+- `rata admin doctor` checks the known `rata` commands and removed flags in the
+  tracker document.
+  `--write` repairs the generated command block.
+- `rata admin api --query "<graphql>"` is the read-only escape hatch. It rejects
+  mutations and subscriptions and never prints the key.
+
+The old root forms (`rata auth`, `rata whoami`, `rata config`, `rata link`,
+`rata team`, ...) exit 2. `whoami` is gone; `rata status` or
+`rata admin auth status` carries the viewer.
+
+Do not guess a workflow state name. Read it from `rata status`; add `--refresh`
+when `cache.ageSeconds` is stale or the context looks wrong.
 
 ## One spelling per operation
 
-| Operation       | Canonical form                                               | Rejected form                |
-| --------------- | ------------------------------------------------------------ | ---------------------------- |
-| Read one issue  | `rata issue show <ref>`                                      | `rata issue <ref>`           |
-| Comment         | `rata issue comment create <ref> --body-file -`              | `rata issue comment <ref>`   |
-| Assign          | `rata issue assign <ref> --assignee me`                      | `rata issue assign <ref> me` |
-| Edit a section  | `rata issue section replace <ref> "<heading>" --body-file -` |                              |
-| Batch edit      | `rata issue update <ref> --sections-file -`                  | a loop of section writes     |
-| Change an issue | `rata issue update <ref> <flags>`                            |                              |
-| Close           | `rata issue close <ref> --comment "..."`                     |                              |
-
-`issue update` also sets `--assignee` and `--state`: one command with several fields, not a second spelling.
-
-## Read loop
-
-```bash
-rata issue status <ref> --json --with-body
-rata issue show <ref> --json
-rata issue show <ref> --summary --json
-rata issue list --id <ref> --id <ref> --json
-rata issue list --parent <ref> --all --json --include relations
-rata next --parent <ref>
-rata why <ref>
-rata search "<text>" --json
-```
-
-One resource prints that object; a collection prints `{ <plural>, pageInfo }`.
-`--fields` selects dotted paths and needs `--json`; it validates the read shape
-even on an empty list or a null object, and a path may cross an array
-(`labels.name`). A list returns one page; `--after` continues it and `--all`
-drains it. `--count` prints one number; `--ids-only` prints plain identifiers.
+| Operation       | Canonical form                                              | Rejected form                                                                                    |
+| --------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Read an issue   | `rata issue <ref>`                                          | `rata issue show <ref>`                                                                          |
+| Read many       | `rata issue <ref> <ref> ...`                                | repeated `issue <ref>` calls                                                                     |
+| Apply a write   | `rata issue apply <ref> --file -`                           | `issue update`, `issue label`, `issue section`, `issue assign`, `issue unassign`, `issue reopen` |
+| Publish a graph | `rata issue publish --file -`                               | create then link in a loop                                                                       |
+| Start           | `rata issue start <ref>`                                    | `issue assign --assignee me`                                                                     |
+| Hand off        | `rata issue handoff <ref> --file -`                         |                                                                                                  |
+| Close           | `rata issue close <ref> --comment-file -`                   | `issue close --comment`                                                                          |
+| Add an edge     | `rata issue relate <ref> --blocked-by <ref>`                | `issue link`, `issue unlink`                                                                     |
+| Comment         | `rata issue comment <ref> --body-file - --dedupe-key <key>` | `issue comment create`                                                                           |
 
 ## Write loop
 
 ```bash
 rata issue create --title "<title>" --body-file - --priority <p> --assignee me
-rata issue create --title "<title>" --parent <spec> --body-file - --priority <p> --assignee me --label ready-for-agent
-rata issue update <ref> --priority <p>
-rata issue update <ref> --state "<state from team show>"
-rata issue comment create <ref> --body-file - --dedupe-key <key>
-rata issue label add <ref> <label...>
-rata issue assign <ref> --assignee me
-rata issue close <ref> --comment "..."
+printf '%s' "$GRAPH_JSON" | rata issue publish --file -
+printf '%s' "$APPLY_JSON" | rata issue apply <ref> --file -
+printf '%s' "$APPLY_JSON" | rata issue apply <ref> --file - --dry-run
+printf '%s' "$APPLY_JSON" | rata issue apply <ref> --file - --if-unchanged <snapshot>
+rata issue start <ref>
+printf '%s' "$HANDOFF_JSON" | rata issue handoff <ref> --file -
+rata issue relate <ref> --blocked-by <blocker>
+printf 'Started work.' | rata issue comment <ref> --body-file - --dedupe-key start-42
+printf 'Done in PR #12.' | rata issue close <ref> --comment-file -
 ```
 
-`--body-file -` reads stdin. `--dry-run` previews a write; a body write also
-takes `--if-unchanged <updatedAt>` from a read. A write whose desired state
-already holds exits 0 with `skipped`. Priorities: `urgent`, `high`, `medium`,
-`low`, `none`.
+`issue apply` plans every action first. It touches only the fields and sections in
+the document. `--dry-run` returns the plan and writes nothing.
+`--if-unchanged <snapshot>` exits 4 when the issue changed. A no-op returns
+`skipped`. A partial failure returns the applied actions and the failed action.
 
-For one section, preview with `issue section replace <ref> "<heading>" --dry-run`,
-then write with the same command and `--if-unchanged <updatedAt>`.
+`issue publish` takes one document with `team`, `parent`, `defaults` and `nodes`.
+Each node requires `key`, `kind` and `title`; `body`, `priority`, `labels`,
+`assignee`, `state`, `parent` and `blockedBy` are optional. A retry reuses the
+nodes and skips the edges that already exist.
 
-For several sections, send one document to `issue update --sections-file -`:
-`{"sections":[{"heading":"Flow","content":"..."}]}`. The dry run returns
-`updatedAt`; the write replaces every heading in one read, one diff and one
-write. Never rewrite the whole body for one section: `issue update --body-file`
-drops every heading that the new body leaves out, with no error.
+`issue start` claims an unassigned issue, skips your own claim, and exits 4 with
+the holder when another user holds it; `--take` reassigns. `issue handoff`
+attaches the PR, applies the state and sections, and posts one deduped comment.
+`issue close` refuses open children unless `--force`, closes to the first
+completed state, and posts one comment; a retry is skipped.
 
 ## Errors
 
-A failed `--json` command writes one object to stderr and exits with the code of
-its class: 2 validation, 3 not found, 4 conflict, 5 auth, 6 retryable, 1 internal.
-Read `hint` and retry once. Two cases write a partial result to stdout instead:
-a bulk write by `--parent`, and a failed `issue update --comment`.
+A failed command with JSON output writes one object to stderr and exits with the
+code of its class: 2 usage or validation, 3 not found, 4 conflict, 5 auth,
+6 retryable, 1 internal. A parse error writes code `usage`; help prints only for
+`--help`. Read `hint` and retry once. A partial apply writes one resource
+document with the applied actions, the failed action and `result.error` on
+stdout, and exits with the failed action's code.
 
 ## Pointers
 
-- Commands, flags and shapes: `reference.md`. Repo rules: `docs/agents/issue-tracker.md`; labels: `docs/agents/triage-labels.md`. Install and admin: `README.md`.
+- Commands, flags and shapes: `reference.md`.
+- Repo rules: `docs/agents/issue-tracker.md`.
+- Labels: `docs/agents/triage-labels.md`.
+- Install and admin: `README.md`.

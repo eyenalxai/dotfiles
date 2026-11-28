@@ -302,9 +302,10 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/eyenalxai/rata.git",
       "skillPath": "skills/rata/SKILL.md",
-      "skillFolderHash": "3c0cbf6889104d14879b52993bfc5727cdb26838",
+      "skillFolderHash": "b69e7c730bdc9d55f3a648ad6388e513bc5a84b2",
       "installedAt": "2026-10-05T11:45:07.275Z",
-      "updatedAt": "2026-11-13T09:03:04.189Z"
+      "updatedAt": "2026-11-28T10:59:46.409Z",
+      "commit": "ccd8a2c441dda83159c83c719660aa2d71eb16ad"
     },
     "handoff": {
       "source": "eyenalxai/skills",
