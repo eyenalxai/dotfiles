@@ -14,16 +14,11 @@ Scaffold the per-repo configuration the mission skills expect:
 
 Prompt-driven, not a blind script: explore first, confirm owner decisions, then write.
 
-## Roles
-
-- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`, `explore` subagent)**: inspects the repo in step 1 and creates missing tracker labels in step 4 if needed.
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: presents findings, walks the owner through decisions, drafts and writes `AGENTS.md` and `docs/agents/*.md`.
-
 ## Process
 
-### 1. Explore via worker
+### 1. Explore
 
-Dispatch an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to check and report in under 300 words:
+Inspect the repo directly; do not assume:
 
 - `git remote -v` and `.git/config` (host and repo).
 - `AGENTS.md` at repo root (exists? already has `## Agent skills`?).
@@ -83,7 +78,7 @@ Write `docs/agents/*.md` from the templates in this folder:
 - [domain.md](./domain.md)
 - Or write `docs/agents/issue-tracker.md` from the owner's description for another tracker.
 
-When Section B ran on GitHub or GitLab, have a worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) create any missing labels with `gh label create` / `glab label create`.
+When Section B ran on GitHub or GitLab, create any missing labels with `gh label create` / `glab label create`.
 
 ### 5. Finish
 

@@ -8,11 +8,6 @@ disable-model-invocation: true
 
 Chart a foggy effort as one **map** issue on the repo's tracker, with child **decision tickets**. Resolve tickets until the destination and path are clear enough for a spec or direct build.
 
-## Roles
-
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: charts the map, runs HITL grilling/domain-modeling exchanges with the owner, critiques worker outputs, and writes the map body, child ticket questions, resolution comments, and Decisions so far.
-- **Workers (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: run all `wayfinder:research` tickets in parallel, build `wayfinder:prototype` artifacts, execute AFK `wayfinder:task` legwork, and gather codebase context before HITL tickets.
-
 ## When to use
 
 Use wayfinder when the destination or key decisions are unknown and cannot be settled in one session. If the path is clear, skip wayfinder and use a Feature or Change flow; a map for clear work creates busywork tickets that delay building.
@@ -29,14 +24,14 @@ Use wayfinder when the destination or key decisions are unknown and cannot be se
 
 ## Ticket types
 
-Every ticket is **HITL** (requires live owner exchange; never answer the owner's side yourself) or **AFK** (worker runs alone):
+Every ticket is **HITL** (requires live owner exchange; never answer the owner's side yourself) or **AFK** (runs alone):
 
-| Label | Mode | Owner / Worker split |
+| Label | Mode | How it resolves |
 | --- | --- | --- |
-| `wayfinder:grilling` | HITL (default) | Orchestrator loads `grilling` + `domain-modeling`; worker gathers repo facts |
-| `wayfinder:research` | AFK | Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) loads `research`, writes cited findings to throwaway `research/<name>` branch (pushed, no PR); orchestrator critiques citations and records summary |
-| `wayfinder:prototype` | HITL | Worker builds throwaway artifact per `prototype`; orchestrator verifies it answers the question and reviews with owner |
-| `wayfinder:task` | AFK or HITL | Manual prerequisite unblocking a decision (provisioning access, migrating sample data). Worker executes if AFK; orchestrator hands owner a checklist if HITL |
+| `wayfinder:grilling` | HITL (default) | Load `grilling` and `domain-modeling` and resolve with the owner |
+| `wayfinder:research` | AFK | Run a subagent loading `research`; write cited findings to a throwaway `research/<name>` branch (pushed, no PR) and link it from the ticket |
+| `wayfinder:prototype` | HITL | Load `prototype`, build a rough throwaway artifact to react to, link it as an asset |
+| `wayfinder:task` | AFK or HITL | Manual prerequisite unblocking a decision (provisioning access, migrating sample data). Execute directly if AFK, or hand the owner a precise checklist if HITL |
 
 ## Fog vs. ticket vs. out of scope
 
@@ -91,7 +86,7 @@ Invoked with a loose idea. Charting resolves nothing and ends in one session.
 2. **Sweep breadth-first.** Grill across the space to surface open decisions and first steps. If no fog remains, stop and tell the owner this fits a Feature or Change without a map.
 3. **Create the map** (`wayfinder:map`) with Destination, Notes, empty Decisions so far, and coarse fog in Not yet specified.
 4. **Create tickets, then wire edges.** Create all specifiable child issues first so real IDs exist, then wire blocking edges and cross-references in a second pass (placeholder `#<n>` numbers auto-link to wrong issues).
-5. **Launch parallel research workers.** For every `wayfinder:research` ticket just created, spawn a DeepSeek `general` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to run `research` in parallel and push findings to `research/<name>` (no PR). Critique their findings and link them from the tickets.
+5. **Start research subagents.** For every `wayfinder:research` ticket just created, run a subagent loading `research` in parallel and push findings to `research/<name>` (no PR), linked from the ticket.
 6. **Stop.** Present the map and frontier to the owner.
 
 ## Mode 2: work through the map

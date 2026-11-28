@@ -6,18 +6,13 @@ disable-model-invocation: true
 
 # To spec
 
-Synthesize the settled discussion and codebase facts into a spec. Never re-interview the owner; grilling already settled the decisions, and asking again reopens them.
-
-## Roles
-
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: designs the testing seams, writes the spec prose (owner-read), presents the draft at the scope and spec gate, and publishes after approval.
-- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: if the codebase has not been explored yet, runs an `explore` pass to map current modules, existing test seams, glossary terms, and relevant ADRs, returning a compact brief (under 400 words).
+Synthesize the settled discussion and codebase understanding into a spec. Never re-interview the owner; grilling already settled the decisions, and asking again reopens them.
 
 Read the tracker doc and triage-label mapping first. If either is missing, ask the owner.
 
 ## Process
 
-1. **Gather missing repo facts.** If the session lacks current module or test-seam facts, dispatch the `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`). Respect `GLOSSARY.md` vocabulary and existing ADRs; inventing terms or contradicting an ADR sends the ticket graph off course.
+1. **Confirm repo context.** Explore the codebase if not already done. Use `GLOSSARY.md` vocabulary and respect existing ADRs; inventing terms or contradicting an ADR sends the ticket graph off course.
 2. **Pick testing seams.** Prefer an existing seam over a new one, and place seams as high as possible (ideally one seam across the codebase). Record them in **Testing Decisions**. Never ask for a separate seam approval; the scope and spec gate covers them.
 3. **Draft the spec** using the template below. Write in neutral current state only: never quote the conversation, name who decided, or include history.
 4. **Gate and publish:**

@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # To questionnaire
 
-Turn a decision the owner cannot make alone into a **questionnaire**: a Markdown file the owner sends to one person to fill out async, or walks through live. The orchestrator (`opencode-go/kimi-k3.1-pro`) runs the exchanges and writes the document because it is owner- and recipient-facing prose. If repo facts are needed for the context block, gather them with an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) first.
+Turn a decision the owner cannot make alone into a **questionnaire**: a Markdown file the owner sends to one person to fill out async, or walks through live.
 
 **Grill the send, not the subject.** Only ask the owner about who gets the document and what decisions depend on the answers. Guessing at the subject is what the questionnaire is for.
 

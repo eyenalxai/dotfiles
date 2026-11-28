@@ -9,16 +9,6 @@ disable-model-invocation: true
 
 Single entry point for a piece of work: from raw request through grilling, design, implementation, and review, ending at one reviewable PR per ticket.
 
-## Roles: forest vs. trees
-
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: runs the mission session. Owns scope classification, grilling, architectural judgment, gates, the mission record, worker critique, and every artifact the owner reads (replies, specs, tickets, glossary/ADRs, PR bodies, handoffs, architecture reports). Keeps its context window lean by never reading dozens of source files or iterating build/test loops in the main session.
-- **Workers (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: run in `explore` or `general` subagents. Handle all tree-level legwork: codebase exploration, research, debugging loops, prototyping, implementation (`tdd`), and raw diff reviews (`code-review`). Workers return compact, structured reports with pointers, never raw dumps.
-- **Critique loop**: after a worker reports back, judge the result at the forest level (right seam, right scope, clean interface, matches spec). If something is off, send targeted redirection to the **same worker `sessionID`** so it fixes the work without re-reading the codebase. Only accept when the shape is right.
-
-If the active harness cannot override subagent models, still delegate to subagents using the default model and note the fallback.
-
-## Loading child skills
-
 Every skill named here is a file to load with the Skill tool before producing its output; summaries here are orientation only. If a skill fails to load, stop and name it. Never simulate its output.
 
 ## Commands
@@ -64,7 +54,7 @@ Optional detours: `research` (missing facts), `improve-codebase-architecture` (f
 
 ## Start procedure
 
-1. **Orient.** Read `AGENTS.md` and the tracker doc. Use an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to check for an existing matching issue in the tracker and gather repo context if needed.
+1. **Orient.** Read `AGENTS.md` and the tracker doc. Check the configured tracker for an existing matching issue.
 2. **Classify** with the scope tree above. Do **not** create or update a mission record yet. The one exception is a Fog path, where `wayfinder` creates its map before decision gates.
 3. **Grill.** Load `grilling` and `domain-modeling` (plus `diagnosing-bugs` for a Bug, or `improve-codebase-architecture` for a full architecture pass). Even when a spec or issue already exists, run a short grill to confirm the question frontier is empty.
 4. **Draft design (Feature / Fog).**
@@ -78,8 +68,8 @@ Optional detours: `research` (missing facts), `improve-codebase-architecture` (f
    - One record per mission: the work item issue itself (the bug/change issue, the published spec on a Feature, or the map on a Fog with the published spec linked from it; a Trivial may use its issue or the PR). Never create a separate `Mission:` issue.
    - When claiming an existing issue, append the record sections without overwriting the original report.
 7. **Route the build.**
-   - Change, Bug, Trivial, or a 1-ticket frontier: load `implement` (spawns one DeepSeek worker, critiques it, reviews, opens PR).
-   - Feature or Fog after `to-tickets` and the Tickets gate, with 2+ ready tickets: load `implement-spec` (orchestrator acts as crew chief, spawns up to 10 parallel DeepSeek workers stacked by blocking edge, critiques and reviews each, reports bottom-up).
+   - Change, Bug, Trivial, or a 1-ticket frontier: load `implement`.
+   - Feature or Fog after `to-tickets` and the Tickets gate, with 2+ ready tickets: load `implement-spec` (mission session acts as crew chief, spawns up to 10 subagent workers stacked by blocking edge, reviews each PR, reports bottom-up).
 
 ## Phase contracts
 
@@ -94,7 +84,7 @@ Optional detours: `research` (missing facts), `improve-codebase-architecture` (f
 | Spec | `to-spec` | Spec draft (published after approval) | Scope and spec |
 | Tickets | `to-tickets` | Ticket graph with surface ownership and edges | Tickets |
 | Build | `implement` (1) or `implement-spec` (2+) | Code and PRs, one per ticket, stacked by edge | PR |
-| Review | `code-review` | Standards and Spec findings + forest check | PR |
+| Review | `code-review` | Standards and Spec findings | PR |
 | PR | `pr` | PR body, evidence, merge danger | PR |
 | Handoff | `handoff` | Next-session chat prompt | Current gate |
 
@@ -108,14 +98,14 @@ Optional detours: `research` (missing facts), `improve-codebase-architecture` (f
 
 - **Snapshot at boundaries only.** Update the record at a gate, at a handoff, on a scope change, or to fix a false record. Never post per-decision comments; the PR carries its own status.
 - **Frontier cap.** Default concurrency cap is 10 ready tickets per wave. Never queue a ready ticket behind an unmerged PR when the graph allows it to run or stack. Record any owner-chosen cap override in Decisions.
-- **References.** Track every load-bearing path or URL (code, vendor source, API docs, ADRs, research, architecture plans) in the record's References table with reason and phase. At session start, have a worker verify each entry and mark broken ones `stale: <what changed>`.
+- **References.** Track every load-bearing path or URL (code, vendor source, API docs, ADRs, research, architecture plans) in the record's References table with reason and phase. Verify each entry at session start and mark broken ones `stale: <what changed>`.
 - **Scope changes.** Reclassify cleanly when fog appears, collapses, or grows past one session. Rewrite the record's scope, gates, frontier, and next step to the new current state without narrating the old scope.
 
 ## Session boundaries and handoffs
 
-A session is a context boundary, not a phase boundary. Stay in the same session across phases; workers already isolate tree-level context. Hand off via `handoff` only when:
+A session is a context boundary, not a phase boundary. Stay in the same session across phases; `implement-spec` workers already isolate parallel ticket contexts. Hand off via `handoff` only when:
 
-- the orchestrator's context is nearly full;
+- the context is nearly full;
 - a side task needs its own context;
 - work moves to another directory or harness;
 - the owner asks for a fresh session.

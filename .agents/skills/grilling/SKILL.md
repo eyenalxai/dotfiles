@@ -7,23 +7,18 @@ description: Grill the owner relentlessly about a plan, decision, or idea. Use w
 
 Interview the owner until you share the same understanding. Model the conversation as a **design tree**: every settled decision unlocks the dependent decisions below it.
 
-## Roles
-
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: owns the design tree, writes every round and ledger, talks to the owner, and judges when understanding is complete.
-- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: gathers codebase, tracker, ADR, and glossary facts so the orchestrator never burns main-session context searching files.
-
 ## 1. Build the fact base before round 1
 
-When working in a repo or tracker, dispatch an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) before asking anything. Ask it for a compact report (under 500 words) with two inventories:
+Before asking anything, build two inventories from the codebase, mission record, tracker, `GLOSSARY.md`, `docs/adr/`, and earlier rounds:
 
 1. **Surface inventory**: existing screens, routes, commands, files, modules, or APIs that touch the request, with paths or URLs.
-2. **Prior-decisions inventory**: decisions already settled in this mission, tracker issues, `GLOSSARY.md`, or `docs/adr/`, plus any rejected options and why.
+2. **Prior-decisions inventory**: decisions already settled in this mission or referenced sessions, with sources, plus any rejected options and why.
 
-Asking the owner about a surface that already exists wastes their time and signals you did not read the repo. If a factual question comes up mid-grill and the environment can answer it, send a follow-up to the same worker `sessionID` instead of asking the owner.
+Asking the owner about a surface that already exists wastes their time and signals you did not read the repo. Dispatch a subagent when the search is large, and **wait for every search to finish before asking any questions**. If a factual question comes up mid-grill and the environment can answer it, look it up instead of asking the owner.
 
 ## 2. Ask the whole question frontier per round
 
-The **question frontier** is every open decision whose prerequisites are already settled. Put the entire frontier into one numbered round, with a recommended answer for each, then stop and wait. Asking one question at a time hides how decisions couple; bundling lets the owner see the full shape.
+The **question frontier** is every open decision whose prerequisites are already settled. Put the entire frontier into one numbered round directly in your chat reply (never split a grilling round into a `question` widget), with a recommended answer for each, then stop and wait. Asking one question at a time hides how decisions couple; bundling lets the owner see the full shape.
 
 Hold back any question that depends on an unanswered question in the current round.
 
@@ -61,7 +56,7 @@ Q2: <Short title>
 ## 3. Rules
 
 - **Never re-offer a rejected option.** Keep it in the ledger's Rejected list with its reason so it stays dead.
-- **Never ask for a findable fact.** Look it up via the worker and fold it into the question.
+- **Never ask for a findable fact.** Look it up and fold it into the question.
 - **Never relabel an owner decision as engineering.** If the owner decided it, record it as settled. Label only your own defaults `engineering` so owner decisions stay visible at the gate.
 - **Handle "I don't care" honestly.** Record `owner: no preference` and state the safe default with its reason. Permission to pick is not an owner mandate.
 

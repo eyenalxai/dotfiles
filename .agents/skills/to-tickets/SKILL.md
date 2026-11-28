@@ -8,11 +8,6 @@ disable-model-invocation: true
 
 Cut an approved spec into tracer-bullet vertical slices, each declaring the surface it owns and its blocking edges, then publish to the configured tracker.
 
-## Roles
-
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: designs the slice breakdown, blocking graph, and surface ownership; quizzes the owner at the Tickets gate; writes every ticket body; publishes after approval.
-- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: explores affected surfaces, call-site blast radius (for wide refactors), and prefactoring opportunities via `explore` so the orchestrator does not scan the repo directly.
-
 Read the tracker doc and triage-label mapping first. If missing, ask the owner.
 
 ## Gate check
@@ -24,14 +19,14 @@ Read the tracker doc and triage-label mapping first. If missing, ask the owner.
 
 ### 1. Gather context and surfaces
 
-Work from the conversation or fetch the named spec/issue. If affected surfaces are not yet mapped, dispatch an `explore` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to list the modules, routes, schemas, commands, and prefactoring seams involved (under 400 words). Use `GLOSSARY.md` terms and respect ADRs.
+Work from the conversation or fetch the named spec/issue. Explore the codebase if not already done to map affected modules, routes, schemas, commands, and prefactoring seams. Use `GLOSSARY.md` terms and respect ADRs.
 
 ### 2. Cut the slices
 
 Follow these rules unless the work is a wide refactor:
 
 - **Vertical, never horizontal.** Each slice cuts a thin, working path across all layers (schema, logic, API/UI, tests) so it is demoable and verifiable on its own.
-- **One fresh worker context.** Size each ticket so one worker session can build, test, and verify it cleanly.
+- **One fresh context window.** Size each ticket so one session can build, test, and verify it cleanly.
 - **Disjoint surface ownership.** Name the module, route, schema, or command each ticket owns. If two ready tickets edit the same surface, add a blocking edge and stack them; parallel edits to one surface create merge conflicts.
 - **Prefactor first.** Put enabling refactors in an earlier blocking ticket so behavior changes stay legible.
 - **Honest blocking edges.** Add an edge only when one ticket genuinely needs another's interface or surface. A ticket with one blocker stacks on the blocker's branch; a ticket with multiple blockers waits until all but one merge, then stacks on the last. Stack order equals merge order.

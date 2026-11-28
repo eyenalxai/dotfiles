@@ -9,14 +9,9 @@ disable-model-invocation: true
 
 Package the current state so a fresh session can resume without re-litigating settled work.
 
-## Roles
-
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: writes the handoff document and the chat prompt. Both are owner-read and control the next session's direction.
-- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: if reference paths, URLs, open PRs, or stack states need verification before handoff, run one `explore` or `general` worker to check them and return a compact status table.
-
 ## When to hand off
 
-Hand off only when the work travels or the current context cannot carry it: context is nearly full, a side task needs isolation, the next step moves to another directory or harness, or the owner asks. Never hand off for a normal phase change in the same session; worker subagents already isolate implementation and research without forcing a copied prompt and a fresh gate confirmation.
+Hand off only when the work travels or the current context cannot carry it: context is nearly full, a side task needs isolation, the next step moves to another directory or harness, or the owner asks. Never hand off for a normal phase change in the same session; stay in the mission session (and use subagent workers in `implement-spec` for parallel tickets) instead of forcing a copied prompt and a fresh gate confirmation.
 
 ## Outputs
 
@@ -46,7 +41,6 @@ Never write "the scope is approved" as settled authority, never write "decide th
 - Top references for the next phase by path or URL, marking broken ones `stale: <what changed>`.
 - Ordered skills to load with the Skill tool, plus the stop rule: if a named skill fails to load, stop and name it instead of simulating it.
 - Exact build and check commands.
-- Execution model: orchestrator (`opencode-go/kimi-k3.1-pro`) owns the forest, gates, and owner-facing artifacts; workers (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) handle exploration, research, implementation, and diff reviews.
 - Output contract and handback: answer first, no status header, one plain `Next step:` sentence when the owner must act; open one PR per ticket stacked by edge, run `code-review`, report the stack bottom-up with URL, check state, what changed, what it unlocks, and merge danger (keep head SHAs in the PR).
 
 ## What the prompt must exclude
@@ -68,7 +62,6 @@ Open PRs (merge order, bottom-up): <urls, or none>. Base commit: <sha>.
 Next frontier: <plain name>: <why it is next and what it unlocks>. Tracking keys live in the mission document.
 References for <phase>: <paths or URLs, with stale marks if broken>.
 Load these skills in order with the Skill tool: <skills>. If any skill fails to load, stop and name it; never simulate its output.
-Orchestrator (opencode-go/kimi-k3.1-pro) owns decisions, gates, and owner-facing writing; delegate exploration, research, implementation, and diff review to workers (openrouter/deepseek/deepseek-v4.1-flash-1017#max) and critique before accepting.
 Checks: <commands>. Open one PR per ticket, stacked by edge, run code-review on each, and report the stack bottom-up (PR URL, check state, what changed, what it unlocks, merge danger). Keep head SHAs in the PR. The owner reviews and merges bottom-up.
 ```
 

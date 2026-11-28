@@ -37,6 +37,6 @@ Never substitute "component", "service", "unit", "API", or "boundary" for these 
 
 - **Survey a repo for candidates:** [improve-codebase-architecture](../improve-codebase-architecture/SKILL.md)
 - **Deepen a cluster by dependency class:** [DEEPENING.md](DEEPENING.md)
-- **Compare radically different interfaces:** [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md) (spawns parallel DeepSeek workers and has the orchestrator judge depth, locality, and seam placement)
+- **Compare radically different interfaces:** [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md) (runs parallel subagents to explore competing designs, then compares depth, locality, and seam placement)
 
 When the owner challenges a finding, a recommendation, or a fact, load `pushback` before you reply.

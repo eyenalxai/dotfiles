@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Wait what
 
-Stop. The last message assumed context the owner does not have. Re-pitch it directly as the orchestrator (`opencode-go/kimi-k3.1-pro`) before doing anything else.
+Stop. The last message assumed context the owner does not have. Re-pitch it before doing anything else.
 
 ## Procedure
 

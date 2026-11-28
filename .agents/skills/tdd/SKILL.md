@@ -5,14 +5,14 @@ description: Test-driven development. Use when the owner wants to build features
 
 # Test-driven development
 
-Strict red-to-green loop executed inside the implementation worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`). Read before and during every cycle; checking test quality after the code is written cannot fix a wrong seam or tautological assertion.
+Strict red-to-green loop. Consult this before and during every cycle; checking test quality after the code is written cannot fix a wrong seam or tautological assertion.
 
 ## When to run
 
 ```text
 Does this change have an approved code seam (spec Testing Decisions, ticket criteria, or gate)?
 ├── No (prose/markdown only) → Skip TDD; verify against the repo's writing standard.
-├── Missing or ambiguous     → Stop and report to the orchestrator; never invent a seam.
+├── Missing or ambiguous     → Stop and ask; never invent a seam.
 └── Yes                      → Run the red-green loop at that seam.
 ```
 

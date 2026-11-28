@@ -8,11 +8,6 @@ disable-model-invocation: true
 
 Move issues (and external PRs when `docs/agents/issue-tracker.md` enables PRs as a request surface) through the triage state machine: categorize, verify against the codebase, grill if needed, and write agent-ready briefs.
 
-## Roles
-
-- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`, `general` subagent)**: queries the triage queue, reads issue/PR threads and diffs, checks codebase redundancy and `.out-of-scope/*.md`, reproduces bug steps, checks out PRs and runs tests. Returns a compact, structured report (under 400 words).
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: reviews the worker's findings, recommends category/state, runs any grilling with the owner, and writes every comment, agent brief, triage note, and `.out-of-scope/` entry posted for humans to read.
-
 ## Reference docs
 
 - [AGENT-BRIEF.md](AGENT-BRIEF.md): writing durable agent briefs
@@ -37,7 +32,7 @@ Move issues (and external PRs when `docs/agents/issue-tracker.md` enables PRs as
 
 ## Show what needs attention
 
-Dispatch a worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) to query the tracker and return three buckets, oldest first, with counts and one-line summaries:
+Query the tracker and present three buckets, oldest first, with counts and one-line summaries:
 
 1. **Unlabeled** (never triaged)
 2. **`needs-triage`** (in evaluation)
@@ -47,14 +42,13 @@ When PRs are in scope, include only *external* PRs (per tracker config) during d
 
 ## Triage a specific issue or PR
 
-1. **Investigate and verify via worker.** Dispatch a `general` worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`) with `GLOSSARY.md` and local ADRs to:
-   - read the full issue/PR body, comments, labels, prior triage notes (so resolved questions are not re-asked), and diff (for PRs);
-   - run a **redundancy check** by domain concept (not reporter phrasing) to see if the behavior already exists;
-   - check `.out-of-scope/*.md` for prior rejections;
-   - **verify the claim**: reproduce a bug from the reported steps, or check out a PR and run relevant tests/commands. Report `confirmed` (with code path), `failed`, or `insufficient detail` (strong `needs-info` signal). An unverified brief sends implementation after the wrong bug.
-2. **Recommend and wait.** Present the worker's verified findings, your category/state recommendation, and wait for the owner's call. (If the worker's verification looks incomplete, send a follow-up to its `sessionID` first.)
-3. **Grill if needed.** Load `grilling` and `domain-modeling` and sharpen until ready, updating `GLOSSARY.md` and ADRs inline.
-4. **Apply the outcome (orchestrator writes every post):**
+1. **Gather context and check the codebase.** Read the full issue/PR body, comments, labels, prior triage notes (so resolved questions are not re-asked), and diff (for PRs). Explore using `GLOSSARY.md` and local ADRs, and run two checks:
+   - **Redundancy:** search by domain concept (not reporter phrasing) to see if the behavior already exists.
+   - **Prior rejection:** check `.out-of-scope/*.md` for matching rejected requests.
+2. **Recommend and wait.** Give your category/state recommendation with a brief codebase summary (including whether it already exists) and wait for direction.
+3. **Verify the claim.** Before grilling, reproduce a bug from the reported steps, or check out a PR and run relevant tests/commands. Report `confirmed` (with code path), `failed`, or `insufficient detail` (strong `needs-info` signal). An unverified brief sends implementation after the wrong bug.
+4. **Grill if needed.** Load `grilling` and `domain-modeling` and sharpen until ready, updating `GLOSSARY.md` and ADRs inline.
+5. **Apply the outcome:**
    - `ready-for-agent`: post agent brief per [AGENT-BRIEF.md](AGENT-BRIEF.md).
    - `ready-for-human`: same brief shape, naming why it cannot be delegated.
    - `needs-info`: post Triage Notes using the template below.

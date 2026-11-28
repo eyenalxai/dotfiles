@@ -57,7 +57,7 @@ Keep only the rows for this scope (mark any excluded gate `not used` if shown, n
 | Session | Work | Exit |
 | --- | --- | --- |
 | 1 | Classify, grill, draft spec and cut tickets (Feature/Fog), present gate | Gate decision |
-| 2 | Run frontier via workers (cap 10, stacked by edge), critique and review PRs | Stack PRs open for bottom-up merge |
+| 2 | Implement the frontier (cap 10, stacked by edge), review each PR | Stack PRs open for bottom-up merge |
 | 3 | (Only if context cannot carry next frontier) Run next unblocked frontier | Next stack PRs open |
 
 Default concurrency cap is 10. Record any override in Decisions. For Change, Bug, or Trivial, session 1 stops at the scope and understanding gate and there is no spec or ticket step.

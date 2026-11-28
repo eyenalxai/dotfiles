@@ -13,11 +13,6 @@ metadata:
 
 Write a crisp, high-signal PR body that lets the owner review and decide the merge fast.
 
-## Roles
-
-- **Orchestrator (`opencode-go/kimi-k3.1-pro`)**: always writes the PR body and owner handback. The owner reads the PR directly to decide the merge, so it must carry orchestrator-grade clarity.
-- **Worker (`openrouter/deepseek/deepseek-v4.1-flash-1017#max`)**: if diff stats, test outputs, screenshots, or check states need gathering, have a worker collect them and return a compact summary.
-
 ## Check the authorizing gate first
 
 Read the mission document (if one exists) and determine which gates authorize this change:
